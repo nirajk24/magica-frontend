@@ -81,9 +81,16 @@ export function TopBar({
   );
 }
 
-/** `nvidia/nemotron-3-super-120b-a12b:free` is not a label; the family name is. */
+/**
+ * Ids the last path segment does not describe. `openrouter/free` is the Free Models Router, which
+ * picks an available free model per request — so it is a mode, not a model, and "free" would read as
+ * a tier rather than a choice. The reference calls its own equivalent `Magica Auto`.
+ */
+const NAMED_MODELS: Record<string, string> = { "openrouter/free": "Auto" };
+
+/** Otherwise the family name is the label: `nvidia/nemotron-3-super-120b-a12b:free` is not one. */
 function modelLabel(modelId: string): string {
-  return modelId.replace(/:free$/, "").split("/").pop() ?? modelId;
+  return NAMED_MODELS[modelId] ?? modelId.replace(/:free$/, "").split("/").pop() ?? modelId;
 }
 
 /**

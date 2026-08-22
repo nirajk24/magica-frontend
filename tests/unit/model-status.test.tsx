@@ -1,8 +1,10 @@
+import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatScreen } from "@/components/chat/ChatScreen";
 import { TopBar } from "@/components/shell/TopBar";
+import { env } from "@/lib/env";
 import { server } from "../msw/setup";
 import { noActiveRun, rateLimited } from "../msw/handlers";
 import { renderWithProviders } from "../render";
@@ -18,7 +20,29 @@ describe("the model pill", () => {
   it("falls back to the default only where there is no chat to read", () => {
     renderWithProviders(<TopBar />);
 
-    expect(screen.getByText("nemotron-3-super-120b-a12b")).toBeInTheDocument();
+    expect(screen.getByText("Auto")).toBeInTheDocument();
+  });
+
+  it("names the free-model router as a mode, not as a model called free", () => {
+    server.use(
+      fixtures.chatHandlerWith([
+        { ...fixtures.userMessage },
+        { ...fixtures.assistantMessage, aiModel: null },
+      ]),
+      http.get(`${env.NEXT_PUBLIC_API_URL}/api/v1/chats/:chatId`, () =>
+        HttpResponse.json({
+          data: {
+            ...fixtures.chatWithMessages,
+            chat: { ...fixtures.chat, modelId: "openrouter/free" },
+            messages: [fixtures.userMessage, { ...fixtures.assistantMessage, aiModel: null }],
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<TopBar chatId={fixtures.CHAT_ID} />);
+
+    expect(screen.queryByText("free")).not.toBeInTheDocument();
   });
 
   it("says the path is healthy without claiming to know what served the turn", async () => {

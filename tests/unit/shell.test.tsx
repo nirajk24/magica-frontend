@@ -106,7 +106,7 @@ describe("the top bar", () => {
   it("names the model the turn runs on", () => {
     renderWithProviders(<TopBar />);
 
-    expect(screen.getByText(/nemotron/i)).toBeInTheDocument();
+    expect(screen.getByText("Auto")).toBeInTheDocument();
   });
 
   it("offers sign in and sign up instead of credits when signed out", () => {
