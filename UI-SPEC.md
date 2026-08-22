@@ -240,11 +240,19 @@ then a paragraph, then `Completed 6 steps` then another paragraph and the image.
 
 ### 3.3 Step group
 
-`Working · N steps ⌄` while the segment is live, `Completed N steps ⌄` once it is done. Small, muted,
-with a chevron; the group is collapsible and **defaults to collapsed once completed** — the terminal
-capture shows a header with no rows under it, and
-`05-plan-cards/completed-cards__collapsed-subtitle__light.jpg` shows the same header expanded after a
-click.
+`Working · N steps` while the segment is live, `Completed N steps` once it is done. Small and muted;
+the group is collapsible and **defaults to collapsed once completed** — the terminal capture shows a
+header with no rows under it, and `05-plan-cards/completed-cards__collapsed-subtitle__light.jpg`
+shows the same header expanded after a click.
+
+**The chevron is present only while the group is open.** Measured: in
+`06-messages/terminal__two-step-groups__light.jpg` the two collapsed headers carry no glyph at all,
+and in the expanded captures a `⌄` follows the label. No capture can show a hovered-but-closed
+header, so hover and keyboard focus reveal it — the header is the click target either way, and an
+affordance nobody can find is worse than that small divergence.
+
+`Working · N steps` also **emphasises the count** — the label is muted and the `N steps` is not.
+`Completed N steps` is uniformly muted.
 
 `N` counts timeline rows in the segment — reasoning blocks *and* tool invocations, not just tools.
 
@@ -252,10 +260,10 @@ click.
 
 | Block / tool | Row | Renderer | Capture |
 |---|---|---|---|
-| `thinking` (live) | brain icon + italic `Thinking ⌄`, body in a bordered box, streaming token by token | `ThinkingRow` | `03-streaming/working-1step__thinking-expanded-token__light.jpg` |
+| `thinking` (live) | brain icon (`--fg`) + muted italic `Thinking ⌄`, body in a bordered box at `--fg`, streaming token by token. The transcript is trimmed — models end reasoning with a newline, and `whitespace-pre-wrap` would make the box reserve a blank line for it | `ThinkingRow` | `03-streaming/working-1step__thinking-expanded-token__light.jpg` |
 | `thinking` (done) | same row, label becomes italic `Reasoned ⌄` | `ThinkingRow` | `04-tool-cards/step-timeline__…light.jpg` |
 | `text` | markdown prose, outside the group | `TextBlock` | `06-messages/terminal__two-step-groups__light.jpg` |
-| `usage` | muted token counts, inside the group | `UsageRow` | not captured — hidden by default collapse (UI-9) |
+| `usage` | never a row — rendered in the assistant footer (UI-9) | — | not captured |
 | `citations` | muted link list | `CitationsRow` | not captured (UI-9) |
 | `step_update` | clipboard icon + `Step update — <key>: <status>` + ✓ | `StepUpdateRow` | `04-tool-cards/ai-gen__FAILED-red-error+self-recovery__dark.png` |
 | `load_skill` / `read_skill_asset` | lightning icon + `Skill` + ✓ + duration, one line, not expandable | `SkillRow` | `10-questions/asking-questions__card-expanded+waiting__dark.png` (`7ms`, `5ms`, `2.9s`) |
@@ -285,6 +293,31 @@ A `7ms` row is a cache hit and is information, not noise.
 
 - Header: icon · bold label · status glyph · optional modality glyph · clock + duration. Right edge:
   credits chip (completed only) and the expand chevron.
+- **Colour hierarchy, sampled rather than chosen.** Icons `--fg`, labels `--fg`, durations `--fg`.
+  The reasoning label is `--fg-muted` while its own transcript is `--fg` — the one row whose label is
+  quieter than its body.
+- **Icons are colour-coded per tool, not uniformly neutral.** Measured: the skill bolt is `--amber`,
+  the `get_model_schema` wrench is `--info` `#5073ea`, and the brain, sparkles and clipboard are plain
+  `--fg`. Curiously `Get Pricing` uses the same wrench glyph *un*coloured, so the colour is a property
+  of the tool rather than the icon. Anything unmeasured stays neutral rather than guessing.
+- **Status glyphs are circled** — `CircleCheck` in `--success`, `CircleX` in `--danger`. A bare tick
+  is the wrong shape.
+- **The reasoning row is the exception to the header layout**: no duration at all, and its chevron
+  sits beside the label. Every other row shows a duration and pushes the chevron to the far right.
+- **`Output` is a labelled detail row placed after `View more`**, not a strip below the box — the
+  reference orders an AI Generation card `Tool · Model · Prompt · Size · Quality · View more · Output`,
+  so the output is never what `View more` is hiding. A **hairline divider** separates it from the
+  fields above.
+- **`View more` opens the tool detail side panel; it does not expand the card.** Confirmed by
+  clicking it in the live product: the card's visible fields do not change and the right-hand panel
+  opens with the same detail plus `Output Format` and `Credits used`. The panel is Phase 5, so until
+  then the link states why it does nothing rather than inventing an in-card expansion.
+- **Detail-row text is 12px**, against 15px prose. Measured by comparing the same word — `Quality` —
+  in both, after fixing each screenshot's device scale from a known height: 10.4 CSS px of glyph in
+  the reference against our 12.5. The reasoning transcript is the same 12px.
+- **`Model` comes from `ToolInvocationDTO.subModelId`**, not from the tool input. The input records
+  what was asked for; the sub-model is chosen at execution time, which is why the reference can show
+  `gpt-image-2-text` for a call whose input never mentions it.
 - Body: a two-column label/value grid, label column ≈ 90px and muted. In light themes the body has a
   hairline border; in dark it is a raised filled surface. Depth reverses — that is why `globals.css`
   carries two palettes.
@@ -613,10 +646,12 @@ People click these; disabled-with-a-reason is honest, silently inert is a bug.
 **UI-8 — Phase 1 disables the send control during a run; the red stop lands in Phase 2** with
 `POST /runs/:id/cancel`. Same rule as UI-7.
 
-**UI-9 — `usage` and `citations` render inside the step group.** Neither appears in any capture, but
-both are named in the PDF's content-block list and both are in the renderer registry. Inside the
-group means they are hidden by the default collapse on a completed turn — which is exactly what the
-captures show — and visible on expand, which is what the PDF asks for.
+**UI-9 — `usage` renders in the assistant footer, `citations` inside the step group.** Neither
+appears in any capture, and both are named in the PDF's content-block list. `citations` reads as a
+timeline row, so it sits in the group. `usage` does not: inside the group it disappears the moment a
+finished turn collapses, which is most of the time. It is filtered out of the rows and the footer
+renders `Message.tokenUsage` instead — a divergence from the reference, which shows token counts
+nowhere, taken because the brief requires the block to render.
 
 **UI-10 — plain `<img>` for remote assets, not `next/image`.** Asset hosts are arbitrary CDNs, so
 `images.remotePatterns` cannot be enumerated. Costs one ESLint rule off.
@@ -684,7 +719,7 @@ off or could be better, just flag it."
 | D-2 | **Retry on an interrupted turn.** The reference has none — its user simply re-sent | The PDF requires retryable failed/cancelled turns in five places |
 | D-3 | **No payment surfaces.** Add Credits is a free top-up: no `$` rows, no upgrade plan, no billing details | Paid services are out of scope. Same modal shape and copy where it still applies |
 | D-4 | **Insufficient-credits state is our own design** | Reaching it in the reference would burn the whole credit balance. Built from the captured vocabulary — the failed-tool card's pill, colour and card language |
-| D-5 | **Generated assets render once**, after the text | The reference briefly double-renders during terminal streaming (markdown link + asset strip) before settling. Rendering the artefact would be cloning a bug |
+| D-5 | **Generated assets render once**, after the text. Any link or image in the prose whose URL is already an asset is dropped | The reference briefly double-renders during terminal streaming (markdown link + asset strip) before settling. Ours also has to survive the model writing the URL into its own prose: a free model does that however firmly the system prompt forbids it, so the guard belongs in the renderer, not the prompt |
 | D-6 | **No `hasMoreMessages` field** | It is exactly `messagesNextCursor !== null`. Fidelity is judged on the visible product, not on our own API shape |
 | D-7 | **Voice input not built**; mic is visual only | Out of scope, and the PDF never asks for it |
 | D-8 | **Projects / Library / Tools / API-MCP / Unfair Advantage are placeholder pages** | Locked scope: the sidebar rows exist for fidelity, the pages do not |
@@ -733,7 +768,7 @@ recovery".
 
 | Value | Rule | Examples |
 |---|---|---|
-| Credits | BigInt string → microcredits / 1e6 + `M`, 2–3 decimals. Never `Number()` | `0.01M credits` · `0.42M credits` · `29.96M` |
+| Credits | BigInt string → microcredits / 1e6 + `M`, to a fixed number of **significant digits**, never fixed decimals. Two for amounts, four for balances and estimates. Never `Number()` | `0.010M credits` · `0.42M credits` · `0.0059M` · `29.96M` · `~0.2108M` |
 | Duration | ms under 1s; `s` with one decimal under a minute; `Nm Ns` above | `110ms` · `7ms` · `5.6s` · `9.3s` · `1m 5s` · `4m 25s` |
 | Message time | locale 12-hour, client-side only | `2:53 PM` |
 | Task list dates | relative | `3 minutes ago` · `1 hour ago` · `4 hours ago` |
