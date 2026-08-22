@@ -8,7 +8,7 @@ import { MessageList, type TranscriptItem } from "@/components/chat/MessageList"
 import { ToolDetailPanel } from "@/components/panels/ToolDetailPanel";
 import { EmptyStateHeader } from "@/components/shell/EmptyStateHeader";
 import { TemplateGallery } from "@/components/shell/TemplateGallery";
-import { Spinner } from "@/components/Spinner";
+import { RadialSpinner } from "@/components/Spinner";
 import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
 import { useStopRun } from "@/queries/use-cancel-run";
@@ -187,10 +187,11 @@ function optimisticUserMessage(content: string): MessageDTO {
   };
 }
 
+/** The transcript's wait is the same wait as the app's, so it wears the same indicator. */
 function FullColumnSpinner() {
   return (
     <div className="flex min-h-[50dvh] items-center justify-center">
-      <Spinner className="size-5" />
+      <RadialSpinner />
     </div>
   );
 }

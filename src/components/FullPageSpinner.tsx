@@ -1,4 +1,4 @@
-import { Spinner } from "@/components/Spinner";
+import { RadialSpinner } from "@/components/Spinner";
 
 /**
  * What a hard reload shows before anything else can be known: a bare centred spinner on the canvas,
@@ -10,7 +10,7 @@ import { Spinner } from "@/components/Spinner";
 export function FullPageSpinner() {
   return (
     <div className="flex h-dvh items-center justify-center">
-      <Spinner className="size-5" />
+      <RadialSpinner />
     </div>
   );
 }

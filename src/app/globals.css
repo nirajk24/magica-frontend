@@ -111,6 +111,12 @@
   --composer-to: #191919;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  [data-spinner] {
+    animation: none;
+  }
+}
+
 body {
   background-color: var(--bg);
   color: var(--fg);
