@@ -19,6 +19,11 @@
  * from the Skill row's bolt. Only --success needs a light variant; the rest already clear AA on
  * white, and --amber is an icon fill rather than text.
  *
+ * `--composer-from` / `--composer-to` are a measured detail rather than a flourish: the light
+ * composer carries a top-to-bottom gradient from #f2f2f2 to #f9f9f9, read off the lossless
+ * empty-state PNG. In dark it is flat #191919 with a #1b1b1b hairline, which the existing surface and
+ * border tokens already describe — so the two stops are equal there.
+ *
  * The `--color-background` / `--color-foreground` pair exists so Shadcn primitives drop in
  * unmodified — their generated classes use that vocabulary, and aliasing once here is cheaper and
  * safer than editing every component the CLI writes.
@@ -42,8 +47,11 @@
   --color-background: var(--bg);
   --color-foreground: var(--fg);
 
+  --color-composer-from: var(--composer-from);
+  --color-composer-to: var(--composer-to);
+
   --radius-bubble: 1.25rem;
-  --radius-composer: 0.75rem;
+  --radius-composer: 1rem;
   --radius-card: 0.5rem;
 }
 
@@ -62,6 +70,9 @@
   --danger: #ba3a28;
   --info: #3655e6;
   --amber: #e3ad47;
+
+  --composer-from: #f2f2f2;
+  --composer-to: #f9f9f9;
 }
 
 .dark {
@@ -79,6 +90,9 @@
   --danger: #ba3a28;
   --info: #3655e6;
   --amber: #e3ad47;
+
+  --composer-from: #191919;
+  --composer-to: #191919;
 }
 
 body {

@@ -10,6 +10,16 @@ import { useUI } from "@/stores/ui";
 
 const MAX_HEIGHT = 200;
 
+/**
+ * Resting height of the text area, measured from the captures. The whole box model follows from it:
+ * 16px padding + this + a 4px gap + the 34px send button + 16px padding + 2px border reproduces the
+ * reference's 136px in a conversation and 96px on the new-chat screen, which is the only difference
+ * between the two.
+ */
+const RESTING_HEIGHT = { conversation: 64, "new-chat": 24 } as const;
+
+export type ComposerVariant = keyof typeof RESTING_HEIGHT;
+
 export type ComposerSubmit = { content: string; planMode: boolean };
 
 /**
@@ -20,12 +30,14 @@ export type ComposerSubmit = { content: string; planMode: boolean };
  */
 export function Composer({
   chatId,
+  variant = "conversation",
   placeholder = "Send a message...",
   runActive = false,
   pending = false,
   onSubmit,
 }: {
   chatId: string;
+  variant?: ComposerVariant;
   placeholder?: string;
   runActive?: boolean;
   pending?: boolean;
@@ -37,13 +49,15 @@ export function Composer({
   const planMode = useUI((state) => state.planModeChats.includes(chatId));
   const togglePlanMode = useUI((state) => state.togglePlanMode);
 
+  const resting = RESTING_HEIGHT[variant];
+
   useLayoutEffect(() => {
     const element = textarea.current;
     if (!element) return;
 
     element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, MAX_HEIGHT)}px`;
-  }, [draft]);
+    element.style.height = `${Math.min(Math.max(element.scrollHeight, resting), MAX_HEIGHT)}px`;
+  }, [draft, resting]);
 
   const canSend = draft.trim().length > 0 && !runActive && !pending;
 
@@ -60,7 +74,7 @@ export function Composer({
   };
 
   return (
-    <div className="rounded-composer border border-border bg-surface px-4 pt-3 pb-2.5">
+    <div className="rounded-composer border border-border bg-surface bg-linear-to-b from-composer-from to-composer-to p-4">
       <textarea
         ref={textarea}
         rows={1}
@@ -69,10 +83,10 @@ export function Composer({
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         aria-label="Message"
-        className="block max-h-[200px] w-full resize-none bg-transparent text-[15px] leading-6 text-fg outline-none placeholder:text-fg-subtle"
+        className="block max-h-[200px] w-full resize-none overflow-y-auto bg-transparent text-[15px] leading-6 text-fg outline-none placeholder:text-fg-subtle"
       />
 
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-1 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <DisabledAction
             icon={Paperclip}
@@ -138,7 +152,7 @@ function SendButton({
         aria-disabled={!canSend}
         onClick={onClick}
         className={cn(
-          "flex size-8 items-center justify-center rounded-full transition-colors",
+          "flex size-[34px] items-center justify-center rounded-full transition-colors",
           canSend ? "bg-fg text-bg" : "cursor-not-allowed bg-bg-subtle text-fg-subtle",
         )}
       >

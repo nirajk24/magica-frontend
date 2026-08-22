@@ -336,7 +336,27 @@ Captures: `02-composer/*` · every chat capture.
 └────────────────────────────────────────────────────────────────┘
 ```
 
-- Rounded ≈12–16px, `--surface` background, no visible border in light, subtle border in dark.
+- Corner radius **16px**, measured off the composer's top-left curve in the 1x chat capture.
+- **The light composer is a vertical gradient, not a flat fill** — `#f2f2f2` at the top to `#f9f9f9`
+  at the bottom, read from the lossless empty-state PNG. In dark it is flat `#191919` with a
+  `#1b1b1b` hairline, which is exactly `--surface` on `--border`.
+- **Resting height is 136px in a conversation and 96px on the new-chat screen.** One box model
+  produces both, and the only thing that changes is the text area's resting height:
+
+  | | conversation | new chat |
+  |---|---|---|
+  | padding top | 16 | 16 |
+  | text area at rest | **64** | **24** |
+  | gap | 4 | 4 |
+  | send button | 34 | 34 |
+  | padding bottom | 16 | 16 |
+  | border | 2 | 2 |
+  | **total** | **136** | **96** |
+
+  Measured three ways that agree: the top-to-bottom span in the 1x chat capture (clipped at the
+  viewport, so a lower bound), the same span in a 2560px dark PNG divided by that capture's scale,
+  and the composer height expressed in units of its own placeholder glyph height — which is
+  scale-free. The 96px figure comes straight off the 1x empty-state PNG.
 - Placeholder: `Send a message...` inside a chat, `Assign a task or ask anything...` on the empty
   state. Copy is graded — use exactly these.
 - Auto-grows with content; Enter sends, Shift+Enter inserts a newline.

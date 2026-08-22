@@ -65,6 +65,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
         <div className={COLUMN}>
           <Composer
             chatId={chatId}
+            variant={isNew ? "new-chat" : "conversation"}
             placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
             pending={send.isPending}
             onSubmit={submit}
