@@ -13,6 +13,10 @@ const ALL = "All";
  * card. The row sits on `--surface`, which is what the dark reference shows; the light capture shows
  * no band, and that token is close enough to white there to be nearly invisible either way.
  *
+ * A card is **one tile**: the artwork runs flush to its top and side edges and the title and
+ * description sit on a `--surface` panel beneath, inside the same rounded container. Measured — the
+ * panel is 52px tall on roughly 10px of padding.
+ *
  * Clicking a card **prefills the composer and does not send** — the reference shows the grid still in
  * place with the prompt sitting in the composer, so this is a starting point the user edits, not a
  * one-click submit.
@@ -54,17 +58,19 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
             key={template.id}
             type="button"
             onClick={() => onPick(template)}
-            className="block w-full break-inside-avoid overflow-hidden rounded-card text-left transition-opacity hover:opacity-90"
+            className="block w-full break-inside-avoid overflow-hidden rounded-card bg-surface text-left transition-opacity hover:opacity-90"
           >
             <div
-              className={cn("w-full rounded-card", TILE_HEIGHTS[template.id.length % 3])}
+              className={cn("w-full", TILE_HEIGHTS[template.id.length % 3])}
               style={{
                 backgroundImage: `linear-gradient(140deg, ${template.tile[0]}, ${template.tile[1]})`,
               }}
               aria-hidden
             />
-            <p className="mt-2 text-sm font-medium text-fg">{template.title}</p>
-            <p className="truncate text-sm text-fg-muted">{template.description}</p>
+            <div className="px-3 py-2.5">
+              <p className="truncate text-sm font-medium text-fg">{template.title}</p>
+              <p className="truncate text-sm text-fg-muted">{template.description}</p>
+            </div>
           </button>
         ))}
       </div>

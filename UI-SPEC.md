@@ -606,6 +606,11 @@ h1 `Your AI worker` · subtitle `Work at the speed of thought.` · the composer 
 Image & Editing`) · a three-column masonry grid of template cards (image, bold title, one-line
 description).
 
+**A template card is one tile.** The artwork runs flush to the card's top and side edges, and the
+title and description sit on a `--surface` panel *inside the same rounded container* — not as loose
+text on the canvas below the image. Measured off a dark capture: panel fill `#191919`, 52px tall,
+about 10px of padding, title at `--fg` over a description at `--fg-muted`, both truncated to one line.
+
 Clicking a template **prefills the composer** and does not send
 (`02-composer/template-prefill__image-editing__dark.png` shows the composer holding a long generated
 prompt while the grid stays put). Template cards load as grey skeleton blocks.
