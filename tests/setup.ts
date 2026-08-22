@@ -33,6 +33,12 @@ vi.stubGlobal(
   },
 );
 
+vi.mock("react-virtuoso", async () => {
+  const { Virtuoso } = await import("./virtuoso-mock");
+
+  return { Virtuoso };
+});
+
 /**
  * `useRouter` throws outside a mounted App Router, so navigation is a spy the tests can assert on.
  */

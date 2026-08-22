@@ -636,7 +636,15 @@ the credits query and the model pill forward with it. The chat screen looks top-
 **UI-14 — `react-virtuoso` stays in Phase 1, as step 8.** The PDF names a virtualized message list
 in the §9 requirement *and* in the winners list, so it is graded surface, not an optimization. It is
 still built **last** in the phase — virtualization on top of working rows is easy, debugging both at
-once is not.
+once is not. Two consequences of doing it properly:
+
+- **The live run is a list item, not something rendered under the list.** One scroller, so the
+  streaming turn scrolls with the conversation and `followOutput` keeps it in view.
+- **History pages on `startReached`, and the "load older" button is gone.** No capture shows such a
+  control; the reference pages by scrolling. The paging logic is tested against `useChatTranscript`
+  directly, because jsdom reports every element as zero-height and the real virtualizer renders
+  nothing there — `react-virtuoso` is replaced by a plain list in tests, and virtualization itself is
+  a browser check.
 
 **UI-15 — one authority renders a run at a time.** While a `StreamingOverlay` is mounted for a run,
 the message list filters out any persisted row with `status === 'streaming'` for that run. The PDF

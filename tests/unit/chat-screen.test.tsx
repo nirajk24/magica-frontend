@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { http, HttpResponse } from "msw";
+import { http } from "msw";
 import { screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { ChatScreen } from "@/components/chat/ChatScreen";
 import { env } from "@/lib/env";
 import { server } from "../msw/setup";
@@ -50,11 +49,11 @@ describe("ChatScreen", () => {
     expect(screen.queryByText(/couldn't be loaded/i)).not.toBeInTheDocument();
   });
 
-  it("greets a new chat with the empty-state copy and no history affordances", () => {
+  it("greets a new chat with the empty-state copy and no transcript", () => {
     renderWithProviders(<ChatScreen chatId="new" />);
 
     expect(screen.getByPlaceholderText("Assign a task or ask anything...")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Load older messages" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtuoso")).not.toBeInTheDocument();
   });
 
   it("uses the in-conversation placeholder for an existing chat", async () => {
@@ -63,27 +62,9 @@ describe("ChatScreen", () => {
     expect(await screen.findByPlaceholderText("Send a message...")).toBeInTheDocument();
   });
 
-  it("walks backwards through history one cursor at a time", async () => {
-    const user = userEvent.setup();
-    server.use(
-      http.get(`${CHATS}/:chatId`, ({ request }) => {
-        const cursor = new URL(request.url).searchParams.get("messagesCursor");
-
-        return HttpResponse.json({
-          data: cursor
-            ? { ...fixtures.chatWithMessages, messages: [fixtures.userMessageWithAttachment] }
-            : { ...fixtures.chatWithMessages, messagesNextCursor: "older" },
-        });
-      }),
-    );
-
+  it("renders the transcript through the virtualized list", async () => {
     renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
 
-    await user.click(await screen.findByRole("button", { name: "Load older messages" }));
-
-    expect(
-      await screen.findByText(fixtures.userMessageWithAttachment.content),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Load older messages" })).not.toBeInTheDocument();
+    expect(await screen.findByTestId("virtuoso")).toBeInTheDocument();
   });
 });

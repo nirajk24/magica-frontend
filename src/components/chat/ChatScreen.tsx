@@ -1,11 +1,10 @@
 "use client";
 
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { useState } from "react";
-import type { MessageDTO } from "@/contracts";
+import { useMemo, useState } from "react";
+import type { ActiveRun, MessageDTO } from "@/contracts";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
-import { LiveRun } from "@/components/chat/LiveRun";
-import { MessageList } from "@/components/chat/MessageList";
+import { MessageList, type TranscriptItem } from "@/components/chat/MessageList";
 import { Spinner } from "@/components/Spinner";
 import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
@@ -32,6 +31,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const { openSignIn } = useClerk();
   const activeRun = useActiveRun(chatId).data ?? null;
   const { query, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
+  const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
   const [optimistic, setOptimistic] = useState<MessageDTO | null>(null);
 
@@ -46,34 +46,31 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   };
 
   const failure = send.isError ? sendFailureMessage(send.error) : null;
-  const transcript = optimistic ? [...messages, optimistic] : messages;
+
+  const items = useMemo<TranscriptItem[]>(() => {
+    const rows: TranscriptItem[] = [...messages, ...(optimistic ? [optimistic] : [])].map(
+      (message) => ({ kind: "message", message }),
+    );
+
+    return live ? [...rows, { kind: "live", chatId, run: live }] : rows;
+  }, [messages, optimistic, live, chatId]);
 
   return (
     <div className="flex h-dvh flex-col">
       {!isNew && (
-        <div className="flex-1 overflow-y-auto">
-          <div className={`${COLUMN} py-10`}>
-            {query.isPending ? (
-              <FullColumnSpinner />
-            ) : query.isError ? (
-              <LoadFailure error={query.error} />
-            ) : (
-              <>
-                {query.hasNextPage && <LoadOlder query={query} />}
-                <MessageList messages={transcript} />
-
-                {activeRun?.triggerRunId && (
-                  <div className="mt-8">
-                    <LiveRun
-                      key={`${activeRun.triggerRunId}:${activeRun.publicAccessToken}`}
-                      chatId={chatId}
-                      run={activeRun}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+        <div className="min-h-0 flex-1">
+          {query.isPending ? (
+            <FullColumnSpinner />
+          ) : query.isError ? (
+            <LoadFailure error={query.error} />
+          ) : (
+            <MessageList
+              items={items}
+              onStartReached={() => {
+                if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -103,6 +100,23 @@ export function ChatScreen({ chatId }: { chatId: string }) {
 }
 
 /**
+ * The run the overlay should render, or `null`.
+ *
+ * INVARIANT: the overlay gives way only once the assistant row it was previewing has actually landed
+ * in the cache. Unmounting when the run goes terminal instead would blank the turn for however long
+ * the refetch takes, and unmounting later would show the same content twice.
+ */
+function liveRunToRender(activeRun: ActiveRun | null, messages: readonly MessageDTO[]) {
+  if (!activeRun?.triggerRunId) return null;
+
+  const settled = messages.some(
+    (message) => message.id === activeRun.assistantMessageId && message.status !== "streaming",
+  );
+
+  return settled ? null : activeRun;
+}
+
+/**
  * The bubble shown between pressing Enter and the server confirming.
  *
  * It is deliberately not a `MessageDTO` from the cache — see `useSendMessage`. The id is a local
@@ -127,19 +141,6 @@ function optimisticUserMessage(content: string): MessageDTO {
     runId: null,
     createdAt: new Date().toISOString(),
   };
-}
-
-function LoadOlder({ query }: { query: ReturnType<typeof useChatTranscript>["query"] }) {
-  return (
-    <button
-      type="button"
-      onClick={() => query.fetchNextPage()}
-      disabled={query.isFetchingNextPage}
-      className="mx-auto mb-8 block rounded-card px-3 py-1.5 text-sm text-fg-muted transition-colors hover:bg-surface hover:text-fg disabled:opacity-60"
-    >
-      {query.isFetchingNextPage ? "Loading…" : "Load older messages"}
-    </button>
-  );
 }
 
 function FullColumnSpinner() {
