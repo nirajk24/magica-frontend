@@ -1,5 +1,6 @@
 import type {
   ActiveRun,
+  AttachmentDTO,
   ChatDTO,
   ChatWithMessages,
   ChatsPage,
@@ -34,6 +35,17 @@ export const chat: ChatDTO = {
   updatedAt: "2026-08-22T10:02:14.000Z",
 };
 
+export const attachment: AttachmentDTO = {
+  id: "01999f00-0000-7000-8000-000000000400",
+  type: "image",
+  url: "https://cdn.magica.com/fixtures/screenshot.png",
+  name: "Screenshot-2026-08-21-at-2.png",
+  contentType: "image/png",
+  size: 1_363_148,
+  status: "ready",
+  metadata: null,
+};
+
 export const userMessage: MessageDTO = {
   id: USER_MESSAGE_ID,
   role: "user",
@@ -54,6 +66,14 @@ export const userMessage: MessageDTO = {
 };
 
 /** text → tool_use → text → usage: the interleaving the timeline has to get right. */
+/** The reference renders a sent attachment above the bubble text, larger than a chip. */
+export const userMessageWithAttachment: MessageDTO = {
+  ...userMessage,
+  id: "01999f00-0000-7000-8000-000000000103",
+  content: "Can you turn this image to dark mode?",
+  attachments: [attachment],
+};
+
 export const assistantBlocks: ContentBlock[] = [
   { segment: 0, type: "thinking", thinking: "The user wants a landscape image.", durationMs: 2_400 },
   { segment: 0, type: "text", text: "I'll generate that for you." },

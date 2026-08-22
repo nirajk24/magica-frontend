@@ -6,8 +6,10 @@ type UIState = {
   sidebarCollapsed: boolean;
   openPanel: { type: "tool"; invocationId: string } | null;
   stoppingRuns: string[];
+  planModeChats: string[];
   setDraft: (chatId: string, text: string) => void;
   clearDraft: (chatId: string) => void;
+  togglePlanMode: (chatId: string) => void;
   toggleSidebar: () => void;
   setOpenPanel: (panel: UIState["openPanel"]) => void;
   markStopping: (runId: string) => void;
@@ -19,7 +21,8 @@ type UIState = {
  * would go stale and never refetch.
  *
  * INVARIANT: `partialize` must list only the fields that should survive a reload. Without it, an
- * open tool panel or a stale "stopping" run is restored from localStorage.
+ * open tool panel, a stale "stopping" run or a plan-mode toggle meant for one send is restored from
+ * localStorage.
  */
 export const useUI = create<UIState>()(
   persist(
@@ -28,6 +31,7 @@ export const useUI = create<UIState>()(
       sidebarCollapsed: false,
       openPanel: null,
       stoppingRuns: [],
+      planModeChats: [],
 
       setDraft: (chatId, text) =>
         set((s) => ({ drafts: { ...s.drafts, [chatId]: text } })),
@@ -38,6 +42,13 @@ export const useUI = create<UIState>()(
           delete drafts[chatId];
           return { drafts };
         }),
+
+      togglePlanMode: (chatId) =>
+        set((s) => ({
+          planModeChats: s.planModeChats.includes(chatId)
+            ? s.planModeChats.filter((id) => id !== chatId)
+            : [...s.planModeChats, chatId],
+        })),
 
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setOpenPanel: (openPanel) => set({ openPanel }),
