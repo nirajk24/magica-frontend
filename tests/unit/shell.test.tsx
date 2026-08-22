@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AccountMenu } from "@/components/shell/AccountMenu";
+import { AppShell } from "@/components/shell/AppShell";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { clerkMock } from "../clerk-mock";
@@ -126,5 +128,62 @@ describe("the top bar", () => {
     renderWithProviders(<TopBar showFiles />);
 
     expect(screen.getByRole("button", { name: "Files in this task" })).toBeInTheDocument();
+  });
+});
+
+describe("before Clerk has resolved", () => {
+  it("shows a spinner rather than a signed-out shell the user would see swapped away", () => {
+    clerkMock.isLoaded = false;
+    renderWithProviders(<AppShell>content</AppShell>);
+
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign up" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "New task" })).not.toBeInTheDocument();
+  });
+
+  it("paints the shell once it has", async () => {
+    renderWithProviders(<AppShell>content</AppShell>);
+
+    expect(await screen.findByRole("link", { name: "New task" })).toBeInTheDocument();
+  });
+});
+
+describe("the account row", () => {
+  it("names the account without spilling out of the sidebar", async () => {
+    renderWithProviders(<AccountMenu />);
+
+    const trigger = await screen.findByRole("button", { name: "Account" });
+
+    expect(trigger).toHaveTextContent("Niraj Kumar");
+    expect(trigger.querySelector(".truncate")).not.toBeNull();
+  });
+
+  it("opens Clerk's account management rather than a rebuild of it", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AccountMenu />);
+
+    await user.click(screen.getByRole("button", { name: "Account" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Manage account/ }));
+
+    expect(clerkMock.openUserProfile).toHaveBeenCalled();
+  });
+
+  it("signs out through Clerk", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AccountMenu />);
+
+    await user.click(screen.getByRole("button", { name: "Account" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Sign out/ }));
+
+    expect(clerkMock.signOut).toHaveBeenCalled();
+  });
+
+  it("shows the email beside the name in the menu", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AccountMenu />);
+
+    await user.click(screen.getByRole("button", { name: "Account" }));
+
+    expect(await screen.findByText("niraj@example.com")).toBeInTheDocument();
   });
 });

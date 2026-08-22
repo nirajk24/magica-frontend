@@ -847,9 +847,17 @@ by a different model than the chat names.
 precision. Display is microcredits / 1e6 with an `M` suffix and 2–3 decimals: `5880 → 0.01M`,
 `420000 → 0.42M`, `29994120 → 29.99M`. One pure, unit-tested function.
 
-**UI-6 — Clerk's `<UserButton/>` renders the user menu.** The captured menu is avatar + name + email
-+ Manage account + Sign out, which is exactly Clerk's surface. Rebuilding it would mean rebuilding
-account management behind it.
+**UI-6 — the account row is ours; account management stays Clerk's.** *Revised.* The original
+decision was to render Clerk's `<UserButton/>` whole. In practice that component lays itself out as
+`[name][avatar]` with no width of its own, so its identifier overflows a 240px sidebar — badly for an
+account whose name is an email, which a development instance always has. Two passes at overriding its
+internals through `appearance` did not hold.
+
+So the row and its two-item menu are ours, in the reference's layout — avatar left, name right,
+opening upward to name · email · `Manage account` · `Sign out`. **What sits behind those two items is
+still Clerk's**: `openUserProfile()` opens Clerk's real Profile/Security modal and `signOut()` is
+Clerk's. The original reasoning holds — rebuilding *account management* would be wrong — but a
+two-item menu is not account management, and owning it is what buys the reference's layout.
 
 **UI-7 — out-of-scope controls render disabled with a tooltip, never wired to nothing.** Applies to
 like/dislike before Phase 6, fork, mic, `Duplicate`, `Add to project`, and the placeholder nav pages.
@@ -982,6 +990,7 @@ comparing screens sees a blank flash where the reference shows a skeleton.
 | Where | Loading treatment | Capture |
 |---|---|---|
 | Hard reload, before the shell paints | full-page centred spinner on a blank canvas | `09-recovery/reload__fullpage-spinner.jpg` |
+| **Before Clerk resolves** | the same bare spinner — **not** the shell | `isSignedIn` is `false` while still loading, so painting early shows a signed-out shell (sign-in buttons, empty task list) to someone signed in, then swaps it |
 | Sidebar Recent tasks after reload | stack of skeleton bars — the chat paints first | `09-recovery/post-reload__sidebar-skeletons+resumed-thinking__light.jpg` |
 | Attachment / asset images | grey block at the image's size | same capture |
 | Tasks page list | eight skeleton bars + a short date bar each | `01-shell/tasks-page__skeletons-filter-search__light.jpg` |

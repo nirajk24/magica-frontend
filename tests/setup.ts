@@ -50,6 +50,7 @@ vi.mock("next/navigation", async () => {
     usePathname: () => "/",
     useSearchParams: () => new URLSearchParams(),
     useParams: () => ({}),
+    useSelectedLayoutSegments: () => [],
     redirect: vi.fn(),
     notFound: vi.fn(),
   };
@@ -82,10 +83,15 @@ vi.mock("@clerk/nextjs", async () => {
   return {
     useAuth: () => ({
       getToken: clerkMock.getToken,
-      isLoaded: true,
+      isLoaded: clerkMock.isLoaded,
       isSignedIn: clerkMock.isSignedIn,
     }),
-    useClerk: () => ({ openSignIn: clerkMock.openSignIn }),
+    useClerk: () => ({
+      openSignIn: clerkMock.openSignIn,
+      openUserProfile: clerkMock.openUserProfile,
+      signOut: clerkMock.signOut,
+    }),
+    useUser: () => ({ isLoaded: true, isSignedIn: clerkMock.isSignedIn, user: clerkMock.user }),
     SignInButton: ({ children }: { children?: unknown }) => children ?? null,
     SignUpButton: ({ children }: { children?: unknown }) => children ?? null,
     UserButton: () => null,

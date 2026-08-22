@@ -1,8 +1,10 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { FullPageSpinner } from "@/components/FullPageSpinner";
 import { PANEL_WIDTH } from "@/components/panels/ToolDetailPanel";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
@@ -21,13 +23,21 @@ import { useUI } from "@/stores/ui";
  * The tool detail panel is the opposite: the reference narrows the content column to make room for
  * it rather than letting it cover the transcript, so the column reserves the panel's width while it
  * is open and animates back when it closes.
+ *
+ * INVARIANT: nothing renders until Clerk has resolved. `isSignedIn` is `false` while it is still
+ * loading, so painting before then shows a signed-out shell — sign-in buttons, an empty task list —
+ * to someone who is signed in, and then swaps it. The reference answers a reload with a bare spinner
+ * for exactly this window.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const segments = useSelectedLayoutSegments();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const panelOpen = useUI((state) => state.openPanel !== null);
+  const { isLoaded } = useAuth();
 
   const chatId = segments[0] === "chat" && segments.length > 1 ? segments[1] : undefined;
+
+  if (!isLoaded) return <FullPageSpinner />;
 
   return (
     <div className="flex h-dvh gap-2 p-2">
