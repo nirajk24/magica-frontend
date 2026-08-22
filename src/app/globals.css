@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/*
+ * Every value below was sampled from docs/reference/design/01-shell/empty-state__{light,dark}.png,
+ * not chosen. Two findings drive the structure:
+ *
+ * 1. Depth reverses between themes. In light, recessed surfaces go DARKER than the canvas
+ *    (sidebar #f9f9f9 on #ffffff). In dark, the sidebar is IDENTICAL to the canvas and raised
+ *    surfaces go LIGHTER (composer #191919 on #121212). Swapping a single scale would put a
+ *    light sidebar on a dark canvas, which the reference never does.
+ * 2. `--accent` is the same indigo in both themes. It is not part of the inversion.
+ */
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+
+  --radius-composer: 0.75rem;
+  --radius-card: 0.5rem;
+}
+
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f9f9f9;
+  --surface: #f7f7f7;
+  --border: #f2f2f2;
+  --fg: #1a1a1a;
+  --fg-muted: #4e4e4e;
+  --fg-subtle: #6c6c6c;
+  --accent: #4a3dd8;
+  --accent-fg: #ffffff;
+}
+
+.dark {
+  --bg: #121212;
+  --bg-subtle: #121212;
+  --surface: #191919;
+  --border: #1b1b1b;
+  --fg: #efefef;
+  --fg-muted: #8f8f8f;
+  --fg-subtle: #575757;
+  --accent: #4a3dd8;
+  --accent-fg: #ffffff;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+}
