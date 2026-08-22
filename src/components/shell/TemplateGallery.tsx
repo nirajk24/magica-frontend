@@ -9,6 +9,10 @@ const ALL = "All";
 /**
  * The empty state's template grid: category tabs over a three-column masonry of cards.
  *
+ * The rhythm is measured: 32px from the composer to the tab row, a 33px-tall row, 32px to the first
+ * card. The row sits on `--surface`, which is what the dark reference shows; the light capture shows
+ * no band, and that token is close enough to white there to be nearly invisible either way.
+ *
  * Clicking a card **prefills the composer and does not send** — the reference shows the grid still in
  * place with the prompt sitting in the composer, so this is a starting point the user edits, not a
  * one-click submit.
@@ -25,7 +29,7 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
       <div
         role="tablist"
         aria-label="Template categories"
-        className="flex gap-6 overflow-x-auto pb-4 text-sm"
+        className="flex h-9 items-center gap-6 overflow-x-auto rounded-card bg-surface px-4 text-sm"
       >
         {[ALL, ...TEMPLATE_CATEGORIES].map((name) => (
           <button
@@ -35,10 +39,8 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
             aria-selected={category === name}
             onClick={() => setCategory(name)}
             className={cn(
-              "shrink-0 whitespace-nowrap border-b-2 pb-1 transition-colors",
-              category === name
-                ? "border-fg text-fg"
-                : "border-transparent text-fg-muted hover:text-fg",
+              "shrink-0 whitespace-nowrap transition-colors",
+              category === name ? "text-fg" : "text-fg-muted hover:text-fg",
             )}
           >
             {name}
@@ -46,7 +48,7 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
         ))}
       </div>
 
-      <div className="columns-2 gap-4 md:columns-3 [&>*]:mb-4">
+      <div className="mt-8 columns-2 gap-4 md:columns-3 [&>*]:mb-4">
         {shown.map((template) => (
           <button
             key={template.id}

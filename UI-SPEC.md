@@ -612,6 +612,28 @@ prompt while the grid stays put). Template cards load as grey skeleton blocks.
 
 Sidebar shows `No tasks yet`. Top bar has no folder icon.
 
+**The empty state's column is 900px, not the conversation's 820px.** Measured off the reference at
+two very different viewport widths — 2553 CSS px and ~2000 — and it is 900 in both, so it is a fixed
+maximum rather than a fraction of the viewport.
+
+**Vertical rhythm**, in CSS px from the top of the viewport, read off a dark capture at a known 1.25
+device scale. The shell above it is an 8px pad plus a 56px top bar, so the first figure is 111px of
+padding inside the content area:
+
+| Element | Top | Height |
+|---|---|---|
+| ghost mark | 175 | 30 |
+| clock | 230 | 13 |
+| `Your AI worker` | 258 | 19 |
+| `Work at the speed of thought.` | 298 | 14 |
+| composer top border | **364** | 132 |
+| category tab row | **528** | **33** |
+| first template card | **594** | — |
+
+That gives a **32px** gap from the composer to the tab row and **32px** from the tab row to the first
+card. The tab row sits on a `--surface` band in the dark capture; the light capture shows the row on
+the canvas with no band, and `--surface` is close enough to white there that one token serves both.
+
 ---
 
 ## 7. Screen — Tasks · `/chat/recent` · Phase 3

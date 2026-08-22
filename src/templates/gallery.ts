@@ -18,7 +18,10 @@ export type Template = {
   description: string;
   category: TemplateCategory;
   prompt: string;
-  /** Two stops for the card's tile, so the grid reads as varied without any image assets. */
+  /**
+   * Two stops for the card's tile. Deliberately desaturated: these stand in for artwork, and a
+   * saturated block reads as a component rather than as a placeholder for one.
+   */
   tile: [string, string];
 };
 
@@ -38,7 +41,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Branding & Design",
     prompt:
       "Design a collectible postage-stamp sheet celebrating the landmarks of Switzerland. Six stamps in a grid, each with a denomination and a perforated edge, muted vintage print colours, fine engraved detail.",
-    tile: ["#b8c6e8", "#e8dcc8"],
+    tile: ["#d4d7dc", "#c7c3bb"],
   },
   {
     id: "city-poster",
@@ -47,7 +50,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Branding & Design",
     prompt:
       "Create a Swiss-style travel poster for New York. Huge condensed type bleeding off the edges, a duotone photograph beneath it, a strict grid, one accent colour against black and white.",
-    tile: ["#d8d8d8", "#8a8a8a"],
+    tile: ["#d9d9d9", "#b4b4b4"],
   },
   {
     id: "storybook",
@@ -56,7 +59,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Content Creation",
     prompt:
       "Turn this child's drawing into a warm hand-painted storybook illustration, keeping every original shape and character exactly where the child put them.",
-    tile: ["#a9c8a2", "#6f9bd1"],
+    tile: ["#cdd3cc", "#bcc2c7"],
   },
   {
     id: "asmr-loop",
@@ -65,7 +68,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Viral Video Formats",
     prompt:
       "Create a short looping ASMR video of a translucent amber jelly cube wobbling on a marble counter in soft daylight, extreme close-up, shallow depth of field.",
-    tile: ["#e6b45c", "#c97b3c"],
+    tile: ["#d9d0c1", "#c2b5a4"],
   },
   {
     id: "street-illusion",
@@ -74,7 +77,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Video Special Effects",
     prompt:
       "Generate a photorealistic anamorphic street painting that reads as a deep circular hole in a city square, with passers-by walking carefully around its edge.",
-    tile: ["#7d8fa6", "#3d4a5c"],
+    tile: ["#c4c9ce", "#aab1b8"],
   },
   {
     id: "banner-reveal",
@@ -83,7 +86,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Video Special Effects",
     prompt:
       "Create a night-time video of an enormous illuminated banner unfurling down the facade of a modern glass building, lights tracing its edge as it falls.",
-    tile: ["#2f4a7a", "#111a2e"],
+    tile: ["#bdc2cb", "#9ba2ac"],
   },
   {
     id: "product-relight",
@@ -92,7 +95,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Image & Editing",
     prompt:
       "Relight this product photograph as a premium campaign shot: single soft key from the upper left, deep falloff, a subtle rim to separate it from the background. Keep the product untouched.",
-    tile: ["#c9b8a8", "#6d5c4e"],
+    tile: ["#d3cdc6", "#bab3ab"],
   },
   {
     id: "background-swap",
@@ -101,7 +104,7 @@ export const TEMPLATES: readonly Template[] = [
     category: "Image & Editing",
     prompt:
       "Cut the subject out of this photo and place them on a windswept coastal cliff at golden hour, matching the light direction and colour temperature on the subject.",
-    tile: ["#8fb3c9", "#d9b58f"],
+    tile: ["#ccd1d4", "#cac2b7"],
   },
   {
     id: "explainer-short",
@@ -110,6 +113,6 @@ export const TEMPLATES: readonly Template[] = [
     category: "Content Creation",
     prompt:
       "Write and storyboard a 30-second explainer about how a credit ledger stays consistent: six beats, one sentence of narration each, and a described visual per beat.",
-    tile: ["#a3a8d8", "#5b5f9e"],
+    tile: ["#cccdd6", "#b4b6c1"],
   },
 ];

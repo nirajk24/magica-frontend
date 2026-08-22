@@ -18,6 +18,12 @@ import { useUI } from "@/stores/ui";
 const COLUMN = "mx-auto w-full max-w-[820px] px-6";
 
 /**
+ * The new-chat screen runs wider than a conversation: 900px against 820px, measured off the
+ * reference at two very different viewport widths, so it is a fixed maximum rather than a fraction.
+ */
+const EMPTY_STATE_COLUMN = "mx-auto w-full max-w-[900px] px-6";
+
+/**
  * The chat screen, in both of its layouts.
  *
  * A chat that does not exist yet has no transcript to scroll, so the composer centres in the column
@@ -85,8 +91,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
         </div>
       )}
 
-      <div className={isNew ? "min-h-0 flex-1 overflow-y-auto py-10" : "shrink-0 pb-6"}>
-        <div className={COLUMN}>
+      <div className={isNew ? "min-h-0 flex-1 overflow-y-auto pt-28 pb-10" : "shrink-0 pb-6"}>
+        <div className={isNew ? EMPTY_STATE_COLUMN : COLUMN}>
           {isNew && <EmptyStateHeader />}
 
           <Composer

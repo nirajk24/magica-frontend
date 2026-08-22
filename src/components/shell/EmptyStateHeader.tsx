@@ -11,11 +11,13 @@ import { useHydrated } from "@/lib/use-hydrated";
  */
 export function EmptyStateHeader() {
   return (
-    <div className="flex flex-col items-center gap-1 pb-6 text-center">
+    <div className="flex flex-col items-center pb-12 text-center">
       <GhostMark />
-      <LiveClock />
-      <h1 className="text-2xl font-semibold tracking-tight text-fg">Your AI worker</h1>
-      <p className="text-sm text-fg-muted">Work at the speed of thought.</p>
+      <div className="mt-6">
+        <LiveClock />
+      </div>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg">Your AI worker</h1>
+      <p className="mt-3 text-sm text-fg-muted">Work at the speed of thought.</p>
     </div>
   );
 }
