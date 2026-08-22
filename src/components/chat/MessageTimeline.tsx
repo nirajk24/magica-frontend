@@ -1,6 +1,7 @@
 "use client";
 
 import { Block } from "@/components/blocks";
+import { StepGroup } from "@/components/blocks/StepGroup";
 import type { Timeline } from "@/lib/timeline";
 
 /**
@@ -9,6 +10,9 @@ import type { Timeline } from "@/lib/timeline";
  * INVARIANT: nothing here may branch on live-versus-persisted. `RunMetadata` and `MessageDTO` are
  * normalised into `Timeline` before they arrive, and that equivalence is what makes reload recovery
  * a single code path.
+ *
+ * Rows sit inside the segment's step group and prose sits below it, which is the order every terminal
+ * capture shows.
  */
 export function MessageTimeline({ timeline }: { timeline: Timeline }) {
   return (
@@ -16,11 +20,11 @@ export function MessageTimeline({ timeline }: { timeline: Timeline }) {
       {timeline.segments.map((segment) => (
         <div key={segment.segment} className="flex flex-col gap-3">
           {segment.rows.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <StepGroup steps={segment.stepCount} streaming={segment.streaming}>
               {segment.rows.map((block, index) => (
                 <Block key={`${segment.segment}-${index}`} block={block} tools={timeline.tools} />
               ))}
-            </div>
+            </StepGroup>
           )}
 
           {segment.prose.map((block, index) => (

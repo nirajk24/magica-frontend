@@ -1,6 +1,13 @@
 import { createElement, type FC, type ReactElement } from "react";
+import { CitationsRow } from "@/components/blocks/CitationsRow";
+import { StepUpdateRow } from "@/components/blocks/StepUpdateRow";
 import { TextBlock } from "@/components/blocks/TextBlock";
+import { ThinkingRow } from "@/components/blocks/ThinkingRow";
+import { ToolUseBlock } from "@/components/blocks/ToolUseBlock";
+import { UsageRow } from "@/components/blocks/UsageRow";
 import type { BlockProps } from "@/components/blocks/types";
+
+export { toolCardRenderers, cardFor } from "@/components/blocks/ToolUseBlock";
 
 /**
  * The block renderer registry. Adding a block type is one entry here.
@@ -10,6 +17,11 @@ import type { BlockProps } from "@/components/blocks/types";
  */
 export const blockRenderers: Record<string, FC<BlockProps>> = {
   text: TextBlock,
+  thinking: ThinkingRow,
+  tool_use: ToolUseBlock,
+  usage: UsageRow,
+  citations: CitationsRow,
+  step_update: StepUpdateRow,
 };
 
 /** What an unregistered block type renders: nothing, and no exception. */
