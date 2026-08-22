@@ -1,7 +1,7 @@
 "use client";
 
 import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
-import { Ellipsis, Gift, Settings, Sparkles, UserPlus } from "lucide-react";
+import { ArrowRight, CreditCard, EllipsisVertical, Settings, Sparkles, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DisabledAction } from "@/components/DisabledAction";
@@ -21,31 +21,19 @@ export function SidebarFooter() {
 
   return (
     <div className="flex flex-col gap-2 border-t border-border px-3 py-3">
-      <PromoCard />
-
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
-        className="flex items-center gap-2 px-1 py-1 text-left text-sm text-fg-muted transition-colors hover:text-fg"
+        className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-fg-muted transition-colors hover:text-fg"
       >
-        <Ellipsis className="size-4" aria-hidden />
+        <EllipsisVertical className="size-4 shrink-0" aria-hidden />
         {expanded ? "Less" : "More"}
       </button>
 
       {expanded && (
         <>
           {isSignedIn && <CreditBlock />}
-
-          {!isSignedIn && (
-            <DisabledAction
-              icon={Gift}
-              label="Claim Offer"
-              reason="Offers aren't part of this build."
-              className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm text-bg opacity-60"
-              showLabel
-            />
-          )}
 
           {isSignedIn && (
             <>
@@ -66,13 +54,7 @@ export function SidebarFooter() {
                 />
               </div>
 
-              <DisabledAction
-                icon={UserPlus}
-                label="Invite team members"
-                reason="Teams aren't part of this build."
-                className="flex w-full items-center justify-between gap-2 rounded-card border border-border px-3 py-2 text-sm"
-                showLabel
-              />
+              <InviteRow />
             </>
           )}
 
@@ -81,8 +63,8 @@ export function SidebarFooter() {
       )}
 
       {isSignedIn ? (
-        <div className="flex items-center gap-2 px-1 pt-1">
-          <UserButton />
+        <div className="flex items-center px-1 pt-1">
+          <UserButton showName />
         </div>
       ) : (
         <SignInButton mode="modal">
@@ -98,16 +80,17 @@ export function SidebarFooter() {
   );
 }
 
-/** `Magica 101` in the reference. Ours names the build rather than linking to a tour we do not have. */
-function PromoCard() {
+/** Label left, arrow right — the one footer row the reference does not centre. */
+function InviteRow() {
   return (
-    <div className="flex items-start gap-2 rounded-card bg-surface px-3 py-2">
-      <Sparkles className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-      <div className="min-w-0">
-        <p className="truncate text-sm text-fg">Magica 101</p>
-        <p className="truncate text-xs text-fg-subtle">Learn what Magica can do</p>
-      </div>
-    </div>
+    <DisabledAction
+      icon={UserPlus}
+      label="Invite team members"
+      reason="Teams aren't part of this build."
+      className="flex w-full items-center gap-2 rounded-card border border-border px-3 py-2 text-sm [&>svg:last-child]:ml-auto"
+      showLabel
+      trailingIcon={ArrowRight}
+    />
   );
 }
 
@@ -129,10 +112,10 @@ function CreditBlock() {
       </p>
 
       <DisabledAction
-        icon={Sparkles}
+        icon={CreditCard}
         label="Add Credits"
         reason="Topping up isn't wired into this build yet."
-        className="flex w-full items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
+        className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm font-medium !text-bg"
         showLabel
       />
     </div>

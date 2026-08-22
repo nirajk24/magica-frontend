@@ -17,6 +17,7 @@ export function DisabledAction({
   reason,
   className,
   showLabel = false,
+  trailingIcon: TrailingIcon,
 }: {
   icon: LucideIcon;
   label: string;
@@ -24,6 +25,8 @@ export function DisabledAction({
   className?: string;
   /** Icon-only controls name themselves through `aria-label`; labelled ones also render the text. */
   showLabel?: boolean;
+  /** A second glyph after the label, for rows the reference ends with an affordance. */
+  trailingIcon?: LucideIcon;
 }) {
   return (
     <Tooltip>
@@ -38,8 +41,9 @@ export function DisabledAction({
           className,
         )}
       >
-        <Icon className="size-4" aria-hidden />
+        <Icon className="size-4 shrink-0" aria-hidden />
         {showLabel && label}
+        {TrailingIcon && <TrailingIcon className="size-4 shrink-0" aria-hidden />}
       </TooltipTrigger>
       <TooltipContent>{reason}</TooltipContent>
     </Tooltip>

@@ -12,10 +12,10 @@ const renderToggle = () =>
   );
 
 describe("ThemeToggle", () => {
-  it("offers all three modes", () => {
+  it("offers all three modes as named icon controls", () => {
     renderToggle();
 
-    for (const option of ["light", "dark", "system"]) {
+    for (const option of ["System theme", "Light theme", "Dark theme"]) {
       expect(screen.getByRole("button", { name: option })).toBeInTheDocument();
     }
   });
@@ -23,16 +23,16 @@ describe("ThemeToggle", () => {
   it("marks the chosen mode as pressed", async () => {
     renderToggle();
 
-    await userEvent.click(screen.getByRole("button", { name: "dark" }));
+    await userEvent.click(screen.getByRole("button", { name: "Dark theme" }));
 
-    expect(screen.getByRole("button", { name: "dark" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "light" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Dark theme" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Light theme" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("puts the theme class on the document so every token flips at once", async () => {
     renderToggle();
 
-    await userEvent.click(screen.getByRole("button", { name: "dark" }));
+    await userEvent.click(screen.getByRole("button", { name: "Dark theme" }));
 
     expect(document.documentElement).toHaveClass("dark");
   });

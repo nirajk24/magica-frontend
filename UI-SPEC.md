@@ -172,11 +172,24 @@ label, ~36px tall, rounded hover): New task · Tasks · Projects · Library · T
 Unfair Advantage. Section label `Recent tasks` (small, muted) then chat rows — single line,
 truncated with an ellipsis, active row has a filled background. Empty: centred muted `No tasks yet`.
 
-**Footer, collapsible.** Collapsed shows `⋮ More`. Expanded shows `⋮ Less` then: `Available Credits`
-+ balance (right-aligned, monospace-ish) · green pill `+15M credits on 21 Sep '26` · `Add Credits`
-(solid dark, full width) · `Settings` | `Updates` (two ghost buttons side by side) · `Invite team
-members →` · a theme trio segmented control (system / light / dark icons) · the user row (avatar +
-name).
+**Footer, collapsible.** Collapsed shows `⋮ More` — **vertical** dots, aligned with the nav icons
+above. Expanded shows `⋮ Less` then: `Available Credits` + balance (right-aligned, monospace-ish) ·
+green pill `+15M credits on 21 Sep '26` · `Add Credits` (**solid**, full width — the one filled
+button in the sidebar) · `Settings` | `Updates` (two ghost buttons side by side) · `Invite team
+members →` (label left, arrow right — the one row that is not centred) · the theme trio · the user
+row (avatar + name).
+
+**The theme trio is icons only** — monitor, sun, moon, in that order, in one segmented control. No
+text labels, so each control carries an `aria-label` or it is nameless.
+
+**`Magica 101` is an anonymous-onboarding card, not a permanent footer item.** It appears above
+`⋮ More` for a signed-out visitor and is absent from every signed-in capture, alongside
+`Claim Offer`. Both belong to the signed-out footer only.
+
+**The user row is Clerk's `<UserButton showName />`** (UI-6). Clicking it opens Clerk's menu upward —
+avatar, name, email, `Manage account`, `Sign out` — and `Manage account` opens Clerk's own Account
+modal with `Profile` and `Security` tabs. All of that is Clerk's surface; we render the button and
+inherit the rest, which is why rebuilding it was never on the table.
 
 **Collapsed rail (~48px).** Icon-only, same order, plus a gear pinned at the bottom. No labels, no
 Recent tasks.
@@ -666,6 +679,42 @@ Captures: `01-shell/tasks-page__{list-filter-select,skeletons-filter-search,sele
 
 Search covers titles **and message content** (PDF §8). `Duplicate` and `Add to project` belong to
 Projects, which is out of scope — they render disabled with a tooltip (UI-7).
+
+---
+
+## 7.1 Screen — the search palette · Phase 6
+
+**Not in the 77 captures.** Observed live: the sidebar header's magnifier opens a centred command
+palette over the content, and it is the product's real search entry point — the Tasks page's field is
+the *other* one, not the only one.
+
+```
+        ┌────────────────────────────────────────────┐
+        │  🔍  Search                          [esc] │
+        ├────────────────────────────────────────────┤
+        │  Tasks                                     │
+        │  💬  Greeting and Introduction             │
+        │  💬  Casual Greeting                       │
+        │  💬  Designing a Premium Swiss Internat…   │  ← focused row is filled
+        │                                            │
+        │                        New task  ⌘ ⇧ O     │
+        └────────────────────────────────────────────┘
+```
+
+- Centred overlay, **≈500px wide** (estimated off a 2048px viewport, not measured on a lossless
+  capture), rounded, on a raised surface. The chat stays visible behind it and is **not** heavily
+  dimmed.
+- Header: magnifier + placeholder `Search`, with an **`esc` chip** right-aligned inside the field.
+- Results are **grouped under a section label** — `Tasks` here — which leaves room for other result
+  kinds without a redesign.
+- Each row is a speech-bubble icon plus the chat title. Titles run **much longer than the sidebar's**,
+  truncating only at the palette's width.
+- The focused row carries a filled background, so the list is keyboard-navigable.
+- A footer action, `New task`, carries the same `⌘ ⇧ O` chord the sidebar's New task row reveals on
+  hover (§13) — so the chord is the product's, not that row's.
+
+It runs on `GET /chats?search=`, which is live, and the brief requires that search to cover message
+content as well as titles (PDF §8).
 
 ---
 
