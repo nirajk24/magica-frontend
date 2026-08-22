@@ -204,3 +204,17 @@ describe("blocks that never become rows", () => {
     expect([...timeline.assetUrls]).toEqual([fixtures.IMAGE_URL]);
   });
 });
+
+describe("a segment holding a failed tool", () => {
+  it("is marked failed, so the group stays expanded instead of hiding the error", () => {
+    const timeline = timelineFromMessage(fixtures.failedAssistantMessage);
+
+    expect(timeline.segments.find((s) => s.segment === 1)?.failed).toBe(true);
+  });
+
+  it("is not marked when every tool succeeded", () => {
+    const timeline = timelineFromMessage(fixtures.assistantMessage);
+
+    expect(timeline.segments.every((s) => s.failed)).toBe(false);
+  });
+});

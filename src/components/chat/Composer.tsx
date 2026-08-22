@@ -33,15 +33,20 @@ export function Composer({
   variant = "conversation",
   placeholder = "Send a message...",
   runActive = false,
+  stopping = false,
   pending = false,
   onSubmit,
+  onStop,
 }: {
   chatId: string;
   variant?: ComposerVariant;
   placeholder?: string;
   runActive?: boolean;
+  /** Held from the Stop click until the cancelled turn is on screen, so the control cannot flicker. */
+  stopping?: boolean;
   pending?: boolean;
   onSubmit: (submission: ComposerSubmit) => void;
+  onStop?: () => void;
 }) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const draft = useUI((state) => state.drafts[chatId] ?? "");
@@ -98,7 +103,11 @@ export function Composer({
 
         <div className="flex items-center gap-3">
           <DisabledAction icon={Mic} label="Dictate" reason="Voice input isn't part of this build." />
-          <SendButton canSend={canSend} pending={pending} runActive={runActive} onClick={submit} />
+          {runActive || stopping ? (
+            <StopButton stopping={stopping} onClick={onStop} />
+          ) : (
+            <SendButton canSend={canSend} pending={pending} onClick={submit} />
+          )}
         </div>
       </div>
     </div>
@@ -134,35 +143,56 @@ function PlanModeToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () 
 function SendButton({
   canSend,
   pending,
-  runActive,
   onClick,
 }: {
   canSend: boolean;
   pending: boolean;
-  runActive: boolean;
   onClick: () => void;
 }) {
-  const label = runActive ? "A run is already in progress" : "Send message";
-
   return (
-    <Tooltip>
-      <TooltipTrigger
-        type="button"
-        aria-label={label}
-        aria-disabled={!canSend}
-        onClick={onClick}
-        className={cn(
-          "flex size-[34px] items-center justify-center rounded-full transition-colors",
-          canSend ? "bg-fg text-bg" : "cursor-not-allowed bg-bg-subtle text-fg-subtle",
-        )}
-      >
-        {pending ? (
-          <Spinner className="size-4 text-current" />
-        ) : (
-          <ArrowUp className="size-4" aria-hidden />
-        )}
-      </TooltipTrigger>
-      {runActive && <TooltipContent>Stopping a run lands with the next phase.</TooltipContent>}
-    </Tooltip>
+    <button
+      type="button"
+      aria-label="Send message"
+      aria-disabled={!canSend}
+      onClick={onClick}
+      className={cn(
+        "flex size-[34px] items-center justify-center rounded-full transition-colors",
+        canSend ? "bg-fg text-bg" : "cursor-not-allowed bg-bg-subtle text-fg-subtle",
+      )}
+    >
+      {pending ? (
+        <Spinner className="size-4 text-current" />
+      ) : (
+        <ArrowUp className="size-4" aria-hidden />
+      )}
+    </button>
+  );
+}
+
+/**
+ * The send arrow's replacement while a run is in flight: the same 34px disc in a red tint, holding a
+ * 14px square. Both sizes and both colours are measured off the reference, and the square's fill is
+ * the same `--danger` the failed tool card uses.
+ *
+ * It stays on screen through `stopping`, after the cancel has been accepted but before the cancelled
+ * turn has been read back, so the control never flips to a send arrow and back.
+ */
+function StopButton({ stopping, onClick }: { stopping: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={stopping ? "Stopping" : "Stop run"}
+      aria-disabled={stopping}
+      aria-busy={stopping}
+      onClick={() => {
+        if (!stopping) onClick?.();
+      }}
+      className={cn(
+        "flex size-[34px] items-center justify-center rounded-full bg-danger-surface transition-opacity",
+        stopping && "cursor-not-allowed opacity-60",
+      )}
+    >
+      <span className="size-[14px] rounded-[3px] bg-danger" aria-hidden />
+    </button>
   );
 }

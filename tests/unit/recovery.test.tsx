@@ -65,9 +65,8 @@ describe("reloading into a running turn", () => {
 
     renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
 
-    expect(
-      await screen.findByRole("button", { name: "A run is already in progress" }),
-    ).toHaveAttribute("aria-disabled", "true");
+    expect(await screen.findByRole("button", { name: "Stop run" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send message" })).not.toBeInTheDocument();
   });
 });
 
@@ -79,7 +78,7 @@ describe("handover to the persisted row", () => {
 
     await screen.findByText(fixtures.userMessage.content);
 
-    expect(screen.getByRole("button", { name: "A run is already in progress" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stop run" })).toBeInTheDocument();
     expect(screen.queryByText(/^Here is your mountain/)).not.toBeInTheDocument();
   });
 

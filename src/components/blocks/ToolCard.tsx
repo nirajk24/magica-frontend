@@ -45,7 +45,7 @@ export function ToolCard({
         }
         footer={
           tool.errorMessage ? (
-            <p className="mt-3 text-sm leading-6 text-danger">{tool.errorMessage}</p>
+            <p className="mt-3 text-xs leading-5 text-danger">{tool.errorMessage}</p>
           ) : null
         }
       />

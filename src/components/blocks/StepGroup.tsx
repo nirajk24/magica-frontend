@@ -11,6 +11,9 @@ import { cn } from "@/lib/cn";
  * which is what the terminal captures show. `steps` counts reasoning, tool calls and step updates —
  * not the token-usage footer.
  *
+ * A group holding a failed tool stays open. Every capture of a collapsed group is a group that
+ * succeeded, and a failure the reader has to go looking for is not explainable from the screen.
+ *
  * The chevron follows the captures: present while the group is open, absent when it is closed. No
  * capture can show a hovered-but-closed header, so hover and keyboard focus reveal it — the header is
  * the click target either way, and an affordance nobody can find is worse than a small divergence.
@@ -18,13 +21,15 @@ import { cn } from "@/lib/cn";
 export function StepGroup({
   steps,
   streaming,
+  failed = false,
   children,
 }: {
   steps: number;
   streaming: boolean;
+  failed?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(streaming);
+  const [open, setOpen] = useState(streaming || failed);
   const Chevron = open ? ChevronDown : ChevronRight;
   const unit = steps === 1 ? "step" : "steps";
 

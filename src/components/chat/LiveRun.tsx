@@ -4,6 +4,7 @@ import { useRealtimeRun, useRealtimeStream } from "@trigger.dev/react-hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { RunMetadata, STREAM_AGENT_TEXT, type ActiveRun } from "@/contracts";
+import { ConnectionPill } from "@/components/chat/ConnectionPill";
 import { StreamingOverlay } from "@/components/chat/StreamingOverlay";
 import { qk } from "@/lib/query-client";
 
@@ -97,9 +98,14 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
   }, [finished, chatId, queryClient]);
 
   const metadata = parseMetadata(realtimeRun?.metadata);
-  if (!metadata) return null;
+  if (!metadata && connection === "live") return null;
 
-  return <StreamingOverlay metadata={metadata} streamedText={parts.join("")} />;
+  return (
+    <div className="flex flex-col">
+      <ConnectionPill connection={connection} />
+      {metadata && <StreamingOverlay metadata={metadata} streamedText={parts.join("")} />}
+    </div>
+  );
 }
 
 /**

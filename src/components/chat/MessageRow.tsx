@@ -7,15 +7,24 @@ import { AssistantFooter } from "@/components/chat/AssistantFooter";
 import { AttachmentGallery } from "@/components/chat/AttachmentGallery";
 import { CopyButton } from "@/components/chat/CopyButton";
 import { MessageTimeline } from "@/components/chat/MessageTimeline";
+import { TurnOutcome } from "@/components/chat/TurnOutcome";
 import { formatMessageTime } from "@/lib/format";
 import { timelineFromMessage } from "@/lib/timeline";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useRetryMessage } from "@/queries/use-retry-message";
 
-export function MessageRow({ message }: { message: MessageDTO }) {
+export function MessageRow({
+  message,
+  runActive = false,
+}: {
+  message: MessageDTO;
+  /** Retry is refused while another run holds the chat, so the control says so instead of failing. */
+  runActive?: boolean;
+}) {
   return message.role === "user" ? (
     <UserMessage message={message} />
   ) : (
-    <AssistantMessage message={message} />
+    <AssistantMessage message={message} runActive={runActive} />
   );
 }
 
@@ -37,9 +46,10 @@ function UserMessage({ message }: { message: MessageDTO }) {
   );
 }
 
-function AssistantMessage({ message }: { message: MessageDTO }) {
+function AssistantMessage({ message, runActive }: { message: MessageDTO; runActive: boolean }) {
   const timeline = useMemo(() => timelineFromMessage(message), [message]);
   const hasBlocks = timeline.segments.length > 0;
+  const retry = useRetryMessage();
 
   return (
     <div className="flex flex-col">
@@ -50,6 +60,13 @@ function AssistantMessage({ message }: { message: MessageDTO }) {
       )}
 
       {message.assets && <AssetStrip assets={message.assets} />}
+
+      <TurnOutcome
+        message={message}
+        runActive={runActive}
+        retrying={retry.isPending}
+        onRetry={retry.mutate}
+      />
 
       <AssistantFooter message={message} />
     </div>

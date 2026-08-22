@@ -4,6 +4,7 @@ import {
   ApiErrorEnvelope,
   ChatWithMessages,
   Health,
+  Ok,
   SendMessage,
   SendMessageResult,
   type ErrorCode,
@@ -102,6 +103,17 @@ export function createApi(getToken: TokenSource) {
         `/chats/${encodeURIComponent(chatId)}/active-run`,
         {},
         ActiveRun.nullable(),
+        getToken,
+      ),
+
+    cancelRun: (runId: string) =>
+      request(`/runs/${encodeURIComponent(runId)}/cancel`, { method: "POST" }, Ok, getToken),
+
+    retryMessage: (messageId: string) =>
+      request(
+        `/messages/${encodeURIComponent(messageId)}/retry`,
+        { method: "POST" },
+        SendMessageResult,
         getToken,
       ),
   };

@@ -1,14 +1,38 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import type { ActiveRun } from "@/contracts";
+import type { ActiveRun, SendMessageResult } from "@/contracts";
 import type { ComposerSubmit } from "@/components/chat/Composer";
 import { ApiError } from "@/lib/api-client";
 import { qk } from "@/lib/query-client";
 import { useApi } from "@/lib/use-api";
 import { useUI } from "@/stores/ui";
 import { NEW_CHAT_ID } from "@/queries/use-chat";
+
+/**
+ * Attaches the screen to a run that has just started, whether it came from a send or from a retry —
+ * both routes answer with the same `SendMessageResult`.
+ *
+ * `qk.activeRun` is seeded from the response rather than refetched: every field is already in the
+ * parsed result, and a refetch would mint a second realtime token against a ten-connection cap.
+ */
+export async function applyRunStart(
+  queryClient: QueryClient,
+  result: SendMessageResult,
+): Promise<void> {
+  const activeRun: ActiveRun = {
+    runId: result.runId,
+    triggerRunId: result.triggerRunId,
+    status: "queued",
+    assistantMessageId: result.assistantMessageId,
+    publicAccessToken: result.publicAccessToken,
+    pendingWaitpoint: null,
+  };
+
+  queryClient.setQueryData(qk.activeRun(result.chatId), activeRun);
+  await queryClient.invalidateQueries({ queryKey: qk.chat(result.chatId) });
+}
 
 /**
  * Sends a turn, and for `chatId === 'new'` moves the browser to the chat the server just created.
@@ -38,17 +62,16 @@ export function useSendMessage(chatId: string) {
     },
 
     onSuccess: async (result) => {
-      const activeRun: ActiveRun = {
-        runId: result.runId,
-        triggerRunId: result.triggerRunId,
-        status: "queued",
-        assistantMessageId: result.assistantMessageId,
-        publicAccessToken: result.publicAccessToken,
-        pendingWaitpoint: null,
-      };
-      queryClient.setQueryData(qk.activeRun(result.chatId), activeRun);
-
       if (chatId === NEW_CHAT_ID) {
+        queryClient.setQueryData(qk.activeRun(result.chatId), {
+          runId: result.runId,
+          triggerRunId: result.triggerRunId,
+          status: "queued",
+          assistantMessageId: result.assistantMessageId,
+          publicAccessToken: result.publicAccessToken,
+          pendingWaitpoint: null,
+        } satisfies ActiveRun);
+
         await queryClient.prefetchInfiniteQuery({
           queryKey: qk.chat(result.chatId),
           queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
@@ -59,7 +82,7 @@ export function useSendMessage(chatId: string) {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: qk.chat(chatId) });
+      await applyRunStart(queryClient, result);
     },
 
     onError: (error, _submission, context) => {

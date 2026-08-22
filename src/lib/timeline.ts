@@ -41,6 +41,8 @@ export type TimelineSegment = {
   /** The `N` in `Working · N steps`. */
   stepCount: number;
   streaming: boolean;
+  /** Whether a tool in this segment failed, which is what keeps a finished group expanded. */
+  failed: boolean;
 };
 
 export type Timeline = {
@@ -93,6 +95,7 @@ function toolViewFromInvocation(invocation: ToolInvocationDTO): ToolView {
 export function groupBlocks(
   items: readonly TimelineItem[],
   streamingSegment: number | null = null,
+  tools: ReadonlyMap<string, ToolView> = new Map(),
 ): TimelineSegment[] {
   const bySegment = new Map<number, TimelineSegment>();
 
@@ -106,6 +109,7 @@ export function groupBlocks(
         prose: [],
         stepCount: 0,
         streaming: block.segment === streamingSegment,
+        failed: false,
       };
       bySegment.set(block.segment, segment);
     }
@@ -113,6 +117,10 @@ export function groupBlocks(
     if (block.type === "text") {
       segment.prose.push(item);
       continue;
+    }
+
+    if (block.type === "tool_use" && tools.get(block.id)?.status === "failed") {
+      segment.failed = true;
     }
 
     if (COUNTS_AS_STEP.has(block.type)) segment.stepCount += 1;
@@ -140,7 +148,7 @@ export function timelineFromMessage(message: MessageDTO): Timeline {
   }
 
   return {
-    segments: groupBlocks(blocks.map((block) => ({ block }))),
+    segments: groupBlocks(blocks.map((block) => ({ block })), null, tools),
     tools,
     assetUrls: new Set((message.assets ?? []).map((asset) => asset.url)),
   };
@@ -227,7 +235,7 @@ export function timelineFromRun(metadata: RunMetadata, streamedText: string): Ti
   const streamingSegment = metadata.blocks.at(-1)?.segment ?? null;
 
   return {
-    segments: groupBlocks(items, streamingSegment),
+    segments: groupBlocks(items, streamingSegment, tools),
     tools,
     assetUrls: new Set(metadata.invocations.flatMap((invocation) => invocation.resultUrls ?? [])),
   };

@@ -1,12 +1,24 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+/**
+ * An action that failed loudly enough to interrupt. `traceId` is the backend's, and it is rendered
+ * so a report can be tied to a server log rather than described from memory.
+ */
+export type Toast = { id: string; text: string; traceId: string | null };
+
+let toastSequence = 0;
+
+/** Older toasts fall off rather than stacking without limit; failures arrive in small numbers. */
+const MAX_TOASTS = 3;
+
 type UIState = {
   drafts: Record<string, string>;
   sidebarCollapsed: boolean;
   openPanel: { type: "tool"; invocationId: string } | null;
   stoppingRuns: string[];
   planModeChats: string[];
+  toasts: Toast[];
   setDraft: (chatId: string, text: string) => void;
   clearDraft: (chatId: string) => void;
   togglePlanMode: (chatId: string) => void;
@@ -14,6 +26,8 @@ type UIState = {
   setOpenPanel: (panel: UIState["openPanel"]) => void;
   markStopping: (runId: string) => void;
   clearStopping: (runId: string) => void;
+  pushToast: (toast: Omit<Toast, "id">) => void;
+  dismissToast: (id: string) => void;
 };
 
 /**
@@ -32,6 +46,7 @@ export const useUI = create<UIState>()(
       openPanel: null,
       stoppingRuns: [],
       planModeChats: [],
+      toasts: [],
 
       setDraft: (chatId, text) =>
         set((s) => ({ drafts: { ...s.drafts, [chatId]: text } })),
@@ -62,6 +77,15 @@ export const useUI = create<UIState>()(
 
       clearStopping: (runId) =>
         set((s) => ({ stoppingRuns: s.stoppingRuns.filter((id) => id !== runId) })),
+
+      pushToast: (toast) =>
+        set((s) => ({
+          toasts: [...s.toasts, { ...toast, id: `toast-${(toastSequence += 1)}` }].slice(
+            -MAX_TOASTS,
+          ),
+        })),
+
+      dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
     }),
     {
       name: "magica-ui",

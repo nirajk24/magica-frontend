@@ -76,7 +76,7 @@ describe("Composer", () => {
     expect(onSubmit).toHaveBeenCalledWith({ content: "make me a poster", planMode: true });
   });
 
-  it("will not send while a run is active, and says why", async () => {
+  it("will not send while a run is active, offering the stop control instead", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     renderWithProviders(<Composer chatId={CHAT_ID} runActive onSubmit={onSubmit} />);
@@ -84,10 +84,8 @@ describe("Composer", () => {
     await user.type(screen.getByLabelText("Message"), "queued up{Enter}");
 
     expect(onSubmit).not.toHaveBeenCalled();
-
-    await user.hover(screen.getByRole("button", { name: "A run is already in progress" }));
-
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/next phase/i);
+    expect(screen.queryByRole("button", { name: "Send message" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stop run" })).toBeInTheDocument();
   });
 
   it("explains the controls it does not implement yet", async () => {

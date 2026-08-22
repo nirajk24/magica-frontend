@@ -8,6 +8,7 @@ import { MessageList, type TranscriptItem } from "@/components/chat/MessageList"
 import { Spinner } from "@/components/Spinner";
 import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
+import { useStopRun } from "@/queries/use-cancel-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 
@@ -33,6 +34,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const { query, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
+  const stop = useStopRun(chatId, activeRun?.runId ?? null, activeRun === null && !query.isFetching);
   const [optimistic, setOptimistic] = useState<{ chatId: string; message: MessageDTO } | null>(
     null,
   );
@@ -70,6 +72,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
           ) : (
             <MessageList
               items={items}
+              runActive={activeRun !== null}
               onStartReached={() => {
                 if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
               }}
@@ -84,9 +87,11 @@ export function ChatScreen({ chatId }: { chatId: string }) {
             chatId={chatId}
             variant={isNew ? "new-chat" : "conversation"}
             runActive={activeRun !== null}
+            stopping={stop.stopping}
             placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
             pending={send.isPending}
             onSubmit={submit}
+            onStop={stop.stop}
           />
 
           {failure && (

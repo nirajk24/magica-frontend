@@ -144,6 +144,21 @@ export const failedAssistantMessage: MessageDTO = {
   errorMessage: "The model stopped responding partway through.",
 };
 
+/**
+ * A turn the user stopped. The partial output and the tool that did finish are still there — the
+ * only thing that marks it is `status`, never a `"(Response stopped)"` suffix in the content.
+ */
+export const cancelledAssistantMessage: MessageDTO = {
+  ...assistantMessage,
+  id: "01999f00-0000-7000-8000-000000000104",
+  status: "cancelled",
+  content: "I'll generate that for you.",
+  contentBlocks: assistantBlocks.slice(0, 3),
+  assets: null,
+  errorMessage: null,
+  creditUsed: "100000",
+};
+
 export const chatWithMessages: ChatWithMessages = {
   chat,
   messages: [userMessage, assistantMessage],
@@ -162,6 +177,13 @@ export const sendMessageResult: SendMessageResult = {
   runId: RUN_ID,
   triggerRunId: TRIGGER_RUN_ID,
   publicAccessToken: "pat_fixture_token",
+};
+
+/** Retry answers with the same shape as send, which is why both share one success path. */
+export const retryResult: SendMessageResult = {
+  ...sendMessageResult,
+  runId: "01999f00-0000-7000-8000-000000000011",
+  triggerRunId: "run_retry456",
 };
 
 export const activeRun: ActiveRun = {

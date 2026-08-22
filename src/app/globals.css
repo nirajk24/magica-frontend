@@ -19,6 +19,11 @@
  * from the Skill row's bolt. Only --success needs a light variant; the rest already clear AA on
  * white, and --amber is an icon fill rather than text.
  *
+ * `--danger-surface` is the stop button's tinted disc, and it is not `--danger` at an opacity: in
+ * both themes its green and blue channels fall on the far side of the canvas from where an alpha
+ * blend could put them. The dark value is exact, read off a lossless PNG; the light one comes from a
+ * lossy JPEG and is approximate.
+ *
  * `--composer-from` / `--composer-to` are a measured detail rather than a flourish: the light
  * composer carries a top-to-bottom gradient from #f2f2f2 to #f9f9f9, read off the lossless
  * empty-state PNG. In dark it is flat #191919 with a #1b1b1b hairline, which the existing surface and
@@ -41,6 +46,7 @@
 
   --color-success: var(--success);
   --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
   --color-info: var(--info);
   --color-amber: var(--amber);
 
@@ -68,6 +74,7 @@
 
   --success: #157f3c;
   --danger: #ba3a28;
+  --danger-surface: #e6d0d2;
   --info: #3655e6;
   --amber: #e3ad47;
 
@@ -88,6 +95,7 @@
 
   --success: #63a869;
   --danger: #ba3a28;
+  --danger-surface: #441812;
   --info: #3655e6;
   --amber: #e3ad47;
 

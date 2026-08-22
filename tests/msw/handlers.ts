@@ -38,7 +38,18 @@ export const handlers = [
   http.get(`${API}/chats/:chatId/active-run`, () => ok(fixtures.activeRun)),
 
   http.get(`${API}/credits`, () => ok(fixtures.creditsPage)),
+
+  http.post(`${API}/runs/:runId/cancel`, () => ok({ ok: true })),
+
+  http.post(`${API}/messages/:messageId/retry`, () => ok(fixtures.retryResult)),
 ];
 
 /** An idle chat: no run to recover, which is what a reload after completion looks like. */
 export const noActiveRun = http.get(`${API}/chats/:chatId/active-run`, () => ok(null));
+
+/** Cancel and retry, refusing. Both surface through the error toast rather than silently. */
+export const cancelFails = http.post(`${API}/runs/:runId/cancel`, () => errors.internal());
+
+export const retryFails = http.post(`${API}/messages/:messageId/retry`, () =>
+  errors.runAlreadyActive(),
+);

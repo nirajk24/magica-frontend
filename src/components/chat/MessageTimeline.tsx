@@ -20,7 +20,11 @@ export function MessageTimeline({ timeline }: { timeline: Timeline }) {
       {timeline.segments.map((segment) => (
         <div key={segment.segment} className="flex flex-col gap-3">
           {segment.rows.length > 0 && (
-            <StepGroup steps={segment.stepCount} streaming={segment.streaming}>
+            <StepGroup
+              steps={segment.stepCount}
+              streaming={segment.streaming}
+              failed={segment.failed}
+            >
               {segment.rows.map((item, index) => (
                 <Block
                   key={`${segment.segment}-${index}`}
