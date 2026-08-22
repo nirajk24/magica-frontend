@@ -32,7 +32,6 @@ export function ThinkingRow({ block, streaming }: BlockProps) {
       labelClassName="italic font-normal text-fg-muted"
       status={streaming ? "streaming" : undefined}
       chevron="inline"
-      defaultOpen={streaming}
     >
       {thinking.length > 0 ? (
         <div className="rounded-card border border-border bg-bg-subtle p-3 text-xs leading-5 whitespace-pre-wrap text-fg">

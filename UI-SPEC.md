@@ -268,6 +268,10 @@ and in the expanded captures a `⌄` follows the label. No capture can show a ho
 header, so hover and keyboard focus reveal it — the header is the click target either way, and an
 affordance nobody can find is worse than that small divergence.
 
+**Expanding a group opens every row in it.** The reference reveals all the bodies at once — schema
+detail, reasoning transcripts, plan detail — rather than making each row a second click. The group
+header is the only thing that collapses.
+
 **A group holding a failed tool stays expanded.** Every capture of a *collapsed* group is a group
 that succeeded, so this costs no fidelity, and the alternative hides the tool's error behind a click
 on a turn whose whole job is to explain itself. The rule lives on the timeline segment rather than in
@@ -340,9 +344,10 @@ A `7ms` row is a cache hit and is information, not noise.
 - **`Model` comes from `ToolInvocationDTO.subModelId`**, not from the tool input. The input records
   what was asked for; the sub-model is chosen at execution time, which is why the reference can show
   `gpt-image-2-text` for a call whose input never mentions it.
-- Body: a two-column label/value grid, label column ≈ 90px and muted. In light themes the body has a
-  hairline border; in dark it is a raised filled surface. Depth reverses — that is why `globals.css`
-  carries two palettes.
+- Body: a two-column label/value grid, label column ≈ 90px and muted, on a **`--surface`** box. In
+  light that reads as a hairline-bordered panel; in dark it is genuinely raised. `--bg-subtle` is the
+  *same value as the canvas* in dark, so using it here leaves the box with no fill in the one theme
+  the reference shows it raised in.
 - `View more` is an accent-coloured link. It **opens the tool detail panel**; it does not reveal the
   remaining fields in place. It renders only when there are more fields than the card shows.
 - A failed card keeps its detail rows and appends the provider's sanitized error as a red paragraph
@@ -666,7 +671,7 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 
 | Overlay | Kind | Anchor / geometry | Phase | Capture |
 |---|---|---|---|---|
-| Tool detail | right-side **overlay**, **538px** measured, full height, shadowed | content behind stays put and is clipped, **not** squeezed — the plan card under it is cut mid-word rather than reflowed | 5 | `04-tool-cards/detail-side-panel__light.jpg` |
+| Tool detail | right-side panel, **538px** measured, full height, shadowed | **the content column narrows to make room for it.** Nothing is clipped — the transcript and the composer reflow into the remaining width, and both the panel's entrance and the reflow animate | 5 | `04-tool-cards/detail-side-panel__light.jpg`, plus the live product |
 | Tool detail, maximized | full-window, `Restore` tooltip on the toggle | same content, only the width changes | 5 | `04-tool-cards/detail-fullscreen__input-images__light.jpg` |
 | Files in this task | centred modal ≈470px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
 | Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
@@ -679,7 +684,8 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 
 **The panel's body is not the card's two-column grid.** It is a flowing list of `Label: value` lines
 at ~15px, on a **42px field pitch**, with the prompt wrapping full width — measured off
-`detail-side-panel__light.jpg` at 1x. `Input Images:` carries a rule under the label with the
+`detail-side-panel__light.jpg` at 1x. **Label and value share one colour**; the separation comes from
+the blank line between fields, not from dimming the label, which is where the card differs. `Input Images:` carries a rule under the label with the
 thumbnails beneath it. The header is the tool's own icon and label on the left, maximize and close on
 the right.
 

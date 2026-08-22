@@ -92,7 +92,7 @@ describe("the reasoning row", () => {
     expect(screen.getByText("partial wo")).toBeVisible();
   });
 
-  it("reads Reasoned once closed, starts collapsed, and shows no duration", async () => {
+  it("reads Reasoned once closed, opens with its group, and shows no duration", async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <Block
@@ -101,15 +101,15 @@ describe("the reasoning row", () => {
       />,
     );
 
-    const header = screen.getByRole("button", { expanded: false });
+    const header = screen.getByRole("button", { expanded: true });
 
     expect(header).toHaveTextContent("Reasoned");
     expect(header).not.toHaveTextContent("2.4s");
-    expect(screen.queryByText("the whole thought")).not.toBeInTheDocument();
+    expect(screen.getByText("the whole thought")).toBeInTheDocument();
 
     await user.click(header);
 
-    expect(screen.getByText("the whole thought")).toBeInTheDocument();
+    expect(screen.queryByText("the whole thought")).not.toBeInTheDocument();
   });
 });
 
@@ -164,10 +164,7 @@ describe("a tool card", () => {
   });
 
   it("renders the generated output from a provider-shaped result", async () => {
-    const user = userEvent.setup();
     renderWithProviders(<ToolCard tool={toolView()} />);
-
-    await user.click(screen.getByRole("button", { expanded: false }));
 
     expect(screen.getByRole("img", { name: "Output of Generating image" })).toHaveAttribute(
       "src",
@@ -176,12 +173,9 @@ describe("a tool card", () => {
   });
 
   it("labels sanitized input rows in the reference's title case", async () => {
-    const user = userEvent.setup();
     renderWithProviders(
       <ToolCard tool={toolView({ input: { aspect_ratio: "16:9", image_url: "https://x.test/a.png" } })} />,
     );
-
-    await user.click(screen.getByRole("button", { expanded: false }));
 
     expect(screen.getByText("Aspect Ratio")).toBeInTheDocument();
     expect(screen.getByText("Image")).toBeInTheDocument();
@@ -309,7 +303,6 @@ describe("row anatomy measured off the reference", () => {
   });
 
   it("shows the generated output as a labelled row, after View more", async () => {
-    const user = userEvent.setup();
     renderWithProviders(
       <ToolCard
         tool={toolView({
@@ -317,8 +310,6 @@ describe("row anatomy measured off the reference", () => {
         })}
       />,
     );
-
-    await user.click(screen.getByRole("button", { name: /Generating image/ }));
 
     const viewMore = screen.getByRole("button", { name: "View more" });
     const output = screen.getByText("Output");
@@ -336,7 +327,6 @@ describe("row anatomy measured off the reference", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /Generating image/ }));
     await user.click(screen.getByRole("button", { name: "View more" }));
 
     expect(screen.getByRole("dialog")).toHaveTextContent("Hidden:");
@@ -344,15 +334,12 @@ describe("row anatomy measured off the reference", () => {
   });
 
   it("names the sub-model that answered, which the input never records", async () => {
-    const user = userEvent.setup();
     renderWithProviders(
       <Block
         block={{ segment: 0, type: "tool_use", id: "call_m", name: "gpt_image_2", input: { prompt: "p" } }}
         tools={new Map([["call_m", toolView({ subModelId: "gpt-image-2-text" })]])}
       />,
     );
-
-    await user.click(screen.getByRole("button", { name: /Generating image/ }));
 
     expect(screen.getByText("Model")).toBeInTheDocument();
     expect(screen.getByText("gpt-image-2-text")).toBeInTheDocument();

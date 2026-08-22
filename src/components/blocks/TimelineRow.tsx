@@ -29,7 +29,7 @@ export function TimelineRow({
   durationMs,
   right,
   chevron = "end",
-  defaultOpen = false,
+  defaultOpen = true,
   children,
 }: {
   icon: React.ComponentType<{ className?: string }>;
@@ -41,6 +41,10 @@ export function TimelineRow({
   right?: ReactNode;
   /** Reasoning rows keep the chevron beside the label; tool cards push it to the far right. */
   chevron?: "inline" | "end";
+  /**
+   * Rows open with their step group rather than one at a time. Expanding a finished group in the
+   * reference reveals every body at once — the group header is the only thing that collapses.
+   */
   defaultOpen?: boolean;
   children?: ReactNode;
 }) {
@@ -117,6 +121,9 @@ export type DetailRow = readonly [string, ReactNode];
  *
  * Detail text is 12px. Measured by comparing the same word — `Quality` — in both, after fixing each
  * screenshot's device scale: 10.4 CSS px of glyph against our 12.5.
+ *
+ * The body is a raised `--surface` box. `--bg-subtle` is the same value as the canvas in dark, so
+ * using it here left the box with no fill at all in the theme the reference shows it raised in.
  */
 export function DetailRows({
   rows,
@@ -137,7 +144,7 @@ export function DetailRows({
   const shown = rows.slice(0, visible);
 
   return (
-    <div className="rounded-card border border-border bg-bg-subtle p-3">
+    <div className="rounded-card border border-border bg-surface p-3">
       <Grid rows={shown} />
 
       {rows.length > visible &&

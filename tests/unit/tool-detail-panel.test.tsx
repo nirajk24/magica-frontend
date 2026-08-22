@@ -9,14 +9,13 @@ import * as fixtures from "../msw/fixtures";
 
 const PROMPT = (fixtures.detailedToolInvocation.input as { prompt: string }).prompt;
 
-/** Expands the step group, then the tool card, which is where `View more` lives. */
+/** Expands the step groups. The rows inside open with their group, so the card needs no click. */
 async function openToolCard(user: ReturnType<typeof userEvent.setup>) {
   renderWithProviders(<MessageRow message={fixtures.detailedAssistantMessage} />);
 
   for (const group of screen.getAllByRole("button", { name: /Completed \d+ step/ })) {
     await user.click(group);
   }
-  await user.click(screen.getByRole("button", { name: /Generating image/ }));
 }
 
 describe("the tool card's View more", () => {

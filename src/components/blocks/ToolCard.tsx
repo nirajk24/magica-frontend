@@ -41,7 +41,6 @@ export function ToolCard({
       status={tool.status}
       durationMs={tool.durationMs}
       right={<CreditsChip tool={tool} />}
-      defaultOpen={tool.status === "running" || tool.status === "failed"}
     >
       <DetailRows
         rows={detail}

@@ -12,15 +12,18 @@ import type { ToolView } from "@/lib/timeline";
 /**
  * The full detail behind a tool card's `View more`.
  *
- * An **overlay**, not a layout squeeze: the transcript keeps its position and is clipped behind the
- * panel, which is what the reference shows — the plan card beneath it is cut off mid-word rather
- * than reflowed. Measured at 538px; maximizing swaps the width for the whole window and the toggle
- * then reads `Restore`.
+ * **The content column makes room for it rather than sitting underneath.** The reference narrows the
+ * transcript and the composer when the panel opens; nothing is clipped. Measured at 538px, and both
+ * the panel's entrance and the column's reflow are animated. Maximizing swaps the width for the
+ * whole window and the toggle then reads `Restore`.
  *
  * Fields are the card's, in the same order and from the same helper, but **untruncated** — the card
  * shows five and the panel is where the rest lives. It reads the `ToolView` it is handed rather than
  * looking an invocation up, so the panel and the card can never describe the same call differently.
  */
+/** Measured off the reference. The shell reserves exactly this much, so the two cannot disagree. */
+export const PANEL_WIDTH = 538;
+
 export function ToolDetailPanel({ tool, onClose }: { tool: ToolView; onClose: () => void }) {
   const [maximized, setMaximized] = useState(false);
 
@@ -43,9 +46,11 @@ export function ToolDetailPanel({ tool, onClose }: { tool: ToolView; onClose: ()
     <aside
       role="dialog"
       aria-label={`${tool.display.label} detail`}
+      style={maximized ? undefined : { maxWidth: PANEL_WIDTH }}
       className={cn(
-        "fixed inset-y-0 right-0 z-40 flex flex-col border-l border-border bg-bg shadow-2xl",
-        maximized ? "left-0" : "w-full max-w-[538px]",
+        "fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-border bg-bg shadow-2xl",
+        "animate-in duration-200 ease-out slide-in-from-right",
+        maximized && "left-0",
       )}
     >
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
@@ -81,23 +86,19 @@ export function ToolDetailPanel({ tool, onClose }: { tool: ToolView; onClose: ()
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5 text-[15px] leading-relaxed">
         {rows.map(([label, value]) => (
           <p key={label} className="break-words text-fg">
-            <span className="text-fg-muted">{label}:</span> {value}
+            {label}: {value}
           </p>
         ))}
 
         {tool.errorMessage && (
-          <p className="break-words text-danger">
-            <span className="text-danger/80">Error:</span> {tool.errorMessage}
-          </p>
+          <p className="break-words text-danger">Error: {tool.errorMessage}</p>
         )}
 
         <ImageSection label="Input Images" urls={inputImages} />
         <ImageSection label="Output" urls={outputs} />
 
         {charged && (
-          <p className="text-fg">
-            <span className="text-fg-muted">Credits used:</span> {formatCredits(tool.creditUsed!)}
-          </p>
+          <p className="text-fg">Credits used: {formatCredits(tool.creditUsed!)}</p>
         )}
       </div>
     </aside>

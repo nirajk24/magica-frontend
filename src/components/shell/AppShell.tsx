@@ -3,9 +3,11 @@
 import { Menu } from "lucide-react";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { PANEL_WIDTH } from "@/components/panels/ToolDetailPanel";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { cn } from "@/lib/cn";
+import { useUI } from "@/stores/ui";
 
 /**
  * The frame every screen sits in: an inset sidebar beside a column holding the top bar and the page.
@@ -15,10 +17,15 @@ import { cn } from "@/lib/cn";
  *
  * Below the mobile breakpoint the sidebar leaves the flow entirely and returns as an overlay drawer,
  * which is what the 430px capture shows: content dimmed behind, drawer over it, no layout squeeze.
+ *
+ * The tool detail panel is the opposite: the reference narrows the content column to make room for
+ * it rather than letting it cover the transcript, so the column reserves the panel's width while it
+ * is open and animates back when it closes.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const segments = useSelectedLayoutSegments();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const panelOpen = useUI((state) => state.openPanel !== null);
 
   const inChat = segments[0] === "chat" && segments.length > 1;
 
@@ -42,7 +49,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        style={{ paddingRight: panelOpen ? PANEL_WIDTH : 0 }}
+        className="flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out"
+      >
         <div className="flex items-center">
           <button
             type="button"
