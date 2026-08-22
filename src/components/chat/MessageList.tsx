@@ -5,6 +5,7 @@ import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { ActiveRun, MessageDTO } from "@/contracts";
 import { LiveRun } from "@/components/chat/LiveRun";
 import { MessageRow } from "@/components/chat/MessageRow";
+import { PendingTurn } from "@/components/chat/PendingTurn";
 import { ScrollToBottom } from "@/components/chat/ScrollToBottom";
 
 const COLUMN = "mx-auto w-full max-w-[820px] px-6";
@@ -17,7 +18,8 @@ const COLUMN = "mx-auto w-full max-w-[820px] px-6";
  */
 export type TranscriptItem =
   | { kind: "message"; message: MessageDTO }
-  | { kind: "live"; chatId: string; run: ActiveRun };
+  | { kind: "live"; chatId: string; run: ActiveRun }
+  | { kind: "pending" };
 
 /**
  * The virtualized message list the brief asks for by name.
@@ -55,6 +57,8 @@ export function MessageList({
           <div className={`${COLUMN} py-4`}>
             {item.kind === "message" ? (
               <MessageRow message={item.message} runActive={runActive} />
+            ) : item.kind === "pending" ? (
+              <PendingTurn />
             ) : (
               <LiveRun
                 key={`${item.run.triggerRunId}:${item.run.publicAccessToken}`}
@@ -81,5 +85,7 @@ export function MessageList({
 }
 
 function keyFor(item: TranscriptItem): string {
-  return item.kind === "message" ? item.message.id : `live:${item.run.runId}`;
+  if (item.kind === "message") return item.message.id;
+
+  return item.kind === "pending" ? "pending" : `live:${item.run.runId}`;
 }

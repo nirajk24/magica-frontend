@@ -70,6 +70,14 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   };
 
   const failure = send.isError ? sendFailureMessage(send.error) : null;
+
+  /**
+   * A send that has been accepted but has no run to render yet. The reference shows the turn the
+   * instant the message lands, so this cannot wait for dispatch — see `PendingTurn`.
+   */
+  const awaitingRun = live === null && (send.isPending || pending !== null);
+
+
   const rateLimited = Boolean(useLlmStatus().data?.rateLimitedUntil);
   const panelTool = openPanel ? findToolView(messages, openPanel.invocationId) : null;
 
@@ -79,16 +87,21 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       message,
     }));
 
-    return live ? [...rows, { kind: "live", chatId, run: live }] : rows;
-  }, [messages, pending, live, chatId]);
+    if (live) return [...rows, { kind: "live", chatId, run: live }];
+
+    return awaitingRun ? [...rows, { kind: "pending" }] : rows;
+  }, [messages, pending, live, chatId, awaitingRun]);
+
+  /** The masthead and templates give way the moment there is a turn to show. */
+  const showEmptyState = isNew && items.length === 0;
 
   return (
     <div className="flex h-full flex-col">
-      {!isNew && (
+      {!showEmptyState && (
         <div className="min-h-0 flex-1">
-          {query.isPending ? (
+          {!isNew && query.isPending ? (
             <FullColumnSpinner />
-          ) : query.isError ? (
+          ) : !isNew && query.isError ? (
             <LoadFailure error={query.error} />
           ) : (
             <MessageList
@@ -102,9 +115,9 @@ export function ChatScreen({ chatId }: { chatId: string }) {
         </div>
       )}
 
-      <div className={isNew ? "min-h-0 flex-1 overflow-y-auto pt-28 pb-10" : "shrink-0 pb-6"}>
-        <div className={isNew ? EMPTY_STATE_COLUMN : COLUMN}>
-          {isNew && <EmptyStateHeader />}
+      <div className={showEmptyState ? "min-h-0 flex-1 overflow-y-auto pt-28 pb-10" : "shrink-0 pb-6"}>
+        <div className={showEmptyState ? EMPTY_STATE_COLUMN : COLUMN}>
+          {showEmptyState && <EmptyStateHeader />}
 
           <Composer
             chatId={chatId}
@@ -132,7 +145,9 @@ export function ChatScreen({ chatId }: { chatId: string }) {
             </p>
           )}
 
-          {isNew && <TemplateGallery onPick={(template) => setDraft(chatId, template.prompt)} />}
+          {showEmptyState && (
+            <TemplateGallery onPick={(template) => setDraft(chatId, template.prompt)} />
+          )}
         </div>
       </div>
 
@@ -144,12 +159,16 @@ export function ChatScreen({ chatId }: { chatId: string }) {
 /**
  * The run the overlay should render, or `null`.
  *
+ * A run with no `triggerRunId` yet is still returned: that id is Trigger.dev's and arrives seconds
+ * after the send is accepted, so gating the row on it left the screen empty for that whole window.
+ * `LiveRun` subscribes only once the id exists and shows a pending row until then.
+ *
  * INVARIANT: the overlay gives way only once the assistant row it was previewing has actually landed
  * in the cache. Unmounting when the run goes terminal instead would blank the turn for however long
  * the refetch takes, and unmounting later would show the same content twice.
  */
 function liveRunToRender(activeRun: ActiveRun | null, messages: readonly MessageDTO[]) {
-  if (!activeRun?.triggerRunId) return null;
+  if (!activeRun) return null;
 
   const settled = messages.some(
     (message) => message.id === activeRun.assistantMessageId && message.status !== "streaming",

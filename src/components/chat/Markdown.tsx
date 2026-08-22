@@ -3,6 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { stripSuppressedUrls } from "@/lib/prose";
 
 /**
  * Assistant prose is real markdown in the reference — bold lead-ins, ordered and unordered lists and
@@ -57,6 +58,11 @@ export function Markdown({
   children: string;
   suppressUrls?: ReadonlySet<string>;
 }) {
+  const source = useMemo(
+    () => (suppressUrls ? stripSuppressedUrls(children, suppressUrls) : children),
+    [children, suppressUrls],
+  );
+
   const components = useMemo<Components>(
     () => ({
       ...baseComponents,
@@ -91,7 +97,7 @@ export function Markdown({
 
   return (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {children}
+      {source}
     </ReactMarkdown>
   );
 }

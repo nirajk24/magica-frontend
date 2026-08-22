@@ -15,7 +15,8 @@ import type { BlockProps } from "@/components/blocks/types";
  * where `Reasoned` is `--fg-muted` and both the brain and the transcript are `--fg`.
  *
  * The transcript is trimmed because models end reasoning with a newline, and `whitespace-pre-wrap`
- * turns that into a blank line the box then makes room for.
+ * turns that into a blank line the box then makes room for. A dangling partial tag is trimmed with
+ * it: a reasoning stream cut mid-token leaves things like `</` behind, which reads as corruption.
  *
  * It shows no duration, and its chevron sits beside the label rather than at the far right — both
  * measured off the reference, which renders every reasoning row as a bare `Reasoned ⌄`.
@@ -23,7 +24,7 @@ import type { BlockProps } from "@/components/blocks/types";
 export function ThinkingRow({ block, streaming }: BlockProps) {
   if (block.type !== "thinking") return null;
 
-  const thinking = block.thinking.trim();
+  const thinking = block.thinking.replace(/<\/?[a-zA-Z-]*>?\s*$/, "").trim();
 
   return (
     <TimelineRow

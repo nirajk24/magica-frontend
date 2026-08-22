@@ -185,7 +185,18 @@ export function timelineFromMessage(message: MessageDTO): Timeline {
  * A thinking block is open when nothing follows it, which is why `reasoningText` lands on the last
  * one; earlier ones render as bare `Reasoned` rows until the persisted message fills them in.
  */
-export function timelineFromRun(metadata: RunMetadata, streamedText: string): Timeline {
+export function timelineFromRun(
+  metadata: RunMetadata,
+  streamedText: string,
+  /**
+   * Reasoning each block carried while it was the open one, by block index.
+   *
+   * `RunMetadata` carries a single `reasoningText` — whatever the *current* block is thinking — so
+   * without this an earlier block's transcript disappears the moment a later one opens. The caller
+   * remembers what it has already shown; this only reads it.
+   */
+  rememberedReasoning: ReadonlyMap<number, string> = new Map(),
+): Timeline {
   const tools = new Map<string, ToolView>(
     metadata.invocations.map((invocation) => [
       invocation.toolUseId,
@@ -230,9 +241,12 @@ export function timelineFromRun(metadata: RunMetadata, streamedText: string): Ti
 
     if (projection.type === "thinking") {
       const open = index === lastIndex;
+      const thinking = open
+        ? (metadata.reasoningText ?? "")
+        : (rememberedReasoning.get(index) ?? "");
 
       items.push({
-        block: { segment, type: "thinking", thinking: open ? (metadata.reasoningText ?? "") : "" },
+        block: { segment, type: "thinking", thinking },
         ...(open ? { streaming: true } : {}),
       });
       return;

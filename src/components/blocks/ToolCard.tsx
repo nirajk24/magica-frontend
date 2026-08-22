@@ -70,7 +70,7 @@ export function OutputStrip({ urls, label }: { urls: readonly string[]; label: s
           key={url}
           src={url}
           alt={`Output of ${label}`}
-          className="max-h-32 rounded-card bg-surface"
+          className="max-h-32 min-h-16 min-w-24 rounded-card bg-surface"
           loading="lazy"
         />
       ))}
