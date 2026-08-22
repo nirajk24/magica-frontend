@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 import type { AssetDTO } from "@/contracts";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
  * Generated outputs, rendered once after the prose.
@@ -44,14 +45,17 @@ function Asset({ asset }: { asset: AssetDTO }) {
         className="max-w-[425px] rounded-card bg-surface"
         loading="lazy"
       />
-      <a
-        href={asset.url}
-        download
-        aria-label="Download image"
-        className="absolute top-2 right-2 rounded-md bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover/asset:opacity-100 focus-visible:opacity-100"
-      >
-        <Download className="size-4" aria-hidden />
-      </a>
+      <Tooltip>
+        <TooltipTrigger
+          asChild
+          className="absolute top-2 right-2 rounded-md bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover/asset:opacity-100 focus-visible:opacity-100"
+        >
+          <a href={asset.url} download aria-label="Download image">
+            <Download className="size-4" aria-hidden />
+          </a>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Download</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

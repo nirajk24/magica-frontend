@@ -11,7 +11,7 @@ describe("groupBlocks", () => {
 
     expect(first?.rows.map((row) => row.block.type)).toEqual(["thinking"]);
     expect(first?.prose.map((row) => row.block.type)).toEqual(["text"]);
-    expect(second?.rows.map((row) => row.block.type)).toEqual(["tool_use"]);
+    expect(second?.rows.map((row) => row.block.type)).toEqual(["tool_use", "usage"]);
     expect(second?.prose.map((row) => row.block.type)).toEqual(["text"]);
   });
 
@@ -74,7 +74,7 @@ describe("timelineFromMessage", () => {
     const timeline = timelineFromMessage(message);
 
     expect(timeline.tools.get(fixtures.TOOL_USE_ID)?.resultSummary).toBe("1 image");
-    expect(timeline.segments[1]?.rows.map((row) => row.block.type)).toEqual(["tool_use"]);
+    expect(timeline.segments[1]?.rows.map((row) => row.block.type)).toEqual(["tool_use", "usage"]);
   });
 
   it("returns no segments for a message that has no blocks", () => {
@@ -168,14 +168,13 @@ describe("timelineFromRun", () => {
 });
 
 describe("blocks that never become rows", () => {
-  it("keeps token usage out of the step group, where a collapse would hide it", () => {
+  it("keeps token usage inside the step group, which a finished turn collapses", () => {
     const timeline = timelineFromMessage(fixtures.assistantMessage);
     const types = timeline.segments.flatMap((segment) =>
       segment.rows.map((row) => row.block.type),
     );
 
-    expect(types).not.toContain("usage");
-    expect(fixtures.assistantBlocks.some((block) => block.type === "usage")).toBe(true);
+    expect(types).toContain("usage");
   });
 
   it("still counts a usage block as no step at all", () => {

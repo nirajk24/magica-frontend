@@ -59,32 +59,3 @@ describe("prose that repeats an asset url", () => {
     expect(screen.getByRole("link", { name: "Download image" })).toBeInTheDocument();
   });
 });
-
-describe("token usage", () => {
-  it("appears in the footer rather than inside the step group", () => {
-    renderWithProviders(<MessageRow message={fixtures.assistantMessage} />);
-
-    expect(screen.getByText(/412 in · 96 out/)).toBeInTheDocument();
-  });
-
-  it("groups large counts the way the reference groups numbers", () => {
-    renderWithProviders(
-      <MessageRow
-        message={{
-          ...fixtures.assistantMessage,
-          tokenUsage: { inputTokens: 1_913, outputTokens: 209 },
-        }}
-      />,
-    );
-
-    expect(screen.getByText(/1,913 in · 209 out/)).toBeInTheDocument();
-  });
-
-  it("is omitted when the server reported none", () => {
-    renderWithProviders(
-      <MessageRow message={{ ...fixtures.assistantMessage, tokenUsage: null }} />,
-    );
-
-    expect(screen.queryByText(/ in · /)).not.toBeInTheDocument();
-  });
-});

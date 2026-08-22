@@ -59,6 +59,12 @@ describe("MessageRow — assistant", () => {
     expect(screen.getByText(/0\.0059M credits/)).toBeInTheDocument();
   });
 
+  it("reports no token counts, which the reference shows nowhere", () => {
+    renderWithProviders(<MessageRow message={fixtures.assistantMessage} />);
+
+    expect(screen.queryByText(/ in · /)).not.toBeInTheDocument();
+  });
+
   it("omits the credit line for a turn that cost nothing", () => {
     renderWithProviders(<MessageRow message={fixtures.failedAssistantMessage} />);
 

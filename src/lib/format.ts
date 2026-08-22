@@ -64,13 +64,25 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Clock time in the reference's format.
+ * A message's timestamp: clock time for today, `Aug 21` for an older day.
  *
  * The locale is pinned rather than taken from the browser: the product is English-only and its copy
- * is compared against captures, so a viewer in a 24-hour locale would read as a fidelity miss.
+ * is compared against captures, so a viewer in a 24-hour locale would read as a fidelity miss. The
+ * year only appears outside the current one, which is an extrapolation — no capture shows a message
+ * old enough to prove it.
  */
-export function formatMessageTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+export function formatMessageTime(iso: string, now: Date = new Date()): string {
+  const date = new Date(iso);
+
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+  });
 }
 
 /** Token counts, grouped the way the reference groups every other number. */

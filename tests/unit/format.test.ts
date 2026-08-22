@@ -64,7 +64,17 @@ describe("formatDuration", () => {
 });
 
 describe("formatMessageTime", () => {
-  it("renders 12-hour clock time regardless of the viewer's locale", () => {
-    expect(formatMessageTime("2026-08-22T14:53:00.000Z")).toMatch(/^\d{1,2}:\d{2}\s(AM|PM)$/);
+  const iso = "2026-08-22T14:53:00.000Z";
+
+  it("renders 12-hour clock time for a message from today", () => {
+    expect(formatMessageTime(iso, new Date(iso))).toMatch(/^\d{1,2}:\d{2}\s(AM|PM)$/);
+  });
+
+  it("renders the day for an older message, the way the reference shows `Aug 21`", () => {
+    expect(formatMessageTime("2026-08-21T14:53:00.000Z", new Date(iso))).toBe("Aug 21");
+  });
+
+  it("adds the year once the message is from a different one", () => {
+    expect(formatMessageTime("2025-08-21T14:53:00.000Z", new Date(iso))).toBe("Aug 21, 2025");
   });
 });

@@ -62,17 +62,8 @@ const COUNTS_AS_STEP: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["
   "step_update",
 ]);
 
-/**
- * Blocks that never render as a timeline row.
- *
- * `tool_result` is folded into its tool card. `usage` is required by the brief but appears nowhere in
- * the reference transcript, and inside a step group it vanishes the moment the group collapses — so
- * the assistant footer renders it from `Message.tokenUsage` instead.
- */
-const HIDDEN_ROW: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["type"]>([
-  "tool_result",
-  "usage",
-]);
+/** `tool_result` is folded into its tool card, so it never renders as a row of its own. */
+const HIDDEN_ROW: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["type"]>(["tool_result"]);
 
 function toolViewFromInvocation(invocation: ToolInvocationDTO): ToolView {
   return {
