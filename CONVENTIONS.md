@@ -44,6 +44,18 @@ that is already written down is the expensive mistake.
   our API, so MSW never sees them. Drive the streaming overlay in tests by handing it a
   `RunMetadata` object directly — `fixtures.runMetadata` and `fixtures.streamedText` exist for this.
   "Tokens actually appear" is an integration check against the running backend, not a unit test.
+- **The default active-run fixture reports a RUNNING run**, which correctly disables the composer.
+  Any test about sending must `server.use(noActiveRun)` first, or it will assert against a disabled
+  button and the failure will not say why.
+- **What `tests/setup.ts` provides**, so it is not rebuilt per file: `matchMedia` and
+  `ResizeObserver` stubs; `next/navigation` mocked, with navigation asserted through
+  `tests/router-mock.ts`; `@clerk/nextjs` mocked behind a flippable signed-in flag
+  (`tests/clerk-mock.ts`); and `react-virtuoso` replaced with a plain list, because jsdom reports
+  every element as zero-height and the real virtualizer then renders nothing.
+- **jsdom has no cascade.** A test can assert that an element carries a class; it cannot assert the
+  colour that class resolves to. Say which of the two a test actually covers rather than implying the
+  colour is verified.
+- **`jsdom` is pinned to 26.** Version 30 needs a Node 22 API this project does not target.
 
 ## Comments
 
