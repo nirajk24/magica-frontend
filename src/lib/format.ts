@@ -89,3 +89,28 @@ export function formatMessageTime(iso: string, now: Date = new Date()): string {
 export function formatTokens(count: number): string {
   return count.toLocaleString("en-US");
 }
+
+const RELATIVE_UNITS: readonly [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 24 * 60 * 60 * 1000],
+  ["month", 30 * 24 * 60 * 60 * 1000],
+  ["day", 24 * 60 * 60 * 1000],
+  ["hour", 60 * 60 * 1000],
+  ["minute", 60 * 1000],
+];
+
+/**
+ * How the task list dates a row: `3 minutes ago`, `1 hour ago`, `4 hours ago`.
+ *
+ * Anything under a minute reads `just now` rather than `0 minutes ago`, which is what a row created
+ * by the send you just made would otherwise say.
+ */
+export function formatRelativeTime(iso: string, now: Date = new Date()): string {
+  const elapsed = now.getTime() - new Date(iso).getTime();
+  const formatter = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
+
+  for (const [unit, ms] of RELATIVE_UNITS) {
+    if (elapsed >= ms) return formatter.format(-Math.floor(elapsed / ms), unit);
+  }
+
+  return "just now";
+}

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CREDIT_DIGITS, formatCredits, formatDuration, formatMessageTime } from "@/lib/format";
+import {
+  CREDIT_DIGITS,
+  formatCredits,
+  formatDuration,
+  formatMessageTime,
+  formatRelativeTime,
+} from "@/lib/format";
 
 describe("formatCredits", () => {
   it.each([
@@ -76,5 +82,23 @@ describe("formatMessageTime", () => {
 
   it("adds the year once the message is from a different one", () => {
     expect(formatMessageTime("2025-08-21T14:53:00.000Z", new Date(iso))).toBe("Aug 21, 2025");
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date("2026-08-22T12:00:00.000Z");
+
+  it.each([
+    ["2026-08-22T11:57:00.000Z", "3 minutes ago"],
+    ["2026-08-22T11:00:00.000Z", "1 hour ago"],
+    ["2026-08-22T08:00:00.000Z", "4 hours ago"],
+    ["2026-08-21T12:00:00.000Z", "yesterday"],
+    ["2026-08-19T12:00:00.000Z", "3 days ago"],
+  ])("renders %s as %s", (iso, expected) => {
+    expect(formatRelativeTime(iso, now)).toBe(expected);
+  });
+
+  it("says just now rather than 0 minutes ago for a row created by the send you just made", () => {
+    expect(formatRelativeTime("2026-08-22T11:59:40.000Z", now)).toBe("just now");
   });
 });

@@ -16,11 +16,14 @@ export function DisabledAction({
   label,
   reason,
   className,
+  showLabel = false,
 }: {
   icon: LucideIcon;
   label: string;
   reason: string;
   className?: string;
+  /** Icon-only controls name themselves through `aria-label`; labelled ones also render the text. */
+  showLabel?: boolean;
 }) {
   return (
     <Tooltip>
@@ -29,9 +32,14 @@ export function DisabledAction({
         aria-disabled
         aria-label={label}
         onClick={(event) => event.preventDefault()}
-        className={cn("cursor-not-allowed text-fg-subtle/60", className)}
+        className={cn(
+          "cursor-not-allowed",
+          showLabel ? "text-fg-muted" : "text-fg-subtle/60",
+          className,
+        )}
       >
         <Icon className="size-4" aria-hidden />
+        {showLabel && label}
       </TooltipTrigger>
       <TooltipContent>{reason}</TooltipContent>
     </Tooltip>

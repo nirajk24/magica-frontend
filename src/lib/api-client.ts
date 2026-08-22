@@ -3,6 +3,8 @@ import {
   ActiveRun,
   ApiErrorEnvelope,
   ChatWithMessages,
+  ChatsPage,
+  CreditsPage,
   Health,
   Ok,
   SendMessage,
@@ -75,10 +77,32 @@ export async function request<T>(
 /** What a caller may send; the server applies the contract's defaults for anything omitted. */
 export type SendMessageInput = z.input<typeof SendMessage>;
 
+/** The chat list's server-side filters. Omitted fields fall back to the contract's defaults. */
+export type ChatsQueryInput = {
+  cursor?: string;
+  search?: string;
+  filter?: "all" | "pinned";
+};
+
+function queryString(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) search.set(key, value);
+  }
+  const encoded = search.toString();
+
+  return encoded ? `?${encoded}` : "";
+}
+
 /** Typed service surface. A component never names a URL or sees an unparsed response. */
 export function createApi(getToken: TokenSource) {
   return {
     getHealth: () => request("/health", {}, Health, getToken),
+
+    getChats: ({ cursor, search, filter }: ChatsQueryInput = {}) =>
+      request(`/chats${queryString({ cursor, search, filter })}`, {}, ChatsPage, getToken),
+
+    getCredits: () => request("/credits", {}, CreditsPage, getToken),
 
     getChat: (chatId: string, messagesCursor?: string) =>
       request(

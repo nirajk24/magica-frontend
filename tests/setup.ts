@@ -86,5 +86,8 @@ vi.mock("@clerk/nextjs", async () => {
       isSignedIn: clerkMock.isSignedIn,
     }),
     useClerk: () => ({ openSignIn: clerkMock.openSignIn }),
+    SignInButton: ({ children }: { children?: unknown }) => children ?? null,
+    SignUpButton: ({ children }: { children?: unknown }) => children ?? null,
+    UserButton: () => null,
   };
 });

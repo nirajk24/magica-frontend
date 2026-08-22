@@ -137,9 +137,21 @@ Captures: `01-shell/empty-state__{light,dark}.png` · `01-shell/sidebar__collaps
 └──────────┴────────────└───────────────────────────────┘──────────────┘
 ```
 
-Measured at a 1400px viewport: sidebar 260px, content column ≈ 820px, composer aligned to the same
-column. The content column is centred in the space *left of* the sidebar, so it shifts when the
-sidebar collapses.
+**The sidebar is a 240px panel inset 8px from the window edge, not a flush 260px column.** An
+earlier reading of 260px was wrong. Measured twice, independently, and the two agree:
+
+| Capture | Device scale | Gutter | Sidebar |
+|---|---|---|---|
+| `01-shell/empty-state__light.png` | 1.0 | 8 px | 240 px |
+| a 2560px live capture | 1.25 (menu bar = 30 device px against 24 CSS px) | 10 device → 8 CSS | 299 device → 239 CSS |
+
+The canvas shows through on the panel's left and above it, so the shell pads and the panel rounds.
+Its fill is `--bg-subtle` (`#f9f9f9`) in light; in dark it is the same value as the canvas, which is
+the depth reversal `globals.css` already carries.
+
+Content column ≈ 820px, composer aligned to the same column, centred in the space *left of* the
+sidebar so it shifts when the sidebar collapses. Nav rows sit on a **38px pitch**; the solid pill in
+the top bar is **32px** tall.
 
 ### 2.1 Breakpoint ladder
 
@@ -168,6 +180,11 @@ name).
 
 **Collapsed rail (~48px).** Icon-only, same order, plus a gear pinned at the bottom. No labels, no
 Recent tasks.
+
+**Signed out, the sidebar is the same sidebar.** Same nav in the same order, same `No tasks yet`.
+Only the footer changes: the `Magica 101` card and `⋮ More` stay, and below them come `Claim Offer`,
+the theme trio and a single full-width **`Sign in`** button — no balance, no `Add Credits`, no
+`Settings` / `Updates`, no team invite, no account row. Observed in the live product; see UI-18.
 
 **User menu** (`01-shell/user-menu__dark.png`) opens upward from the user row: avatar + name + email
 header, `Manage account`, `Sign out`. This is Clerk's `<UserButton/>` surface — we render Clerk's
@@ -391,23 +408,31 @@ Captures: `02-composer/*` · every chat capture.
 - **The light composer is a vertical gradient, not a flat fill** — `#f2f2f2` at the top to `#f9f9f9`
   at the bottom, read from the lossless empty-state PNG. In dark it is flat `#191919` with a
   `#1b1b1b` hairline, which is exactly `--surface` on `--border`.
-- **Resting height is 136px in a conversation and 96px on the new-chat screen.** One box model
-  produces both, and the only thing that changes is the text area's resting height:
+- **Resting height is ~132px, and it is the same on both screens.** An earlier reading of 96px for
+  the new-chat composer was wrong. Four measurements:
 
-  | | conversation | new chat |
+  | Screen | Capture | Height |
   |---|---|---|
-  | padding top | 16 | 16 |
-  | text area at rest | **64** | **24** |
-  | gap | 4 | 4 |
-  | send button | 34 | 34 |
-  | padding bottom | 16 | 16 |
-  | border | 2 | 2 |
-  | **total** | **136** | **96** |
+  | new chat | `01-shell/empty-state__light.png`, 1x lossless | **133px** |
+  | new chat | a 2560px live capture, 1.25x | **132px** |
+  | conversation | `04-tool-cards/ai-gen__FAILED-safety…__dark.png`, 1.25x lossless | **141px** |
+  | conversation | `06-messages/capabilities-answer…__light.jpg`, 1x lossy | 126px |
 
-  Measured three ways that agree: the top-to-bottom span in the 1x chat capture (clipped at the
-  viewport, so a lower bound), the same span in a 2560px dark PNG divided by that capture's scale,
-  and the composer height expressed in units of its own placeholder glyph height — which is
-  scale-free. The 96px figure comes straight off the 1x empty-state PNG.
+  The two screens differ by under ten pixels and **the sign of the gap flips between capture pairs**,
+  so it is measurement noise, not a second box model. One box model, one resting height:
+
+  | | value |
+  |---|---|
+  | padding top | 16 |
+  | text area at rest | **64** |
+  | gap | 4 |
+  | send button | 34 |
+  | padding bottom | 16 |
+  | border | 2 |
+  | **total** | **136** |
+
+  The `--danger`-tinted stop control replaces the send arrow in that 34px slot without changing the
+  box (§3.8 above).
 - Placeholder: `Send a message...` inside a chat, `Assign a task or ask anything...` on the empty
   state. Use exactly this copy.
 - Auto-grows with content; Enter sends, Shift+Enter inserts a newline.
@@ -768,11 +793,14 @@ blanket boundary on the shell would gate a screen the product leaves open. Conse
   without a token. The draft is already in the UI store, so the prompt survives the round trip.
 - After signing in the visitor presses send once more. Auto-resuming would need a pending-intent flag
   and a listener on the session flipping, which is a race for one keystroke.
-- **This has no capture behind it.** None of the 77 shows an anonymous state — the two `clerk__*`
-  files are the signed-in Manage Account modal — so it rests on direct observation of the live
-  product, recorded here because the earlier blanket boundary was an assumption, never evidence.
-- **Open for Phase 3:** what an anonymous visitor sees in the sidebar and top bar. There is no
-  capture, and Phase 1 has neither, so it does not block.
+- **None of the 77 captures shows an anonymous state** — the two `clerk__*` files are the signed-in
+  Manage Account modal — so this rests on direct observation of the live product, recorded here
+  because the earlier blanket boundary was an assumption, never evidence.
+- **What an anonymous visitor sees is no longer open.** Observed live: the full sidebar with its nav
+  and `No tasks yet`; a footer of `Magica 101` · `⋮ More` · `Claim Offer` · the theme trio · a
+  full-width `Sign in`; and a top bar of the model pill, a centred `Magica 101` pill, and
+  `Sign in` / `Sign up` — with **no credits chip and no folder icon**. Acting on any of them opens
+  Clerk's modal, which is the same gate the composer already uses. §2.2 and §2.3 carry the detail.
 
 **UI-19 — one error surface per kind of failure.** A send failure stays inline beneath the composer,
 because that is where its restored draft is and the user is already looking there. A cancel or retry

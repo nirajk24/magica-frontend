@@ -62,7 +62,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   }, [messages, pending, live, chatId]);
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="flex h-full flex-col">
       {!isNew && (
         <div className="min-h-0 flex-1">
           {query.isPending ? (
@@ -85,7 +85,6 @@ export function ChatScreen({ chatId }: { chatId: string }) {
         <div className={COLUMN}>
           <Composer
             chatId={chatId}
-            variant={isNew ? "new-chat" : "conversation"}
             runActive={activeRun !== null}
             stopping={stop.stopping}
             placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}

@@ -1,0 +1,66 @@
+"use client";
+
+import { Menu } from "lucide-react";
+import { useSelectedLayoutSegments } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { Sidebar } from "@/components/shell/Sidebar";
+import { TopBar } from "@/components/shell/TopBar";
+import { cn } from "@/lib/cn";
+
+/**
+ * The frame every screen sits in: an inset sidebar beside a column holding the top bar and the page.
+ *
+ * The 8px gutter is measured, not decorative — the reference's sidebar is a rounded panel with the
+ * canvas showing through on its left and above it, so the shell pads and the panel rounds.
+ *
+ * Below the mobile breakpoint the sidebar leaves the flow entirely and returns as an overlay drawer,
+ * which is what the 430px capture shows: content dimmed behind, drawer over it, no layout squeeze.
+ */
+export function AppShell({ children }: { children: ReactNode }) {
+  const segments = useSelectedLayoutSegments();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const inChat = segments[0] === "chat" && segments.length > 1;
+
+  return (
+    <div className="flex h-dvh gap-2 p-2">
+      <div className="hidden md:flex">
+        <Sidebar />
+      </div>
+
+      {drawerOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-fg/40"
+          />
+          <div className="absolute inset-y-2 left-2 flex w-2/3 max-w-[280px]">
+            <Sidebar onNavigate={() => setDrawerOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center">
+          <button
+            type="button"
+            aria-label="Open navigation"
+            onClick={() => setDrawerOpen(true)}
+            className={cn(
+              "ml-2 rounded-md p-1.5 text-fg-muted transition-colors hover:text-fg md:hidden",
+            )}
+          >
+            <Menu className="size-5" aria-hidden />
+          </button>
+          <div className="min-w-0 flex-1">
+            <TopBar showFiles={inChat} />
+          </div>
+        </div>
+
+        <main className="min-h-0 flex-1">{children}</main>
+      </div>
+    </div>
+  );
+}

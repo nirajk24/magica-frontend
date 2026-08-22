@@ -6,7 +6,9 @@ import { ApiError } from "@/lib/api-client";
 /** One factory, so `qk.chat(id)` is the same key everywhere. Hand-written arrays desync. */
 export const qk = {
   health: () => ["health"] as const,
-  chats: (filter: "all" | "pinned" = "all") => ["chats", filter] as const,
+  chats: () => ["chats"] as const,
+  chatList: (filter: "all" | "pinned" = "all", search?: string) =>
+    ["chats", filter, search ?? null] as const,
   chat: (id: string) => ["chat", id] as const,
   activeRun: (chatId: string) => ["active-run", chatId] as const,
   credits: () => ["credits"] as const,

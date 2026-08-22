@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AppShell } from "@/components/shell/AppShell";
 
 /**
  * The signed-in shell. It carries no auth check: the reference lets an anonymous visitor reach the
@@ -7,5 +8,5 @@ import type { ReactNode } from "react";
  * `chat/[chatId]/layout.tsx`.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <AppShell>{children}</AppShell>;
 }

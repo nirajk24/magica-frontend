@@ -13,12 +13,13 @@ const MAX_HEIGHT = 200;
 /**
  * Resting height of the text area, measured from the captures. The whole box model follows from it:
  * 16px padding + this + a 4px gap + the 34px send button + 16px padding + 2px border reproduces the
- * reference's 136px in a conversation and 96px on the new-chat screen, which is the only difference
- * between the two.
+ * reference's ~132px box.
+ *
+ * The new-chat screen and a conversation use the **same** height. Four readings put the two within
+ * ten pixels of each other and the sign of the gap flips between capture pairs, so it is measurement
+ * noise rather than a second box model.
  */
-const RESTING_HEIGHT = { conversation: 64, "new-chat": 24 } as const;
-
-export type ComposerVariant = keyof typeof RESTING_HEIGHT;
+const RESTING_HEIGHT = 64;
 
 export type ComposerSubmit = { content: string; planMode: boolean };
 
@@ -30,7 +31,6 @@ export type ComposerSubmit = { content: string; planMode: boolean };
  */
 export function Composer({
   chatId,
-  variant = "conversation",
   placeholder = "Send a message...",
   runActive = false,
   stopping = false,
@@ -39,7 +39,6 @@ export function Composer({
   onStop,
 }: {
   chatId: string;
-  variant?: ComposerVariant;
   placeholder?: string;
   runActive?: boolean;
   /** Held from the Stop click until the cancelled turn is on screen, so the control cannot flicker. */
@@ -54,15 +53,13 @@ export function Composer({
   const planMode = useUI((state) => state.planModeChats.includes(chatId));
   const togglePlanMode = useUI((state) => state.togglePlanMode);
 
-  const resting = RESTING_HEIGHT[variant];
-
   useLayoutEffect(() => {
     const element = textarea.current;
     if (!element) return;
 
     element.style.height = "auto";
-    element.style.height = `${Math.min(Math.max(element.scrollHeight, resting), MAX_HEIGHT)}px`;
-  }, [draft, resting]);
+    element.style.height = `${Math.min(Math.max(element.scrollHeight, RESTING_HEIGHT), MAX_HEIGHT)}px`;
+  }, [draft]);
 
   const canSend = draft.trim().length > 0 && !runActive && !pending;
 
