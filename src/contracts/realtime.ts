@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { BlockProjection } from "@/contracts/blocks";
 import { InvocationStatus, ToolDisplay } from "@/contracts/messages";
+import { WaitpointKind } from "@/contracts/api";
 
 export const STREAM_AGENT_TEXT = "agent-text";
 
@@ -48,7 +49,7 @@ export const RunMetadata = z.object({
   ),
   assistantMessageId: z.string().optional(),
   waitpoint: z
-    .object({ id: z.string(), kind: z.string(), payload: z.json() })
+    .object({ id: z.string(), kind: WaitpointKind, payload: z.json() })
     .optional(),
   servedModel: z.string().optional(),
   tokenUsage: z

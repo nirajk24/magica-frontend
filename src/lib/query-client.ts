@@ -1,9 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-/**
- * One factory, so `qk.chat(id)` is the same key in every file. Hand-written key arrays
- * scattered across components is how invalidation silently stops working.
- */
+/** One factory, so `qk.chat(id)` is the same key everywhere. Hand-written arrays desync. */
 export const qk = {
   health: () => ["health"] as const,
   chats: (filter: "all" | "pinned" = "all") => ["chats", filter] as const,
@@ -13,13 +10,11 @@ export const qk = {
 };
 
 /**
- * `refetchOnWindowFocus` is off deliberately: alt-tabbing back mid-stream would refetch the
- * chat and fight the streaming overlay for the same rows.
+ * `refetchOnWindowFocus` is off because alt-tabbing back mid-stream would refetch the chat and
+ * fight the streaming overlay for the same rows.
  *
- * Note for the run-recovery query added in Phase 1 — `qk.activeRun` must override this with
- * `staleTime: Infinity`. It mints a fresh realtime token on every call, so any finite stale
- * time changes the token, which tears down and rebuilds the subscription against a free-tier
- * cap of 10 concurrent connections.
+ * INVARIANT: `qk.activeRun` must override `staleTime` with `Infinity`. It mints a fresh realtime
+ * token per call, so any finite stale time rebuilds the subscription against a 10-connection cap.
  */
 export function createQueryClient(): QueryClient {
   return new QueryClient({

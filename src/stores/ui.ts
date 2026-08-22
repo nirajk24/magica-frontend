@@ -15,13 +15,11 @@ type UIState = {
 };
 
 /**
- * Browser-only state. Anything the server knows belongs in TanStack Query instead — a
- * message list kept here would go stale and never refetch.
+ * Browser-only state. Anything the server knows belongs in TanStack Query — a message list here
+ * would go stale and never refetch.
  *
- * `partialize` is load-bearing: without it the transient fields are written to localStorage
- * and an open tool panel or a stale "stopping" run is restored on reload. Drafts persist
- * because the reference product's send-message PATCH is a presence heartbeat with no content
- * field, so server-side draft sync would be inventing a feature.
+ * INVARIANT: `partialize` must list only the fields that should survive a reload. Without it, an
+ * open tool panel or a stale "stopping" run is restored from localStorage.
  */
 export const useUI = create<UIState>()(
   persist(

@@ -8,10 +8,9 @@ const OPTIONS = ["light", "dark", "system"] as const;
 const subscribe = () => () => {};
 
 /**
- * The active option is painted only after hydration. `theme` is unknowable on the server, so
- * rendering it there guarantees a mismatch — and a mount-flag effect would trigger a second
- * render pass on every load. `useSyncExternalStore` gives the same answer declaratively: the
- * server snapshot is false, the client snapshot is true.
+ * The active option is painted only after hydration — `theme` is unknowable on the server, so
+ * rendering it there guarantees a mismatch. `useSyncExternalStore` reports that without the extra
+ * render pass a mount-flag effect would cost.
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();

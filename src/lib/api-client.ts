@@ -3,10 +3,9 @@ import { ApiErrorEnvelope, Health, type ErrorCode } from "@/contracts";
 import { env } from "@/lib/env";
 
 /**
- * Carries the backend's contract error code so the UI can switch on it —
- * INSUFFICIENT_CREDITS opens the top-up CTA, RUN_ALREADY_ACTIVE is swallowed,
- * VALIDATION_ERROR renders field-level copy. `traceId` goes in the error toast so a
- * reported bug is traceable to a single request.
+ * Carries the backend's contract error code, which is what the UI switches on:
+ * INSUFFICIENT_CREDITS opens the top-up CTA, RUN_ALREADY_ACTIVE is swallowed, VALIDATION_ERROR
+ * renders field-level copy. `traceId` belongs in the error toast.
  */
 export class ApiError extends Error {
   constructor(
@@ -23,19 +22,15 @@ export class ApiError extends Error {
 export type TokenSource = () => Promise<string | null>;
 
 /**
- * The only `fetch` in this repo. Everything above it is a typed service call; everything
- * below it is HTTP.
+ * The only `fetch` in this repo.
  *
- * Auth is Bearer, never cookies: two repos means two origins, so a Clerk cookie set on this
- * domain is never sent to the backend. The token is fetched immediately before every request
- * because the JWT lives about a minute — caching it produces intermittent 401s that read as a
- * backend fault. Responses are `schema.parse`d rather than cast, so backend drift surfaces
- * here with a readable error instead of as `undefined` three components deep.
+ * INVARIANT: auth is Bearer, never cookies — the two repos are separate origins, so a Clerk
+ * cookie set here never reaches the backend. The token must be fetched immediately before each
+ * request; the JWT lives about a minute, so caching it produces intermittent 401s.
  *
- * The body is parsed defensively because not every response comes from `defineRoute`: an
- * unrouted path returns Next's HTML 404, and a proxy or cold start can return HTML too.
- * Reading `res.json()` unguarded would throw a SyntaxError and discard the status code, so a
- * plain 404 would surface as a parse failure instead of NOT_FOUND.
+ * Responses are parsed, not cast, so backend drift surfaces here rather than as `undefined` deep
+ * in a component. The body parse is guarded because an unrouted path returns Next's HTML 404, and
+ * an unguarded `res.json()` would throw and discard the status code.
  */
 export async function request<T>(
   path: string,
@@ -71,10 +66,7 @@ export async function request<T>(
   return schema.parse((json as { data: unknown } | null)?.data);
 }
 
-/**
- * Typed service surface. Routes are added here as their backend phase lands, so a component
- * never names a URL and never sees an unparsed response.
- */
+/** Typed service surface. A component never names a URL or sees an unparsed response. */
 export function createApi(getToken: TokenSource) {
   return {
     getHealth: () => request("/health", {}, Health, getToken),

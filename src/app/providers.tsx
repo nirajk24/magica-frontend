@@ -8,8 +8,8 @@ import { createQueryClient } from "@/lib/query-client";
 import { env } from "@/lib/env";
 
 /**
- * The QueryClient is created in state, not at module scope: a module-level client is shared
- * across requests on the server and would leak one user's cache into another's render.
+ * The QueryClient is created in state, not at module scope — a module-level client is shared
+ * across server requests and would leak one user's cache into another's render.
  */
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);

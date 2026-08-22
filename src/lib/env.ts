@@ -6,9 +6,8 @@ const Env = z.object({
 });
 
 /**
- * Only `NEXT_PUBLIC_*` belongs here. Next.js inlines these at build time, so they must be
- * referenced as literal property accesses rather than looked up dynamically off process.env,
- * which is why the object is spelled out instead of passed whole.
+ * Only `NEXT_PUBLIC_*` belongs here. Next inlines these at build time, so each must be a literal
+ * property access — passing `process.env` whole would leave them undefined.
  */
 export const env = Env.parse({
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
