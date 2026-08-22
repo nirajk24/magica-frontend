@@ -4,6 +4,12 @@ Companion to the backend's `LLD.md` and the shared `ARCHITECTURE.md`. The backen
 this repo owns rendering. **Every visual decision here traces to a capture in the reference library
 (77 files, 10 folders) — nothing is designed from imagination.**
 
+**This file is the *plan*; `UI-SPEC.md` is the *spec*.** Phases, build order and DoD live here; what a
+screen looks like, which capture proves it, the measured values and the numbered `UI-n` / `D-n`
+decisions live there. When the two disagree, UI-SPEC wins — it is corrected against the live product
+as things are found, and several of this file's original assumptions have already been overturned that
+way.
+
 **Two constraints decide more than they look like they should:** auth is **Bearer, never cookies**,
 and `runId` vs `triggerRunId` must never be conflated. Both are spelled out in the sections below —
 getting either wrong fails late and confusingly.
@@ -375,8 +381,12 @@ five seconds**, so it is not throwaway scaffolding.
 Stop button (send arrow → red square; `stoppingRuns` set locally and held until terminal), failed
 turn (`errorMessage` + partial output + tool outcomes + **Retry**), cancelled turn (gray
 `Response was interrupted` pill — derived from status, *not* from a `"(Response stopped)"` text
-suffix), reconnecting pill, `ScrollToBottom`, `AssistantFooter` (credits · copy · **like/dislike rendered DISABLED — `PATCH /messages/:id/feedback` is a Phase-6 route; disabled-with-tooltip is honest, wired-to-nothing is a bug someone will click** ·
-time), error toasts carrying `traceId`.
+suffix), reconnecting pill, `ScrollToBottom`, error toasts carrying `traceId`.
+
+`AssistantFooter` **already shipped in Phase 1** — it is in step 1's own reference capture, so
+splitting it out would have meant a visibly unfinished message row. It renders credits · copy ·
+like/dislike **disabled with a tooltip** (`PATCH /messages/:id/feedback` is a Phase-6 route;
+disabled-with-a-reason is honest, wired-to-nothing is a bug someone will click) · time.
 
 Reference: `06-messages/interrupted__response-was-interrupted-pill__dark.jpg`,
 `04-tool-cards/ai-gen__FAILED-safety+reasoned-retry+tracker-1of3__dark.png`.
@@ -418,8 +428,13 @@ The frontend never computes or estimates a cost — it renders the number it is 
 
 `ToolDetailPanel` as a right-side **overlay, not a layout squeeze** (the captures show content
 staying put), maximize → fullscreen with a `Restore` tooltip, detail rows
-(Tool / Model / Prompt / Size / Quality / Aspect Ratio / Resolution + `View more`), asset strip,
+(Tool / Model / Prompt / Size / Quality / Aspect Ratio / Resolution), asset strip,
 image hover → expand + download.
+
+**`View more` on a tool card is this panel's entry point** — confirmed by clicking it in the live
+product, where the card's fields do not change and the panel opens carrying the same detail plus
+`Output Format` and `Credits used`. Phase 1 ships that link disabled with the reason, so wiring it up
+is this phase's first move. UI-SPEC §3.5.
 
 Reference: `04-tool-cards/detail-side-panel__light.jpg`,
 `04-tool-cards/detail-fullscreen__input-images__light.jpg`.

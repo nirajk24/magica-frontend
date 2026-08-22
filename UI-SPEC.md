@@ -263,7 +263,7 @@ affordance nobody can find is worse than that small divergence.
 | `thinking` (live) | brain icon (`--fg`) + muted italic `Thinking ⌄`, body in a bordered box at `--fg`, streaming token by token. The transcript is trimmed — models end reasoning with a newline, and `whitespace-pre-wrap` would make the box reserve a blank line for it | `ThinkingRow` | `03-streaming/working-1step__thinking-expanded-token__light.jpg` |
 | `thinking` (done) | same row, label becomes italic `Reasoned ⌄` | `ThinkingRow` | `04-tool-cards/step-timeline__…light.jpg` |
 | `text` | markdown prose, outside the group | `TextBlock` | `06-messages/terminal__two-step-groups__light.jpg` |
-| `usage` | never a row — rendered in the assistant footer (UI-9) | — | not captured |
+| `usage` | muted token counts inside the step group, so a collapsed turn hides them (UI-9) | `UsageRow` | not captured |
 | `citations` | muted link list | `CitationsRow` | not captured (UI-9) |
 | `step_update` | clipboard icon + `Step update — <key>: <status>` + ✓ | `StepUpdateRow` | `04-tool-cards/ai-gen__FAILED-red-error+self-recovery__dark.png` |
 | `load_skill` / `read_skill_asset` | lightning icon + `Skill` + ✓ + duration, one line, not expandable | `SkillRow` | `10-questions/asking-questions__card-expanded+waiting__dark.png` (`7ms`, `5ms`, `2.9s`) |
@@ -321,7 +321,8 @@ A `7ms` row is a cache hit and is information, not noise.
 - Body: a two-column label/value grid, label column ≈ 90px and muted. In light themes the body has a
   hairline border; in dark it is a raised filled surface. Depth reverses — that is why `globals.css`
   carries two palettes.
-- `View more` is an accent-coloured link that reveals the remaining fields.
+- `View more` is an accent-coloured link. It **opens the tool detail panel** (Phase 5); it does not
+  reveal the remaining fields in place.
 - A failed card keeps its detail rows and appends the provider's sanitized error as a red paragraph
   **inside the same body**. No credits chip, because nothing was charged.
 
@@ -335,8 +336,14 @@ A `7ms` row is a cache hit and is information, not noise.
 
 ### 3.6 Assets
 
-Rendered once, after the prose, ≈425px wide at an 820px column, rounded ≈8px. Hover shows two dark
-rounded icon buttons at the top-right: expand (opens the image preview, Phase 5) and download.
+Rendered once, after the prose, ≈425px wide at an 820px column, rounded ≈8px.
+
+**Hover shows two dark rounded icon buttons at the top-right**, and each carries a tooltip below it:
+`Use as reference` on the left and `Download` on the right. We ship only `Download` — using an output
+as the next turn's input needs the attachment pipeline, so it is a deliberate omission (D-10) rather
+than a miss.
+
+**Clicking the image opens the Image Preview modal**, not a new tab.
 
 `ui-flows.md` records that the reference briefly renders a generated image **twice** during terminal
 streaming — once from the markdown link and once in the asset strip — before settling. We render
@@ -350,6 +357,9 @@ Two lines, both small and muted:
  ⓢ 0.42M credits
  ⧉   ⑃   👍   👎   2:58 PM
 ```
+
+Nothing else. No token counts — the reference reports them nowhere, and the footer is the one part of
+a turn that is always on screen.
 
 Icons in order: copy · fork/branch · like · dislike, then the time. **Like and dislike render
 disabled with a tooltip until Phase 6** — `PATCH /messages/:id/feedback` is a Phase-6 route, and a
@@ -563,6 +573,7 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 | Files in this task | centred modal ≈470px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
 | Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
 | Image preview | centred wide modal, two columns | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
+| Image preview of a **generated** asset | same modal, two extra rows | a scrollable `Prompt` block with its own `Copy` button at the top, and a `Model` row (`gpt-image-2-text`). `Source` reads `Generated in chat` rather than `Uploaded`. So the panel is source-aware: the captured file was an upload, which is why it shows neither | 6 | observed live, no capture in the library |
 | Credits popover | anchored under the credits chip, right-aligned | `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details` | 6 | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` |
 | Add credits | centred modal ≈390px | title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits` | 6 | `07-modals/add-credits__amounts-autorecharge__light.jpg` |
 | Attach popover | above the paperclip | `Select Asset` / `+ Upload` | 6 | `02-composer/attach-popover__select-asset-upload__light.jpg` |
@@ -646,12 +657,12 @@ People click these; disabled-with-a-reason is honest, silently inert is a bug.
 **UI-8 — Phase 1 disables the send control during a run; the red stop lands in Phase 2** with
 `POST /runs/:id/cancel`. Same rule as UI-7.
 
-**UI-9 — `usage` renders in the assistant footer, `citations` inside the step group.** Neither
-appears in any capture, and both are named in the PDF's content-block list. `citations` reads as a
-timeline row, so it sits in the group. `usage` does not: inside the group it disappears the moment a
-finished turn collapses, which is most of the time. It is filtered out of the rows and the footer
-renders `Message.tokenUsage` instead — a divergence from the reference, which shows token counts
-nowhere, taken because the brief requires the block to render.
+**UI-9 — `usage` and `citations` both render inside the step group.** Neither appears in any capture,
+and both are named in the PDF's content-block list. A finished group is collapsed, so at rest neither
+is visible — which is what the reference shows — and both are reachable on expand, which is what the
+brief asks for. **The assistant footer reports no token counts**: an earlier build put them there and
+it was the wrong call, because the reference surfaces token usage nowhere at all and the footer is
+always visible.
 
 **UI-10 — plain `<img>` for remote assets, not `next/image`.** Asset hosts are arbitrary CDNs, so
 `images.remotePatterns` cannot be enumerated. Costs one ESLint rule off.
@@ -724,6 +735,7 @@ off or could be better, just flag it."
 | D-7 | **Voice input not built**; mic is visual only | Out of scope, and the PDF never asks for it |
 | D-8 | **Projects / Library / Tools / API-MCP / Unfair Advantage are placeholder pages** | Locked scope: the sidebar rows exist for fidelity, the pages do not |
 | D-9 | **Clerk stays on its development instance**, watermark included | A production instance needs a custom domain we will not buy |
+| D-10 | **No `Use as reference` button on a generated asset** — only `Download` | Feeding an output back as the next turn's input needs the attachment pipeline, which is Phase 6 at the earliest. One button that works beats two where one lies |
 
 ---
 
@@ -770,7 +782,7 @@ recovery".
 |---|---|---|
 | Credits | BigInt string → microcredits / 1e6 + `M`, to a fixed number of **significant digits**, never fixed decimals. Two for amounts, four for balances and estimates. Never `Number()` | `0.010M credits` · `0.42M credits` · `0.0059M` · `29.96M` · `~0.2108M` |
 | Duration | ms under 1s; `s` with one decimal under a minute; `Nm Ns` above | `110ms` · `7ms` · `5.6s` · `9.3s` · `1m 5s` · `4m 25s` |
-| Message time | locale 12-hour, client-side only | `2:53 PM` |
+| Message time | today → locale 12-hour; older → `MMM d`; a different year adds it. Client-side only | `2:53 PM` · `Aug 21` · `Aug 21, 2025` |
 | Task list dates | relative | `3 minutes ago` · `1 hour ago` · `4 hours ago` |
 | File rows | `TYPE · time · size` | `PNG · 02:55 PM · 1.3 MB` |
 | Plan estimates | `~` prefix, server-supplied | `~0.2108M` · `Estimated total ~0.2108M credits` |
@@ -832,4 +844,6 @@ recovery".
    streaming turn at 430px is not.
 3. **Search with results** — the Tasks-page search *field* is captured, an active query is not.
 4. **`usage` and `citations` rows** — named in the PDF, absent from every capture. UI-9.
+6. **The generated-asset image preview** — the library only captured an *uploaded* file's preview, so
+   the `Prompt` and `Model` rows were found by clicking a generated one in the live product.
 5. **`stopping` state** — named in the PDF's status model, not captured. Derived client-side.
