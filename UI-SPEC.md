@@ -1,0 +1,756 @@
+# UI Specification — screens, routes, and the decisions behind them
+
+Companion to `LLD.md`. **`LLD.md` says *when* something is built; this file says *what* it looks
+like and *which capture proves it*.** Every screen below names the capture files it was read from, so
+a claim can be checked rather than trusted.
+
+**Precedence when two sources disagree**
+
+1. `Agent Chat Hackathon _ Work Trial.pdf` — the scope authority. Wins everything.
+2. The captures in the reference library — the pixel authority for anything the PDF does not name.
+3. `ui-flows.md` — behaviour observed in the recordings, for states no still frame shows.
+4. This file — decisions made where 1–3 were silent or in conflict.
+
+Capture paths are written relative to the reference library (`06-messages/chat__…`). The library
+itself is **not** in this repo and never enters it; only the filenames travel, the same way `LLD.md`
+already cites them.
+
+Measurements are read off captures at the widths noted. They are start values to verify in the
+browser beside the capture, not gospel.
+
+---
+
+## 0. What the PDF requires of the UI, verbatim
+
+The lines below are the graded requirements. Everything in this document exists to satisfy one of
+them.
+
+| PDF § | Requirement |
+|---|---|
+| 4 Layout | "Responsive chat shell with persistent navigation, message list, pinned composer, and optional artifact panel" |
+| 4 Composer | "Multiline input, OpenRouter Free status, attachments, media picker, **plan mode**, send, interrupt, and stop states" |
+| 4 Accessibility | "Keyboard navigation, focus management, screen-reader labels, and visible error recovery" |
+| 4 Responsive | "Desktop and mobile layouts preserve the same conversation and controls" |
+| 4 Fidelity | "Match the live product's spacing, empty states, transitions, loading states, and copy" |
+| 5 Content Blocks | "Render text, thinking, tool use, tool result, reasoning, citations, and usage **without losing ordering**" |
+| 5 Failure States | "Failed and cancelled turns remain visible, retryable, and distinguishable from successful messages" |
+| 8 Chat Management | create, cursor-paginated list **and message history**, search titles + message content, favourite, delete |
+| 9 Conversation Stream | "A **virtualized** message list with a stable pinned composer and **no duplicate terminal messages**" |
+| 9 Status Model | "thinking → working → complete, failed, cancelled, or **stopping**" |
+| 9 Tool Detail | "sanitized tool inputs, outputs, duration, credits, and user-safe failure details" |
+| 9 Reconnect | "bounded retries, token refresh, and REST fallback when realtime transport fails" |
+| 10 Credits | balance, per-tool cost, per-turn total, ledger, insufficient-credits block with a clear message |
+| 11 Diagnosability | "Every failed turn must be explainable from the UI alone — status, safe error message, tool outcomes, partial output, and retry path" |
+| Winners | "virtualized messages, stable selectors" · "easy to add … **result renderers**" |
+
+Two of these overturn assumptions worth calling out explicitly:
+
+- **Virtualization is required, not an optimization.** §9 names it in the requirement itself and the
+  winners list names it again. It stays in Phase 1 (step 8) — see UI-14.
+- **Plan mode is required and the reference has no such control.** A deliberate,
+  README-flagged divergence — see D-1.
+
+---
+
+## 1. Route map
+
+| Route | Screen | Auth | Phase | Reference URL |
+|---|---|---|---|---|
+| `/` | redirect → `/chat` | — | 3 | — |
+| `/chat` | Empty state ("Your AI worker") | required | 3 | `app.magica.com/chat` |
+| `/chat/new` | Bare composer, no chat yet | required | **1** | (ours; see UI-2) |
+| `/chat/[chatId]` | **The chat screen** | required | **1** | `app.magica.com/chat/{id}` |
+| `/chat/recent` | Tasks page (chat list) | required | 3 | `app.magica.com/chat/recent` |
+| `/sign-in/[[...rest]]` | Clerk catch-all | public | 0 | Clerk-hosted equivalent |
+| `/projects` `/library` `/tools` `/api-mcp` `/unfair-advantage` | Placeholder pages | required | 7 | same paths |
+
+Everything except `/sign-in` lives under `src/app/(app)/`, whose layout is the auth boundary. No
+route is protected by a path pattern (see `proxy.ts`).
+
+### 1.1 Navigation flow
+
+```
+                            ┌──────────────────┐
+  not signed in  ─────────▶ │  /sign-in        │ ── Clerk ──┐
+                            └──────────────────┘            │
+                                                            ▼
+   ┌────────────────────────────────────────────────────────────────────────┐
+   │                        (app) — signed-in shell                         │
+   │                                                                        │
+   │   sidebar "New task" ─────────────────▶ /chat/new                      │
+   │   sidebar logo / "/"  ────────────────▶ /chat        (empty state)      │
+   │   empty-state composer send ──────────▶ /chat/{id}   (server creates)   │
+   │   template card click ────────────────▶ /chat        (prefills only)    │
+   │                                                                        │
+   │   /chat/new  ──send──▶ router.replace ▶ /chat/{id}                      │
+   │                                                                        │
+   │   sidebar "Tasks" / "Recent tasks" ───▶ /chat/recent ──row──▶ /chat/{id}│
+   │   Tasks row context menu ─────────────▶ stays on /chat/recent           │
+   │                                                                        │
+   │   /chat/{id}  ─ files icon ───────────▶ Files modal      (overlay)      │
+   │                ─ credits chip ────────▶ Credits popover  (overlay)      │
+   │                ─ tool card expand ───▶ Tool detail panel (overlay)      │
+   │                ─ asset click ─────────▶ Image preview    (overlay)      │
+   │                ─ waitpoint pending ──▶ docked question panel           │
+   │                                          (REPLACES the composer)        │
+   └────────────────────────────────────────────────────────────────────────┘
+```
+
+Overlays never change the URL. They are React state, not routes — the captures show the chat content
+staying exactly where it was behind every one of them.
+
+### 1.2 Two routing decisions
+
+**`/chat` is the empty state, `/` redirects to it.** The reference's empty state lives at `/chat`,
+not at the root, and cloning the URL costs one redirect. This differs from the file map in `LLD.md`
+§1, which put the empty state at `app/page.tsx`.
+
+**`/chat/new` is ours, and it is load-bearing.** There is no `POST /chats`; the send route creates
+the chat when `:id === 'new'`. `chatId === 'new'` means: skip the chat query (a `GET /chats/new`
+would 404), render a bare composer, and on send `router.replace` to the real id. Without it there is
+no way to start a conversation before the Phase-3 sidebar exists — and it is the demo's first five
+seconds.
+
+---
+
+## 2. The shell — geometry shared by every screen
+
+Captures: `01-shell/empty-state__{light,dark}.png` · `01-shell/sidebar__collapsed-rail__dark.png` ·
+`01-shell/mobile-430__{empty-state-templates,sidebar-drawer-open}__dark.png` ·
+`06-messages/chat__user-bubbles+assistant-footer__light.jpg`
+
+```
+┌──────────┬───────────────────────────────────────────────────────────┐
+│ sidebar  │  top bar:  [model pill ⌄]              [files] [credits]  │
+│  260px   ├───────────────────────────────────────────────────────────┤
+│          │                                                           │
+│  nav     │            ┌───────────────────────────────┐              │
+│          │            │   content column ~820px max   │              │
+│  Recent  │            │   centred in the remaining    │              │
+│  tasks   │            │   width                       │              │
+│          │            └───────────────────────────────┘              │
+│  ──────  │                                                           │
+│  footer  │            ┌───────────────────────────────┐              │
+│          │            │   composer — same width,      │              │
+│  user    │            │   pinned to the bottom        │              │
+└──────────┴────────────└───────────────────────────────┘──────────────┘
+```
+
+Measured at a 1400px viewport: sidebar 260px, content column ≈ 820px, composer aligned to the same
+column. The content column is centred in the space *left of* the sidebar, so it shifts when the
+sidebar collapses.
+
+### 2.1 Breakpoint ladder
+
+| Width | Sidebar | Evidence |
+|---|---|---|
+| ≥ 1024px | expanded, 260px | all desktop captures |
+| ~930px | collapses to an icon rail (~48px) | `05-plan-cards/progress-tracker__2of3-nextstep__narrow-930__dark.png` |
+| ~640px | gone entirely; content is full width | `04-tool-cards/ai-gen__expanded-fields__narrow-640__dark.png` |
+| ≤ 768px (mobile) | overlay drawer ~2/3 width, content dimmed behind | `01-shell/mobile-430__sidebar-drawer-open__dark.png` |
+
+The two "narrow" captures are the responsive evidence: they were taken at those widths in the real
+product, so the ladder is observed rather than invented.
+
+### 2.2 Sidebar anatomy
+
+**Expanded (260px).** Header: `Magica` wordmark, search icon, panel-collapse icon. Nav rows (icon +
+label, ~36px tall, rounded hover): New task · Tasks · Projects · Library · Tools · API / MCP ·
+Unfair Advantage. Section label `Recent tasks` (small, muted) then chat rows — single line,
+truncated with an ellipsis, active row has a filled background. Empty: centred muted `No tasks yet`.
+
+**Footer, collapsible.** Collapsed shows `⋮ More`. Expanded shows `⋮ Less` then: `Available Credits`
++ balance (right-aligned, monospace-ish) · green pill `+15M credits on 21 Sep '26` · `Add Credits`
+(solid dark, full width) · `Settings` | `Updates` (two ghost buttons side by side) · `Invite team
+members →` · a theme trio segmented control (system / light / dark icons) · the user row (avatar +
+name).
+
+**Collapsed rail (~48px).** Icon-only, same order, plus a gear pinned at the bottom. No labels, no
+Recent tasks.
+
+**User menu** (`01-shell/user-menu__dark.png`) opens upward from the user row: avatar + name + email
+header, `Manage account`, `Sign out`. This is Clerk's `<UserButton/>` surface — we render Clerk's
+component and accept its menu rather than rebuilding it (UI-6).
+
+### 2.3 Top bar
+
+Left: the model pill — a small rounded chip, avatar-ish glyph + label + chevron. The reference reads
+`Magica Auto`; ours reads the OpenRouter free model (UI-4). **There is no model selector in the
+composer** — the model is chat-level and lives here. Right: folder icon (files in this task) and the
+credits chip `⚡ 29.96M`. On the empty state the right side shows an `Upgrade` pill instead and there
+is no folder icon — nothing to scope files to.
+
+---
+
+## 3. Screen — the chat screen · `/chat/[chatId]` · Phase 1
+
+The graded screen. Captures, in the order they answer questions:
+
+| Question | Capture |
+|---|---|
+| Overall layout, bubbles, footer | `06-messages/chat__user-bubbles+assistant-footer__light.jpg` |
+| First row of a new turn | `03-streaming/thinking__first-row-newchat__light.jpg` |
+| Thinking row streaming mid-token | `03-streaming/working-1step__thinking-expanded-token__light.jpg` |
+| A full expanded step timeline | `06-messages/completed-cards…` → `05-plan-cards/completed-cards__collapsed-subtitle__light.jpg` |
+| Skill / Reasoned / Model-schema rows | `04-tool-cards/step-timeline__skill+reasoned+model-schema__light.jpg` |
+| Tool card running, expanded | `04-tool-cards/ai-gen__running-expanded-viewmore__light.jpg` |
+| Tool card completed + credits chip | `04-tool-cards/ai-gen__completed+verify-2nd-gen__light.jpg` |
+| Tool card failed + red error | `04-tool-cards/ai-gen__FAILED-red-error+self-recovery__dark.png` |
+| Terminal text + inline asset | `03-streaming/terminal-text-streaming__image-inline__light.jpg` |
+| Two collapsed step groups | `06-messages/terminal__two-step-groups__light.jpg` |
+| Footer + hover affordances, dark | `06-messages/footer__credits-icons-time__dark.png` |
+| Scroll-to-bottom + image hover | `06-messages/capabilities-answer+scroll-btn+image-hover__light.jpg` |
+| Interrupted turn | `06-messages/interrupted__response-was-interrupted-pill__dark.jpg` |
+| Mid-run reload | `09-recovery/post-reload__sidebar-skeletons+resumed-thinking__light.jpg` |
+
+### 3.1 User message
+
+Right-aligned bubble, `--surface` background, heavily rounded (≈16px), padding ≈10px/16px, max width
+≈ 70% of the column. No avatar.
+
+**Attachments render above the text, inside the same bubble container, and larger than you would
+guess** — the image is roughly the full bubble width with the text sitting beneath it. See the user
+bubble in `03-streaming/working-1step__thinking-expanded-token__light.jpg`.
+
+Hover reveals, below and right of the bubble: the timestamp and a copy icon
+(`06-messages/footer__credits-icons-time__dark.png`).
+
+While an attachment image is still loading, the reference shows a **grey block the size of the
+image**, not a collapsed row — visible in the reload capture. Assets need a sized placeholder.
+
+### 3.2 Assistant message
+
+No bubble, no avatar. Plain markdown prose on the canvas, left-aligned, ≈16px with generous
+line-height. Bold lead-ins, ordered and unordered lists and inline images all appear in the captures,
+so the renderer is real markdown, not `white-space: pre-wrap`.
+
+Order within one assistant message, repeated per segment:
+
+```
+[ step group header ]        Working · N steps ⌄   /   Completed N steps ⌄
+  [ timeline rows ]          thinking · tool cards · step updates · usage
+[ prose ]                    text blocks, rendered as markdown
+[ assets ]                   generated images/videos, once, after the text
+[ footer ]                   credits · copy · fork · like · dislike · time
+```
+
+The two-step-groups capture is the proof that prose sits **outside** the group: `Completed 5 steps`
+then a paragraph, then `Completed 6 steps` then another paragraph and the image.
+
+### 3.3 Step group
+
+`Working · N steps ⌄` while the segment is live, `Completed N steps ⌄` once it is done. Small, muted,
+with a chevron; the group is collapsible and **defaults to collapsed once completed** — the terminal
+capture shows a header with no rows under it, and
+`05-plan-cards/completed-cards__collapsed-subtitle__light.jpg` shows the same header expanded after a
+click.
+
+`N` counts timeline rows in the segment — reasoning blocks *and* tool invocations, not just tools.
+
+### 3.4 Timeline rows
+
+| Block / tool | Row | Renderer | Capture |
+|---|---|---|---|
+| `thinking` (live) | brain icon + italic `Thinking ⌄`, body in a bordered box, streaming token by token | `ThinkingRow` | `03-streaming/working-1step__thinking-expanded-token__light.jpg` |
+| `thinking` (done) | same row, label becomes italic `Reasoned ⌄` | `ThinkingRow` | `04-tool-cards/step-timeline__…light.jpg` |
+| `text` | markdown prose, outside the group | `TextBlock` | `06-messages/terminal__two-step-groups__light.jpg` |
+| `usage` | muted token counts, inside the group | `UsageRow` | not captured — hidden by default collapse (UI-9) |
+| `citations` | muted link list | `CitationsRow` | not captured (UI-9) |
+| `step_update` | clipboard icon + `Step update — <key>: <status>` + ✓ | `StepUpdateRow` | `04-tool-cards/ai-gen__FAILED-red-error+self-recovery__dark.png` |
+| `load_skill` / `read_skill_asset` | lightning icon + `Skill` + ✓ + duration, one line, not expandable | `SkillRow` | `10-questions/asking-questions__card-expanded+waiting__dark.png` (`7ms`, `5ms`, `2.9s`) |
+| `get_model_schema` | wrench icon + `Model schema` + status + duration + chevron; body = one `Model ID` row | `ModelSchemaCard` | `04-tool-cards/model-schema__cached-7ms+seedance__light.jpg` |
+| `gpt_image_2` / `crop_image` / `merge_videos` | sparkles icon + `AI Generation` + status + duration, credits chip right; body = detail rows + `View more` + output | `AiGenerationCard` | `04-tool-cards/ai-gen__running-expanded-viewmore__light.jpg` |
+| `submit_plan` | clipboard icon + plan microstates (§4) | `PlanCard` | all of `05-plan-cards/` |
+| `ask_questions` | speech-bubble icon + `Asking questions` / `User input received` | `QuestionsCard` | all of `10-questions/` |
+| anything unknown | generic card from the registry's `display.label` + `display.icon` | `ToolCard` | — |
+
+**Durations are always rendered**, including cache hits: `110ms`, `5.6s`, `7ms`, `1m 5s`, `4m 25s`.
+A `7ms` row is a cache hit and is information, not noise.
+
+### 3.5 Tool card anatomy
+
+```
+ ✦  AI Generation   ✓  🖼  ⏱ 1m 5s                          0.21M  ⌄
+   ┌──────────────────────────────────────────────────────────────┐
+   │  Tool      generate                                          │
+   │  Model     gpt-image-2-edit                                  │
+   │  Prompt    Convert this app UI screenshot into …             │
+   │  Size      Auto                                              │
+   │  Quality   High                                              │
+   │  View more                                                   │
+   │  Error: 400 Your request was rejected by the safety system…  │  ← failed only, red
+   └──────────────────────────────────────────────────────────────┘
+```
+
+- Header: icon · bold label · status glyph · optional modality glyph · clock + duration. Right edge:
+  credits chip (completed only) and the expand chevron.
+- Body: a two-column label/value grid, label column ≈ 90px and muted. In light themes the body has a
+  hairline border; in dark it is a raised filled surface. Depth reverses — that is why `globals.css`
+  carries two palettes.
+- `View more` is an accent-coloured link that reveals the remaining fields.
+- A failed card keeps its detail rows and appends the provider's sanitized error as a red paragraph
+  **inside the same body**. No credits chip, because nothing was charged.
+
+| Status | Glyph | Notes |
+|---|---|---|
+| `pending` | none / muted | rare, brief |
+| `running` | spinner ⟳ | accent-coloured |
+| `completed` | ✓ in a circle | green-ish |
+| `failed` | ⊗ in a circle | red |
+| `cancelled` | muted, no duration emphasis | derived from run status |
+
+### 3.6 Assets
+
+Rendered once, after the prose, ≈425px wide at an 820px column, rounded ≈8px. Hover shows two dark
+rounded icon buttons at the top-right: expand (opens the image preview, Phase 5) and download.
+
+`ui-flows.md` records that the reference briefly renders a generated image **twice** during terminal
+streaming — once from the markdown link and once in the asset strip — before settling. We render
+assets once, after the text. Recorded as D-5.
+
+### 3.7 Assistant footer
+
+Two lines, both small and muted:
+
+```
+ ⓢ 0.42M credits
+ ⧉   ⑃   👍   👎   2:58 PM
+```
+
+Icons in order: copy · fork/branch · like · dislike, then the time. **Like and dislike render
+disabled with a tooltip until Phase 6** — `PATCH /messages/:id/feedback` is a Phase-6 route, and a
+button wired to nothing is a bug a grader will click. Fork is not in scope at all and is disabled on
+the same grounds (UI-7).
+
+### 3.8 Composer
+
+Captures: `02-composer/*` · every chat capture.
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ [attachment chips, when present]                               │
+│ Send a message...                                              │
+│                                                                │
+│ 📎  ⌥plan                                        🎙   ( ↑ )     │
+└────────────────────────────────────────────────────────────────┘
+```
+
+- Rounded ≈12–16px, `--surface` background, no visible border in light, subtle border in dark.
+- Placeholder: `Send a message...` inside a chat, `Assign a task or ask anything...` on the empty
+  state. Copy is graded — use exactly these.
+- Auto-grows with content; Enter sends, Shift+Enter inserts a newline.
+- Left icon row: paperclip (attach popover) and, in the reference, a plug = "Connect apps" tooltip.
+  Integrations are out of scope, so **the plug slot becomes our plan-mode toggle** (D-1).
+- Right: mic (visual only, out of scope) and the send control — a circular arrow that becomes a
+  **red rounded square stop** while a run is active.
+- Attachment chip: small thumbnail with a round ✕ badge on its top-right corner, above the textarea
+  (`02-composer/attachment-chip__thumbnail-x__light.jpg`).
+- Attach popover, anchored above the paperclip: caption "Add a file from your device or select one
+  from your library", then `Select Asset` (ghost, full width) and `+ Upload` (solid, full width).
+
+Phase-1 reality: the send control is **disabled** while a run is active. The red stop button ships in
+Phase 2 with the cancel route (UI-8).
+
+### 3.9 Floating scroll-to-bottom
+
+A circular ⬇ button centred above the composer, visible only when scrolled up
+(`06-messages/capabilities-answer+scroll-btn+image-hover__light.jpg`). Phase 2.
+
+### 3.10 Turn states
+
+| State | Rendering | Capture |
+|---|---|---|
+| `thinking` | `Thinking ⌄` row alone at the top-left, user bubble top-right, stop button already red | `03-streaming/thinking__first-row-newchat__light.jpg` |
+| `working` | `Working · N steps ⌄` header, N incrementing live | `04-tool-cards/step-timeline__…` |
+| `waiting` | plan card actionable, or `Waiting for your input...` under a questions card | `05-plan-cards/actionable__…` · `10-questions/asking-questions__card-expanded+waiting__dark.png` |
+| `stopping` | client-only, held from Stop click until terminal | not captured — derived (`stoppingRuns`) |
+| `complete` | `Completed N steps`, prose, assets, footer | `06-messages/terminal__two-step-groups__light.jpg` |
+| `failed` | partial output + tool outcomes preserved, `errorMessage`, Retry | `04-tool-cards/ai-gen__FAILED-safety+reasoned-retry+tracker-1of3__dark.png` |
+| `cancelled` | full-width bordered row `ⓘ Response was interrupted`, muted, then the footer | `06-messages/interrupted__response-was-interrupted-pill__dark.jpg` |
+
+The interrupted state is derived from `status === 'cancelled'`, **not** from a `"(Response stopped)"`
+text suffix. The reference's own API appends that suffix; rendering it as content would put a string
+in the transcript that the user never typed.
+
+### 3.11 Reload recovery
+
+`09-recovery/reload__fullpage-spinner.jpg` → a blank page with a small centred spinner.
+`09-recovery/post-reload__sidebar-skeletons+resumed-thinking__light.jpg` → the chat paints **before**
+the sidebar list, so Recent tasks is a stack of skeleton bars while the messages are already there.
+Attachment images show sized grey placeholders. The `Thinking` row resumes live at the bottom and the
+composer already shows the red stop.
+
+That ordering is a requirement, not an accident: the chat query and the chats query are independent,
+and the chat must not wait for the list.
+
+---
+
+## 4. Screen — plan approval (inline, in the chat screen) · Phase 4
+
+Captures: all 14 files in `05-plan-cards/`. The plan card is a timeline row, **not an overlay** — the
+PDF calls it an "approval overlay" but the reference renders it inline, and the reference wins on
+appearance.
+
+Microstates, in lifecycle order:
+
+1. `Plan submitted ⟳` — brief, while the plan registers (`plan-submitted__spinner__light.jpg`)
+2. **Actionable card** (`actionable__runall-stepbystep-requestchanges__light.jpg`) —
+   Title (bold) + overview paragraph · numbered steps, each with a title, a description and a
+   right-aligned per-step credit chip `◈ ~0.2108M` · `Estimated total` row ·
+   action row: left hint `Enter run all` (a kbd chip + muted text), right
+   `Request Changes` (ghost) · `Step by Step` (ghost) · `Run All` (solid dark, ▶).
+3. **Request Changes** (`request-changes__inline-textarea__light.jpg`) — a textarea expands in-card,
+   placeholder `What would you like changed? (e.g., 'Skip the narration' or 'Use a more cinematic
+   style')`, hint `⌘ + Enter to submit changes`.
+4. `Changes requested ↻ ⏱36.3s` in **orange**, collapsed to a header + one-line subtitle
+   `Convert Screenshot to Dark Mode (1 steps)`, expandable to detail rows ending in
+   `Result  Changes requested: Also add a bit of flair`
+   (`changes-requested__orange+result__light.jpg`).
+5. `Plan approved ⟳` → `Plan approved ✓ ⏱9.3s`, same collapse behaviour, `Result  Approved by user`
+   (`plan-approved__{pending-spinner,done-9.3s}__light.jpg`).
+6. Completed cards collapse to header + subtitle + chevron; click re-expands
+   (`completed-cards__collapsed-subtitle__light.jpg`).
+
+**Step-by-step mode** (`05-plan-cards/step-mode__*`, `06-messages/step-mode__*`): approval sends
+`executionMode: "step_by_step"`, then the transcript shows
+`📋 Setting up execution plan — <title> (3 steps) ✓` → bold `Execution mode is step-by-step…` →
+`📋 Step update — <key>: in_progress ✓` → the tool runs → `Step update — …: completed — <note>` →
+`Step 1 is done — here's the image:` + a remaining-steps list + a check-in question, and **the turn
+ends**. The user sends `Next step.` and a new turn continues.
+
+**Plan progress card** (`progress-tracker__{0of3-checklist,1of3-progressbar-cost}__dark.png`):
+bold title left, `1/3` right, a thin accent progress bar beneath, then step rows — green ✓ with a
+completion note / accent spinner / empty checkbox — each with the **actual** cost right-aligned
+(`0.16M`). It persists across turns and reloads, from `metadata.activePlan` live and
+`chat.activePlan` on read, through the same component.
+
+**Per-step credits come from the server.** `submit_plan` steps are priced through the tool registry.
+The frontend renders the number it is given and never computes or estimates one.
+
+---
+
+## 5. Screen — the Options waitpoint ("Asking questions") · Phase 6
+
+Captures: all 7 files in `10-questions/`. This is the PDF's "Options" waitpoint (p109) and it is
+graded under "easy to add … waitpoint types" (p538).
+
+**In the transcript** — a timeline card: `💬 Asking questions ⟳` + chevron; body is a label/value
+table with `Message` (a framing sentence) then `Q1 *`, `Q2 *`, … where the asterisk means required;
+`View more` when there are more than about four rows. Directly under the card, in plain prose:
+`Waiting for your input...`. On resolve the header retitles to **`User input received`** and every row
+renders `question → answer` (`user-input-received__resolved-answers__dark.png`).
+
+**The input panel is docked at the bottom and replaces the composer.** Header: the question text
+left, `‹ n of m ›` pager and `✕` right. One question at a time.
+
+| Type | Body | Footer | Keyboard hint |
+|---|---|---|---|
+| image | `Images (0/3)`, dashed drag-and-drop zone with an upload glyph, `Drag & drop your files or Browse Files`, then a full-width `Select from Assets` row | `Save & Next` (disabled until valid) · `Skip` | `Enter to submit · Esc to skip` |
+| text | single-line `Type your answer...` | `Save & Next` · `Skip` | `Enter to submit · Esc to skip` |
+| select | numbered options, one tagged `Recommended`, chevron on the focused row, a `✎ Something else` escape hatch on the footer's left | `Skip` only | `↑↓ to navigate · Enter to select · Esc to skip` |
+
+Hints render below the panel as centred kbd chips.
+
+Behaviour that matters: **skip is always available, even on required questions** — the UI never
+blocks and the agent handles the gap in reasoning. `✕` leaves the waitpoint pending and must leave a
+way back in. Answers accumulate client-side and submit **once**. The tool can be called again in the
+same turn, so a second, smaller round (`1 of 2`) is a normal state
+(`asking-questions__round2-after-skips+answers-inline__dark.png`).
+
+---
+
+## 6. Screen — empty state · `/chat` · Phase 3
+
+Captures: `01-shell/empty-state__{light,dark}.png` · `02-composer/template-prefill__*` ·
+`01-shell/mobile-430__empty-state-templates__dark.png`
+
+Centred column: indigo ghost logo · a **live clock** `2:10 ᴾᴹ` (small, meridiem superscripted) ·
+h1 `Your AI worker` · subtitle `Work at the speed of thought.` · the composer with the
+`Assign a task or ask anything...` placeholder · a row of template category tabs
+(`All · Viral Video Formats · Video Special Effects · Content Creation · Branding & Design ·
+Image & Editing`) · a three-column masonry grid of template cards (image, bold title, one-line
+description).
+
+Clicking a template **prefills the composer** and does not send
+(`02-composer/template-prefill__image-editing__dark.png` shows the composer holding a long generated
+prompt while the grid stays put). Template cards load as grey skeleton blocks.
+
+Sidebar shows `No tasks yet`. Top bar has no folder icon.
+
+---
+
+## 7. Screen — Tasks · `/chat/recent` · Phase 3
+
+Captures: `01-shell/tasks-page__{list-filter-select,skeletons-filter-search,select-mode-0selected,select-mode-2selected,context-menu-pin-rename-delete}` (4 dark, 1 light)
+
+- h1 `Tasks` left. Toolbar right: `Filter by All ⌄` (ghost) · `Select tasks` (ghost) · `⊕ New task`
+  (solid pill).
+- Full-width search field, magnifier + `Search tasks...`.
+- Rows: title left, relative date right (`3 minutes ago`, `1 hour ago`, `4 hours ago`), no dividers,
+  generous row height, hover background.
+- Loading: eight skeleton bars of varying width plus a short bar in the date column.
+- **Select mode**: `Select tasks` becomes `Done`; a header row appears with a master checkbox and
+  `2 Selected` on the left, and move-to-project / trash / ✕ icons on the right; each row gains a
+  checkbox and selected rows are highlighted.
+- **Row context menu**: `Pin to top` · `Rename` · `Duplicate` · `Add to project ▸` (submenu:
+  `Create project`) · `Delete` (red).
+
+Search covers titles **and message content** (PDF §8). `Duplicate` and `Add to project` belong to
+Projects, which is out of scope — they render disabled with a tooltip (UI-7).
+
+---
+
+## 8. Overlays
+
+| Overlay | Kind | Anchor / geometry | Phase | Capture |
+|---|---|---|---|---|
+| Tool detail | right-side **overlay**, ≈530px, full height, shadowed | content behind stays put and is clipped, **not** squeezed | 5 | `04-tool-cards/detail-side-panel__light.jpg` |
+| Tool detail, maximized | full-window, `Restore` tooltip on the toggle | — | 5 | `04-tool-cards/detail-fullscreen__input-images__light.jpg` |
+| Files in this task | centred modal ≈470px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
+| Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
+| Image preview | centred wide modal, two columns | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
+| Credits popover | anchored under the credits chip, right-aligned | `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details` | 6 | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` |
+| Add credits | centred modal ≈390px | title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits` | 6 | `07-modals/add-credits__amounts-autorecharge__light.jpg` |
+| Attach popover | above the paperclip | `Select Asset` / `+ Upload` | 6 | `02-composer/attach-popover__select-asset-upload__light.jpg` |
+| Settings / Upgrade / Clerk | reference-only | — | — | `07-modals/{settings__account__dark,upgrade__*,clerk__*}` |
+
+The side panel and the image preview can be open **at the same time** (`ui-flows.md`), so overlay
+state is not a single slot.
+
+Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-3).
+
+---
+
+## 9. Component → file → capture → phase
+
+| Component | File | Capture | Phase |
+|---|---|---|---|
+| `MessageList` | `components/chat/MessageList.tsx` | `06-messages/chat__…` | 1 |
+| `MessageRow` | `components/chat/MessageRow.tsx` | `06-messages/chat__…` | 1 |
+| `Composer` | `components/chat/Composer.tsx` | `02-composer/*` | 1 |
+| `StreamingOverlay` | `components/chat/StreamingOverlay.tsx` | `03-streaming/*` | 1 |
+| `AssistantFooter` | `components/chat/AssistantFooter.tsx` | `06-messages/footer__…dark.png` | 1 |
+| `AssetStrip` | `components/chat/AssetStrip.tsx` | `03-streaming/terminal-text-streaming__…` | 1 |
+| `AttachmentChip` | `components/chat/AttachmentChip.tsx` | `02-composer/attachment-chip__…` | 6 |
+| `ScrollToBottom` | `components/chat/ScrollToBottom.tsx` | `06-messages/capabilities-answer+scroll-btn…` | 2 |
+| `TextBlock` `ThinkingRow` `UsageRow` `CitationsRow` `StepUpdateRow` | `components/blocks/` | §3.4 | 1 |
+| `StepGroup` | `components/blocks/StepGroup.tsx` | `06-messages/terminal__two-step-groups…` | 1 |
+| `ToolCard` (generic fallback) | `components/blocks/ToolCard.tsx` | — | 1 |
+| `AiGenerationCard` | `components/blocks/AiGenerationCard.tsx` | `04-tool-cards/ai-gen__*` | 1 |
+| `ModelSchemaCard` | `components/blocks/ModelSchemaCard.tsx` | `04-tool-cards/model-schema__…` | 1 |
+| `SkillRow` | `components/blocks/SkillRow.tsx` | `04-tool-cards/step-timeline__…` | 1 |
+| `PlanCard` | `components/blocks/PlanCard.tsx` | `05-plan-cards/*` | 4 |
+| `PlanProgressCard` | `components/blocks/PlanProgressCard.tsx` | `05-plan-cards/progress-tracker__*` | 6 |
+| `QuestionsCard` | `components/blocks/QuestionsCard.tsx` | `10-questions/*` | 6 |
+| `QuestionPanel` | `components/questions/QuestionPanel.tsx` | `10-questions/question__*` | 6 |
+| `Sidebar` `TopBar` `CreditsChip` `ThemeToggle` `UserFooter` | `components/shell/` | `01-shell/*` | 3 (ThemeToggle: 0) |
+| `EmptyState` `TemplateGallery` | `components/shell/` | `01-shell/empty-state__*` | 3 |
+| `TasksPage` rows, toolbar, select mode, context menu | `app/(app)/chat/recent/` | `01-shell/tasks-page__*` | 3 |
+| `ToolDetailPanel` | `components/panels/ToolDetailPanel.tsx` | `04-tool-cards/detail-*` | 5 |
+| `FilesModal` `MediaLibrary` `ImagePreview` `AddCredits` | `components/modals/` | `07-modals/*` | 6 |
+
+---
+
+## 10. UI decisions
+
+Numbered so a review can cite one. Reasons that outlive this file belong in `docs/decisions.md`.
+
+**UI-1 — Shadcn/ui is adopted, and this closes the open question.** The PDF lists
+`UI Components — Shadcn/ui` in the non-negotiable stack table, so it is a requirement rather than a
+preference. The full screen sweep also shows why: five Radix-backed primitives carry real
+accessibility weight the PDF grades — `dialog` (four modals, plus the focus trap), `popover` (attach,
+credits), `dropdown-menu` (filter-by, model pill), `context-menu` **with a submenu** (task rows), and
+`tooltip` (disabled controls, `Restore`, `Connect apps`, the `⌘⇧O` hint). Collapsibles, tabs and
+checkboxes stay hand-rolled — they are a few lines each and the captures do not match shadcn's
+defaults anyway. Phase 1 pulls in `cn` + `tooltip` only; later phases add a primitive when the phase
+that needs it lands.
+
+**UI-2 — `/chat/new` skips the chat query entirely.** `GET /chats/new` would 404. On send, the result
+seeds `qk.chat(newId)` with the chat and the user message *before* `router.replace`, so the screen
+never flashes a spinner between the send and the first read.
+
+**UI-3 — `/chat` is the empty state; `/` redirects.** Clones the reference URL for one redirect.
+Diverges from `LLD.md` §1's file map.
+
+**UI-4 — the model pill shows the OpenRouter free model and its status.** The PDF asks for
+"OpenRouter Free status" in the composer; the reference has no composer-level model control and puts
+`Magica Auto` in the top bar. We keep the reference's placement and satisfy the requirement there,
+because a second control in the composer would be a redesign.
+
+**UI-5 — credits are strings, formatted with BigInt arithmetic.** `Number()` on a credit value loses
+precision. Display is microcredits / 1e6 with an `M` suffix and 2–3 decimals: `5880 → 0.01M`,
+`420000 → 0.42M`, `29994120 → 29.99M`. One pure, unit-tested function.
+
+**UI-6 — Clerk's `<UserButton/>` renders the user menu.** The captured menu is avatar + name + email
++ Manage account + Sign out, which is exactly Clerk's surface. Rebuilding it would mean rebuilding
+account management behind it.
+
+**UI-7 — out-of-scope controls render disabled with a tooltip, never wired to nothing.** Applies to
+like/dislike before Phase 6, fork, mic, `Duplicate`, `Add to project`, and the placeholder nav pages.
+A grader clicks these; disabled-with-a-reason is honest, silently inert is a bug.
+
+**UI-8 — Phase 1 disables the send control during a run; the red stop lands in Phase 2** with
+`POST /runs/:id/cancel`. Same rule as UI-7.
+
+**UI-9 — `usage` and `citations` render inside the step group.** Neither appears in any capture, but
+both are named in the PDF's content-block list and both are in the renderer registry. Inside the
+group means they are hidden by the default collapse on a completed turn — which is exactly what the
+captures show — and visible on expand, which is what the PDF asks for.
+
+**UI-10 — plain `<img>` for remote assets, not `next/image`.** Asset hosts are arbitrary CDNs, so
+`images.remotePatterns` cannot be enumerated. Costs one ESLint rule off, recorded in
+`docs/decisions.md`.
+
+**UI-11 — assets and attachments render with a sized placeholder.** The reload capture shows grey
+blocks at the image's dimensions, not collapsed rows. Without this, a reload mid-run reflows the
+whole transcript as images arrive.
+
+**UI-12 — timestamps and the live clock render after hydration.** Both depend on the viewer's locale
+and clock, which the server cannot know; rendering them during SSR guarantees a mismatch. Same
+`useSyncExternalStore` pattern `ThemeToggle` already uses.
+
+**UI-13 — no `TopBar` in Phase 1.** It is Phase 3 in `LLD.md` and pulling it forward means pulling
+the credits query and the model pill forward with it. The chat screen looks top-bare until Phase 3.
+
+**UI-14 — `react-virtuoso` stays in Phase 1, as step 8.** The PDF names a virtualized message list
+in the §9 requirement *and* in the winners list, so it is graded surface, not an optimization. It is
+still built **last** in the phase — virtualization on top of working rows is easy, debugging both at
+once is not.
+
+**UI-15 — one authority renders a run at a time.** While a `StreamingOverlay` is mounted for a run,
+the message list filters out any persisted row with `status === 'streaming'` for that run. The PDF
+requires "no duplicate terminal messages" explicitly.
+
+**UI-16 — overlay state is not a single slot.** The side panel and the image preview can be open
+together in the reference, so the UI store holds them independently.
+
+**UI-17 — the docked question panel replaces the composer rather than floating over it.** The
+capture shows the composer gone, not covered, and the pager and hints occupying its space.
+
+---
+
+## 11. Deliberate divergences from the reference
+
+Each one is README-flagged. The PDF invites this: "if you spot something in the reference that seems
+off or could be better, just flag it to the reviewer."
+
+| # | Divergence | Why |
+|---|---|---|
+| D-1 | **Plan-mode toggle in the composer**, in the slot the reference gives the "Connect apps" plug | PDF §4 requires plan mode in the composer; the reference has no such control (plans are agent-initiated). Integrations are out of scope, so the slot is free |
+| D-2 | **Retry on an interrupted turn.** The reference has none — its user simply re-sent | The PDF requires retryable failed/cancelled turns in five places |
+| D-3 | **No payment surfaces.** Add Credits is a free top-up: no `$` rows, no upgrade plan, no billing details | The trial forbids paid services. Same modal shape and copy where it still applies |
+| D-4 | **Insufficient-credits state is our own design** | Reaching it in the reference would burn the whole credit balance. Built from the captured vocabulary — the failed-tool card's pill, colour and card language |
+| D-5 | **Generated assets render once**, after the text | The reference briefly double-renders during terminal streaming (markdown link + asset strip) before settling. Rendering the artefact would be cloning a bug |
+| D-6 | **No `hasMoreMessages` field** | It is exactly `messagesNextCursor !== null`. Internal API shape is not graded on fidelity; the UI is |
+| D-7 | **Voice input not built**; mic is visual only | Out of scope, and the PDF never asks for it |
+| D-8 | **Projects / Library / Tools / API-MCP / Unfair Advantage are placeholder pages** | Locked scope: the sidebar rows exist for fidelity, the pages do not |
+| D-9 | **Clerk stays on its development instance**, watermark included | A production instance needs a custom domain we will not buy |
+
+---
+
+## 12. Loading and skeleton inventory
+
+"Skeletons are not optional polish" — five distinct loading states are captured, and a grader
+comparing screens sees a blank flash where the reference shows a skeleton.
+
+| Where | Loading treatment | Capture |
+|---|---|---|
+| Hard reload, before the shell paints | full-page centred spinner on a blank canvas | `09-recovery/reload__fullpage-spinner.jpg` |
+| Sidebar Recent tasks after reload | stack of skeleton bars — the chat paints first | `09-recovery/post-reload__sidebar-skeletons+resumed-thinking__light.jpg` |
+| Attachment / asset images | grey block at the image's size | same capture |
+| Tasks page list | eight skeleton bars + a short date bar each | `01-shell/tasks-page__skeletons-filter-search__light.jpg` |
+| Template gallery | grey card blocks in the masonry grid | `01-shell/empty-state__light.png` (populated) + `ui-flows.md` |
+| Media library | `Loading file count...` subtitle + skeleton tile grid | `07-modals/media-library__loading-skeletons__light.jpg` |
+| Files modal | centred spinner | `07-modals/files__loading-spinner__light.jpg` |
+
+---
+
+## 13. Keyboard and accessibility map
+
+PDF §4 grades "keyboard navigation, focus management, screen-reader labels, and visible error
+recovery".
+
+| Surface | Keys | Notes |
+|---|---|---|
+| Composer | `Enter` send · `Shift+Enter` newline | |
+| Plan card | `Enter` run all (hint rendered in-card) | |
+| Request-changes textarea | `⌘+Enter` submit | hint rendered in-card |
+| Question panel — text / image | `Enter` submit · `Esc` skip | hints rendered under the panel |
+| Question panel — select | `↑↓` navigate · `Enter` select · `Esc` skip | |
+| Sidebar New task | `⌘⇧O`, revealed as a chip on hover | `01-shell/sidebar__newtask-shortcut-hover__light.jpg` |
+| Modals | focus trap, `Esc` closes, focus returns to the opener | Radix `dialog` (UI-1) |
+| Streaming text | `aria-live="polite"` region so a screen reader follows the answer | |
+| Tool cards / step groups | native `button` toggles with `aria-expanded` | |
+| Status glyphs | never colour alone — glyph + text label | ✓/⟳/⊗ carry `aria-label` |
+
+---
+
+## 14. Formatting rules
+
+| Value | Rule | Examples |
+|---|---|---|
+| Credits | BigInt string → microcredits / 1e6 + `M`, 2–3 decimals. Never `Number()` | `0.01M credits` · `0.42M credits` · `29.96M` |
+| Duration | ms under 1s; `s` with one decimal under a minute; `Nm Ns` above | `110ms` · `7ms` · `5.6s` · `9.3s` · `1m 5s` · `4m 25s` |
+| Message time | locale 12-hour, client-side only | `2:53 PM` |
+| Task list dates | relative | `3 minutes ago` · `1 hour ago` · `4 hours ago` |
+| File rows | `TYPE · time · size` | `PNG · 02:55 PM · 1.3 MB` |
+| Plan estimates | `~` prefix, server-supplied | `~0.2108M` · `Estimated total ~0.2108M credits` |
+| Renewal pill | `+15M credits on 21 Sep '26` | green pill |
+
+---
+
+## 15. Capture index — all 77, by the screen they serve
+
+**01-shell (12)** — §2, §6, §7. `empty-state__{light,dark}` · `sidebar__collapsed-rail__dark` ·
+`sidebar__newtask-shortcut-hover__light` · `user-menu__dark` ·
+`tasks-page__{list-filter-select,skeletons-filter-search,select-mode-0selected,select-mode-2selected,context-menu-pin-rename-delete}` ·
+`mobile-430__{empty-state-templates,sidebar-drawer-open}__dark`
+
+**02-composer (4)** — §3.8, §6. `attach-popover__select-asset-upload__light` ·
+`attachment-chip__thumbnail-x__light` · `template-prefill__{content-creation__light,image-editing__dark}`
+
+**03-streaming (5)** — §3.1–3.4, §3.10. `thinking__first-row-newchat__light` ·
+`new-turn__thinking-start__dark` · `working-1step__thinking-expanded-token__light` ·
+`planning-pipeline-skills-schemas-light` · `terminal-text-streaming__image-inline__light`
+
+**04-tool-cards (10)** — §3.4, §3.5, §8. `ai-gen__{running-expanded-viewmore__light,completed+verify-2nd-gen__light,output-row__light,expanded-fields__narrow-640__dark,FAILED-red-error+self-recovery__dark,FAILED-safety+reasoned-retry+tracker-1of3__dark}` ·
+`model-schema__cached-7ms+seedance__light` · `step-timeline__skill+reasoned+model-schema__light` ·
+`detail-side-panel__light` · `detail-fullscreen__input-images__light`
+
+**05-plan-cards (14)** — §4. `plan-submitted__spinner__light` ·
+`actionable__runall-stepbystep-requestchanges__light` · `request-changes__inline-textarea__light` ·
+`changes-requested__{orange+result,with-duration-36s}__light` ·
+`plan-approved__{pending-spinner,done-9.3s}__light` · `completed-cards__collapsed-subtitle__light` ·
+`progress-tracker__{0of3-checklist,1of3-progressbar-cost,2of3-nextstep__narrow-930}__dark` ·
+`step-mode__{start__light,approved+setup__light,approved+setup+step-update__dark}`
+
+**06-messages (7)** — §3.1–3.10. `chat__user-bubbles+assistant-footer__light` ·
+`footer__credits-icons-time__dark` · `terminal__two-step-groups__light` ·
+`capabilities-answer+scroll-btn+image-hover__light` ·
+`interrupted__response-was-interrupted-pill__dark` ·
+`step-mode__{step1-done-checkin+transparency,terminal+next-step-draft}__dark`
+
+**07-modals (14)** — §8. `files__{loaded-1-image,loading-spinner}__light` ·
+`media-library__{empty,loading-skeletons}__light` ·
+`image-preview__{details-actions__light,open-animation}` · `add-credits__amounts-autorecharge__light` ·
+`settings__account__dark` · `upgrade__{monthly__light,yearly__light,yearly__dark,switch-confirm}` ·
+`clerk__{profile,security}`
+
+**08-credits (2)** — §8. `popover__{monthly-plan,plan-balance-usage}__light`
+
+**09-recovery (2)** — §3.11, §12. `reload__fullpage-spinner` ·
+`post-reload__sidebar-skeletons+resumed-thinking__light`
+
+**10-questions (7)** — §5. `questions-flow__prompt+skill-rows+upload-1of5__dark` ·
+`asking-questions__{card-expanded+waiting,round2-after-skips+answers-inline}__dark` ·
+`question__{free-text-2of5,single-select-recommended-4of5,single-select-5of5}__dark` ·
+`user-input-received__resolved-answers__dark`
+
+### Known gaps in the reference — design these, do not guess and do not skip
+
+1. **Insufficient credits** — deliberately never captured; reaching it would burn the balance. D-4.
+2. **Mobile chat with an active turn** — the mobile empty state and drawer are captured, an active
+   streaming turn at 430px is not.
+3. **Search with results** — the Tasks-page search *field* is captured, an active query is not.
+4. **`usage` and `citations` rows** — named in the PDF, absent from every capture. UI-9.
+5. **`stopping` state** — named in the PDF's status model, not captured. Derived client-side.
