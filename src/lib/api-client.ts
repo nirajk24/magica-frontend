@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { ApiErrorEnvelope, Health, type ErrorCode } from "@/contracts";
+import {
+  ActiveRun,
+  ApiErrorEnvelope,
+  ChatWithMessages,
+  Health,
+  SendMessage,
+  SendMessageResult,
+  type ErrorCode,
+} from "@/contracts";
 import { env } from "@/lib/env";
 
 /**
@@ -66,10 +74,39 @@ export async function request<T>(
   return schema.parse((json as { data: unknown } | null)?.data);
 }
 
+/** What a caller may send; the server applies the contract's defaults for anything omitted. */
+export type SendMessageInput = z.input<typeof SendMessage>;
+
 /** Typed service surface. A component never names a URL or sees an unparsed response. */
 export function createApi(getToken: TokenSource) {
   return {
     getHealth: () => request("/health", {}, Health, getToken),
+
+    getChat: (chatId: string, messagesCursor?: string) =>
+      request(
+        `/chats/${encodeURIComponent(chatId)}${
+          messagesCursor ? `?messagesCursor=${encodeURIComponent(messagesCursor)}` : ""
+        }`,
+        {},
+        ChatWithMessages,
+        getToken,
+      ),
+
+    sendMessage: (chatId: string, body: SendMessageInput) =>
+      request(
+        `/chats/${encodeURIComponent(chatId)}/messages`,
+        { method: "POST", body: JSON.stringify(body) },
+        SendMessageResult,
+        getToken,
+      ),
+
+    getActiveRun: (chatId: string) =>
+      request(
+        `/chats/${encodeURIComponent(chatId)}/active-run`,
+        {},
+        ActiveRun.nullable(),
+        getToken,
+      ),
   };
 }
 
