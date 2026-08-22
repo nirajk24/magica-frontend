@@ -763,10 +763,36 @@ flashes a spinner between the send and the first read and no `ChatDTO` has to be
 **UI-3 — `/chat` is the new-chat page; `/` redirects.** Clones the reference URL for one redirect,
 and supersedes the `/chat/new` route in `LLD.md` §1's file map.
 
-**UI-4 — the model pill shows the OpenRouter free model and its status.** The PDF asks for
-"OpenRouter Free status" in the composer; the reference has no composer-level model control and puts
-`Magica Auto` in the top bar. We keep the reference's placement and satisfy the requirement there,
-because a second control in the composer would be a redesign.
+**UI-4 — the model pill shows the chat's model and the path's availability, from two sources.** The
+PDF asks for "OpenRouter Free status" in the composer; the reference has no composer-level model
+control and puts `Magica Auto` in the top bar. We keep the reference's placement and satisfy the
+requirement there.
+
+**Identity and availability are different questions and must not share a source.**
+
+| What is shown | Source | Note |
+|---|---|---|
+| the model this chat is configured to use | `ChatDTO.modelId` | the fallback, for a chat that has not run a turn yet. Already on the wire, so no extra request |
+| the model that actually served a turn | `MessageDTO.aiModel` | written at message bootstrap, so it is set from the turn's start. **This is the label**, from the newest turn that recorded one |
+| whether the shared path is refusing work | `GET /llm/status` → `rateLimitedUntil` | null once the cooldown elapses, so the server owns the clock |
+
+**Never label the pill from `LlmStatus.limitedModel`.** It is written in exactly one place — when a
+rate limit is recorded — so it is null until a limit has happened and then names the model that
+*failed*, not one that served. Using it would show nothing most of the time and a broken model's name
+the rest. It belongs only in copy about the limit itself.
+
+Three things about the rate-limited state:
+
+- **It is a global singleton, not per-account.** One user's limit warns everyone, which is honest for
+  a genuinely shared free-tier path but is a stated simplification rather than a personal signal.
+- **The cooldown is often a guess** — the provider's `Retry-After` when one is sent, a 60-second
+  default otherwise, and free models usually send nothing. So the copy hedges: "try again shortly"
+  survives being wrong in both directions where a countdown does not.
+- **It cannot be produced on demand against a live backend** without exhausting a real model, so the
+  warning is verified against fixtures only.
+
+There is no model fallback. Rotation on a `429` was never built, so a turn cannot silently be served
+by a different model than the chat names.
 
 **UI-5 — credits are strings, formatted with BigInt arithmetic.** `Number()` on a credit value loses
 precision. Display is microcredits / 1e6 with an `M` suffix and 2–3 decimals: `5880 → 0.01M`,

@@ -39,6 +39,8 @@ export const handlers = [
 
   http.get(`${API}/credits`, () => ok(fixtures.creditsPage)),
 
+  http.get(`${API}/llm/status`, () => ok(fixtures.llmStatus)),
+
   http.post(`${API}/runs/:runId/cancel`, () => ok({ ok: true })),
 
   http.post(`${API}/messages/:messageId/retry`, () => ok(fixtures.retryResult)),
@@ -46,6 +48,9 @@ export const handlers = [
 
 /** An idle chat: no run to recover, which is what a reload after completion looks like. */
 export const noActiveRun = http.get(`${API}/chats/:chatId/active-run`, () => ok(null));
+
+/** The shared free-tier path refusing work, which cannot be produced on demand against a real backend. */
+export const rateLimited = http.get(`${API}/llm/status`, () => ok(fixtures.rateLimitedLlmStatus));
 
 /** Cancel and retry, refusing. Both surface through the error toast rather than silently. */
 export const cancelFails = http.post(`${API}/runs/:runId/cancel`, () => errors.internal());

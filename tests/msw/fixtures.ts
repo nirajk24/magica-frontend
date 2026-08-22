@@ -8,6 +8,7 @@ import type {
   ChatsPage,
   ContentBlock,
   CreditsPage,
+  LlmStatus,
   MessageDTO,
   RunMetadata,
   SendMessageResult,
@@ -222,6 +223,14 @@ export const activeRun: ActiveRun = {
   assistantMessageId: ASSISTANT_MESSAGE_ID,
   publicAccessToken: "pat_fixture_token",
   pendingWaitpoint: null,
+};
+
+/** A healthy path. `limitedModel` is null until a limit is recorded; it never names a serving model. */
+export const llmStatus: LlmStatus = { limitedModel: null, rateLimitedUntil: null };
+
+export const rateLimitedLlmStatus: LlmStatus = {
+  limitedModel: "nvidia/nemotron-3-super-120b-a12b:free",
+  rateLimitedUntil: "2026-08-22T10:05:00.000Z",
 };
 
 export const creditsPage: CreditsPage = {

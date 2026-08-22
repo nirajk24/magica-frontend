@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const panelOpen = useUI((state) => state.openPanel !== null);
 
-  const inChat = segments[0] === "chat" && segments.length > 1;
+  const chatId = segments[0] === "chat" && segments.length > 1 ? segments[1] : undefined;
 
   return (
     <div className="flex h-dvh gap-2 p-2">
@@ -65,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Menu className="size-5" aria-hidden />
           </button>
           <div className="min-w-0 flex-1">
-            <TopBar showFiles={inChat} />
+            <TopBar chatId={chatId} showFiles={chatId !== undefined} />
           </div>
         </div>
 

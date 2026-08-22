@@ -6,6 +6,7 @@ import {
   ChatsPage,
   CreditsPage,
   Health,
+  LlmStatus,
   Ok,
   SendMessage,
   SendMessageResult,
@@ -103,6 +104,8 @@ export function createApi(getToken: TokenSource) {
       request(`/chats${queryString({ cursor, search, filter })}`, {}, ChatsPage, getToken),
 
     getCredits: () => request("/credits", {}, CreditsPage, getToken),
+
+    getLlmStatus: () => request("/llm/status", {}, LlmStatus, getToken),
 
     getChat: (chatId: string, messagesCursor?: string) =>
       request(

@@ -12,6 +12,7 @@ export const qk = {
   chat: (id: string) => ["chat", id] as const,
   activeRun: (chatId: string) => ["active-run", chatId] as const,
   credits: () => ["credits"] as const,
+  llmStatus: () => ["llm-status"] as const,
 };
 
 const MAX_ATTEMPTS = 3;

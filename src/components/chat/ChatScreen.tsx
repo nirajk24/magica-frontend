@@ -14,6 +14,7 @@ import { useActiveRun } from "@/queries/use-active-run";
 import { useStopRun } from "@/queries/use-cancel-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
 import { findToolView } from "@/lib/timeline";
+import { useLlmStatus } from "@/queries/use-llm-status";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 import { useUI } from "@/stores/ui";
 
@@ -69,6 +70,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   };
 
   const failure = send.isError ? sendFailureMessage(send.error) : null;
+  const rateLimited = Boolean(useLlmStatus().data?.rateLimitedUntil);
   const panelTool = openPanel ? findToolView(messages, openPanel.invocationId) : null;
 
   const items = useMemo<TranscriptItem[]>(() => {
@@ -113,6 +115,13 @@ export function ChatScreen({ chatId }: { chatId: string }) {
             onSubmit={submit}
             onStop={stop.stop}
           />
+
+          {rateLimited && !failure && (
+            <p role="status" className="mt-2 px-1 text-sm text-amber">
+              The free model path is rate limited right now. Sending will likely fail — try again
+              shortly.
+            </p>
+          )}
 
           {failure && (
             <p role="alert" className="mt-2 px-1 text-sm text-danger">
