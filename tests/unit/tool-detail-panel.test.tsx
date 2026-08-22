@@ -1,19 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MessageRow } from "@/components/chat/MessageRow";
+import { ChatScreen } from "@/components/chat/ChatScreen";
 import { timelineFromMessage } from "@/lib/timeline";
 import { useUI } from "@/stores/ui";
+import { server } from "../msw/setup";
+import { noActiveRun } from "../msw/handlers";
 import { renderWithProviders } from "../render";
 import * as fixtures from "../msw/fixtures";
 
 const PROMPT = (fixtures.detailedToolInvocation.input as { prompt: string }).prompt;
 
-/** Expands the step groups. The rows inside open with their group, so the card needs no click. */
+/**
+ * Renders the whole screen, not the card: the panel lives outside the virtualized list, so opening it
+ * from a card is only correct if the two are wired together through the store and the message cache.
+ */
 async function openToolCard(user: ReturnType<typeof userEvent.setup>) {
-  renderWithProviders(<MessageRow message={fixtures.detailedAssistantMessage} />);
+  server.use(
+    noActiveRun,
+    fixtures.chatHandlerWith([fixtures.userMessage, fixtures.detailedAssistantMessage]),
+  );
 
-  for (const group of screen.getAllByRole("button", { name: /Completed \d+ step/ })) {
+  renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
+
+  for (const group of await screen.findAllByRole("button", { name: /Completed \d+ step/ })) {
     await user.click(group);
   }
 }
@@ -124,5 +134,20 @@ describe("the tool detail panel", () => {
     await user.click(screen.getByRole("button", { name: "View more" }));
 
     expect(screen.getByRole("dialog")).toHaveTextContent("Input Images:");
+  });
+});
+
+describe("the panel and the virtualized list", () => {
+  it("survives the card that opened it leaving the DOM", async () => {
+    const user = userEvent.setup();
+    await openToolCard(user);
+    await user.click(screen.getByRole("button", { name: "View more" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: /Completed \d+ step/ })[1]!);
+
+    expect(screen.queryByRole("button", { name: "View more" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

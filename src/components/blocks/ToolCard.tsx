@@ -1,10 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createPortal } from "react-dom";
 import type { ToolView } from "@/lib/timeline";
-import { ToolDetailPanel } from "@/components/panels/ToolDetailPanel";
-import { useHydrated } from "@/lib/use-hydrated";
 import { useUI } from "@/stores/ui";
 import { DetailRows, TimelineRow, type DetailRow } from "@/components/blocks/TimelineRow";
 import { iconColourFor, iconFor } from "@/components/blocks/icons";
@@ -28,10 +25,7 @@ export function ToolCard({
   const Icon = iconFor(tool.display.icon);
   const detail = rows ?? inputRows(tool.input);
   const urls = outputUrls(tool);
-  const openPanel = useUI((state) => state.openPanel);
   const setOpenPanel = useUI((state) => state.setOpenPanel);
-  const hydrated = useHydrated();
-  const panelOpen = openPanel?.type === "tool" && openPanel.invocationId === tool.id;
 
   return (
     <TimelineRow
@@ -57,13 +51,6 @@ export function ToolCard({
         }
         onViewMore={() => setOpenPanel({ type: "tool", invocationId: tool.id })}
       />
-
-      {panelOpen &&
-        hydrated &&
-        createPortal(
-          <ToolDetailPanel tool={tool} onClose={() => setOpenPanel(null)} />,
-          document.body,
-        )}
     </TimelineRow>
   );
 }

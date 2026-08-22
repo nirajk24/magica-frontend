@@ -6,6 +6,7 @@ import { Block, blockRenderers, cardFor, rendererFor, toolCardRenderers } from "
 import { ToolCard } from "@/components/blocks/ToolCard";
 import { MessageTimeline } from "@/components/chat/MessageTimeline";
 import { timelineFromMessage, type ToolView } from "@/lib/timeline";
+import { useUI } from "@/stores/ui";
 import { renderWithProviders } from "../render";
 import * as fixtures from "../msw/fixtures";
 
@@ -317,11 +318,12 @@ describe("row anatomy measured off the reference", () => {
     expect(viewMore.compareDocumentPosition(output)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it("opens the detail panel from View more rather than expanding the card itself", async () => {
+  it("asks for the detail panel from View more rather than expanding the card itself", async () => {
     const user = userEvent.setup();
     const { container } = renderWithProviders(
       <ToolCard
         tool={toolView({
+          id: "inv_hidden",
           input: { a: "1", b: "2", c: "3", d: "4", e: "5", hidden: "6" },
         })}
       />,
@@ -329,7 +331,7 @@ describe("row anatomy measured off the reference", () => {
 
     await user.click(screen.getByRole("button", { name: "View more" }));
 
-    expect(screen.getByRole("dialog")).toHaveTextContent("Hidden:");
+    expect(useUI.getState().openPanel).toEqual({ type: "tool", invocationId: "inv_hidden" });
     expect(container).not.toHaveTextContent("Hidden");
   });
 

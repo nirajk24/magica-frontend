@@ -689,8 +689,16 @@ the blank line between fields, not from dimming the label, which is where the ca
 thumbnails beneath it. The header is the tool's own icon and label on the left, maximize and close on
 the right.
 
-`Escape` closes it. It is an overlay rather than a modal — the transcript behind stays readable, so
-there is no focus trap and no backdrop.
+`Escape` closes it. It is a panel rather than a modal — the transcript beside it stays readable, so
+there is no focus trap and no backdrop, and no drop shadow either: a large shadow against the dark
+canvas reads as a glow leaking along the seam.
+
+**It cannot be rendered by the card that opens it.** Cards live inside the virtualizer and unmount as
+soon as they scroll out of view, which takes the panel with them. The store carries only the
+invocation id; the screen reads the invocation back out of the cached messages and renders the panel
+outside the list.
+
+Maximizing animates, so the panel's width is what changes rather than its layout mode.
 
 The side panel and the image preview can be open **at the same time** (`ui-flows.md`), so overlay
 state is not a single slot.

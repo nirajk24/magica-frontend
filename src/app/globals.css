@@ -109,3 +109,30 @@ body {
   background-color: var(--bg);
   color: var(--fg);
 }
+
+/*
+ * The reference's scrollbar is roughly half the width of the platform default, and its thumb is a
+ * translucent neutral rather than a solid one, so it reads the same in both themes.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fg) 20%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--fg) 18%, transparent);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--fg) 30%, transparent);
+}

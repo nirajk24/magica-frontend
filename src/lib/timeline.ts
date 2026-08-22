@@ -130,6 +130,25 @@ export function groupBlocks(
   return [...bySegment.values()].sort((a, b) => a.segment - b.segment);
 }
 
+/**
+ * The invocation behind an open detail panel, found across a chat's messages.
+ *
+ * The panel is rendered outside the virtualized list, so it cannot be handed the `ToolView` by the
+ * card that opened it — the card unmounts as soon as it scrolls out of view. Only the id travels
+ * through the store; the invocation itself is read back out of the cached messages.
+ */
+export function findToolView(
+  messages: readonly MessageDTO[],
+  invocationId: string,
+): ToolView | null {
+  for (const message of messages) {
+    const invocation = message.toolInvocations.find((candidate) => candidate.id === invocationId);
+    if (invocation) return toolViewFromInvocation(invocation);
+  }
+
+  return null;
+}
+
 /** The persisted half of the rendering model: a stored message becomes a timeline. */
 export function timelineFromMessage(message: MessageDTO): Timeline {
   const tools = new Map<string, ToolView>(

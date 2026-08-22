@@ -46,11 +46,11 @@ export function ToolDetailPanel({ tool, onClose }: { tool: ToolView; onClose: ()
     <aside
       role="dialog"
       aria-label={`${tool.display.label} detail`}
-      style={maximized ? undefined : { maxWidth: PANEL_WIDTH }}
+      style={{ width: maximized ? "100vw" : PANEL_WIDTH }}
       className={cn(
-        "fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-border bg-bg shadow-2xl",
+        "fixed inset-y-0 right-0 z-40 flex max-w-full flex-col border-l border-border bg-bg",
         "animate-in duration-200 ease-out slide-in-from-right",
-        maximized && "left-0",
+        "transition-[width] duration-200 ease-out",
       )}
     >
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">

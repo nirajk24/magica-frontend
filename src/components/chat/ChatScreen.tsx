@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { ActiveRun, MessageDTO } from "@/contracts";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
 import { MessageList, type TranscriptItem } from "@/components/chat/MessageList";
+import { ToolDetailPanel } from "@/components/panels/ToolDetailPanel";
 import { EmptyStateHeader } from "@/components/shell/EmptyStateHeader";
 import { TemplateGallery } from "@/components/shell/TemplateGallery";
 import { Spinner } from "@/components/Spinner";
@@ -12,6 +13,7 @@ import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
 import { useStopRun } from "@/queries/use-cancel-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
+import { findToolView } from "@/lib/timeline";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 import { useUI } from "@/stores/ui";
 
@@ -34,6 +36,10 @@ const EMPTY_STATE_COLUMN = "mx-auto w-full max-w-[900px] px-6";
  *
  * While a run is active its persisted row is filtered out of the transcript and `LiveRun` owns the
  * rendering, so the same content is never on screen twice.
+ *
+ * The tool detail panel is rendered here rather than by the card that opens it: cards live inside the
+ * virtualizer and unmount as soon as they scroll out of view, which would take an open panel with
+ * them. The store carries only the invocation id, and the invocation is read back from the messages.
  */
 export function ChatScreen({ chatId }: { chatId: string }) {
   const isNew = chatId === NEW_CHAT_ID;
@@ -44,6 +50,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
   const setDraft = useUI((state) => state.setDraft);
+  const openPanel = useUI((state) => state.openPanel);
+  const setOpenPanel = useUI((state) => state.setOpenPanel);
   const stop = useStopRun(chatId, activeRun?.runId ?? null, activeRun === null && !query.isFetching);
   const [optimistic, setOptimistic] = useState<{ chatId: string; message: MessageDTO } | null>(
     null,
@@ -61,6 +69,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   };
 
   const failure = send.isError ? sendFailureMessage(send.error) : null;
+  const panelTool = openPanel ? findToolView(messages, openPanel.invocationId) : null;
 
   const items = useMemo<TranscriptItem[]>(() => {
     const rows: TranscriptItem[] = [...messages, ...(pending ? [pending] : [])].map((message) => ({
@@ -117,6 +126,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
           {isNew && <TemplateGallery onPick={(template) => setDraft(chatId, template.prompt)} />}
         </div>
       </div>
+
+      {panelTool && <ToolDetailPanel tool={panelTool} onClose={() => setOpenPanel(null)} />}
     </div>
   );
 }
