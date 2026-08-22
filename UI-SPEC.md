@@ -191,8 +191,21 @@ avatar, name, email, `Manage account`, `Sign out` — and `Manage account` opens
 modal with `Profile` and `Security` tabs. All of that is Clerk's surface; we render the button and
 inherit the rest, which is why rebuilding it was never on the table.
 
-**Collapsed rail (~48px).** Icon-only, same order, plus a gear pinned at the bottom. No labels, no
-Recent tasks.
+**Collapsed rail (~64px, estimated).** Icon-only, same order, plus a gear pinned at the bottom. No
+labels, no Recent tasks. Verified against the collapsed capture at 8x zoom:
+
+- **The top slot is the logo, and the logo is the toggle.** At rest it shows the Magica M mark; on
+  hover it swaps to the panel icon with a `Toggle sidebar ⌘B` tooltip. The button is the toggle
+  throughout — only the glyph swaps — so the control never disappears for keyboard users.
+- **Search stays in the rail.** Collapsing must not hide the palette's entry point.
+- **Every rail icon names itself in a right-side tooltip** — the rail has no room for labels.
+- **`⌘B` toggles the sidebar from anywhere**, which is the chord the tooltip advertises.
+
+**Exact nav icons, from the capture at 8x** — three of ours were wrong: Tasks is the bubble with
+**three dots** (`MessageSquareMore`), Library is the book-stack (`LibraryBig`), Tools is the
+**box cluster** (`Boxes`, not a wrench), and API / MCP is an **open book with a gear**, which lucide
+does not ship — `ApiMcpIcon` draws it. New task (`CirclePlus`), Projects (`FolderOpen`) and
+Unfair Advantage (`Sparkles`) were already right.
 
 **Signed out, the sidebar is the same sidebar.** Same nav in the same order, same `No tasks yet`.
 Only the footer changes: the `Magica 101` card and `⋮ More` stay, and below them come `Claim Offer`,
@@ -205,11 +218,23 @@ component and accept its menu rather than rebuilding it (UI-6).
 
 ### 2.3 Top bar
 
-Left: the model pill — a small rounded chip, avatar-ish glyph + label + chevron. The reference reads
-`Magica Auto`; ours reads the OpenRouter free model (UI-4). **There is no model selector in the
-composer** — the model is chat-level and lives here. Right: folder icon (files in this task) and the
-credits chip `⚡ 29.96M`. On the empty state the right side shows an `Upgrade` pill instead and there
-is no folder icon — nothing to scope files to.
+Left: the model pill — glyph + label + chevron, opening a single-choice menu of `ALLOWED_MODELS`
+(UI-4). It reads **`Magica Auto`**, same as the reference — this clone carries the same brand, so
+the same name is the exact one. The glyph is a **squircle tile** (fg tile, bg mark; ~20px, 7px
+radius) carrying the **wordmark M** — the sharp M with a four-point star cut from its left stroke
+(`MagicaLogo`, masked so whatever is behind shows through the cut), which is a different mark from
+the empty state's googly-eyed mascot. Both chips are **36px pills on `--surface`, borderless** — the
+zoomed reference settles the earlier border-vs-fill ambiguity in favour of the flat fill. The
+chevron rotates 180° while the menu is open.
+
+**The picker menu is the reference's, at 8x**: a `rounded-2xl` panel, `p-2`, rows of tile + name +
+one-line description on `--fg-muted`. The chosen row is marked by a `--surface` fill alone — **no
+checkmark anywhere** (`indicator={false}` on the radio row). Row tiles are 36px `rounded-[10px]` fg
+tiles with the logo mark.
+**There is no model selector in the composer** — the model is chat-level and lives here. Right:
+folder icon (files in this task) and the credits chip, whose icon is a **rocket outline in the text
+colour** — not an amber bolt. On the empty state the right side shows an `Upgrade` pill instead and
+there is no folder icon — nothing to scope files to.
 
 ---
 
@@ -456,10 +481,19 @@ Captures: `02-composer/*` · every chat capture.
 - Placeholder: `Send a message...` inside a chat, `Assign a task or ask anything...` on the empty
   state. Use exactly this copy.
 - Auto-grows with content; Enter sends, Shift+Enter inserts a newline.
-- Left icon row: paperclip (attach popover) and, in the reference, a plug = "Connect apps" tooltip.
-  Integrations are out of scope, so **the plug slot becomes our plan-mode toggle** (D-1).
+- Left icon row: paperclip (attach popover), then the reference's plug = "Connect apps" tooltip
+  (disabled here — integrations are out of scope), then our plan-mode toggle. **Three icons where the
+  reference has two** — plan mode is the brief's requirement and the reference has no such control,
+  so the extra icon is the divergence, recorded as part of D-1.
 - Right: mic (visual only, out of scope) and the send control — a circular arrow that becomes a
   **red rounded square stop** while a run is active.
+- **At rest the send control has no disc.** The capture shows a bare muted arrow until there is
+  something to send; the filled `--fg` circle appears with the first character. The 34px footprint
+  stays either way.
+- **Focus draws a solid border.** Resting border is the `--border` hairline; focus-within moves it to
+  `--border-strong` (ESTIMATED: `#d9d9d9` light / `#3f3f3f` dark — no focused capture exists).
+- The light fill is a whisper of a gradient, `#fafafa → #fdfdfd`, measured off the lossless PNG — the
+  earlier `#f2f2f2 → #f9f9f9` reading was too dark at the top.
 - Attachment chip: small thumbnail with a round ✕ badge on its top-right corner, above the textarea
   (`02-composer/attachment-chip__thumbnail-x__light.jpg`).
 - Attach popover, anchored above the paperclip: caption "Add a file from your device or select one
@@ -619,12 +653,23 @@ same turn, so a second, smaller round (`1 of 2`) is a normal state
 Captures: `01-shell/empty-state__{light,dark}.png` · `02-composer/template-prefill__*` ·
 `01-shell/mobile-430__empty-state-templates__dark.png`
 
-Centred column: indigo ghost logo · a **live clock** `2:10 ᴾᴹ` (small, meridiem superscripted) ·
+Centred column: the **Magica mascot** — a different mark from the wordmark's sharp star-cut M —
+the brand's chunky rounded M with two white-and-black eyes,
+in **`--accent` exactly** (the capture's purple samples as `#4a3dd8`, the same value); the eyes are
+literal white/near-black in both themes, part of the mark rather than the page. Then a **live clock**
+`2:10 ᴾᴹ` (small, meridiem superscripted) ·
 h1 `Your AI worker` · subtitle `Work at the speed of thought.` · the composer with the
 `Assign a task or ask anything...` placeholder · a row of template category tabs
 (`All · Viral Video Formats · Video Special Effects · Content Creation · Branding & Design ·
 Image & Editing`) · a three-column masonry grid of template cards (image, bold title, one-line
 description).
+
+**The tab row's band exists in one theme only** — measured off both lossless captures: dark draws a
+`#191919` strip behind the tabs; light draws **no strip at all**, bare text on the canvas. The active
+tab is the inverse trick: a white pill with a faint shadow in light, and in dark that same `--panel`
+fill disappears into the strip, leaving white text. `--tab-strip` (transparent / `#191919`) carries
+the asymmetry — giving it a light value re-introduces a strip the reference never draws, which is
+exactly the mistake the first implementation made.
 
 **A template card is one tile.** The artwork runs flush to the card's top and side edges, and the
 title and description sit on a `--surface` panel *inside the same rounded container* — not as loose
@@ -682,7 +727,21 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 
 ---
 
-## 7.1 Screen — the search palette · Phase 6
+**Toolbar, from the zoomed reference**: `Filter by All ⌄` and `Select tasks` are **40px pills on
+`--surface`, borderless**; `⊕ New task` is the filled `--fg` pill. The search field is a **44px
+`rounded-xl`** bordered field. The filter menu lists `All / Projects / Pinned / No project` with a
+check on the active row — Projects and No project render disabled here, since projects do not exist
+in this build. The title is ~30px bold.
+
+**The theme trio's active option is a raised pill** — `--panel` fill with a small shadow inside a
+`--surface` track — not a tinted segment.
+
+**Theme switching animates as one frame.** `setTheme` is wrapped in a **view transition**
+(`ThemeToggle.applyThemeSmoothly`): the browser crossfades the whole page, which is the only way a
+theme switch animates without breaking every element that declares a transition of its own.
+No-API browsers and reduced-motion users get the instant switch.
+
+## 7.1 Screen — the search palette · BUILT
 
 **Not in the 77 captures.** Observed live: the sidebar header's magnifier opens a centred command
 palette over the content, and it is the product's real search entry point — the Tasks page's field is
@@ -701,20 +760,57 @@ the *other* one, not the only one.
         └────────────────────────────────────────────┘
 ```
 
-- Centred overlay, **≈500px wide** (estimated off a 2048px viewport, not measured on a lossless
-  capture), rounded, on a raised surface. The chat stays visible behind it and is **not** heavily
-  dimmed.
+- **Vertically centred** overlay, **≈500px wide**, `rounded-xl`, with a pronounced shadow.
+- **The page behind is blurred, not tinted.** That is what keeps the product at full contrast while
+  still reading as a layer. A tint is the single most visible way to get this screen wrong — and it
+  fails in *both* directions, because `--fg` inverts: 20% of it greys the whole product in light and
+  washes it pale in dark.
+- **The panel has three bands, and the middle one is recessed AND rounded.** Header and footer sit
+  at the panel level with no separator rules; the result list sits in a **`rounded-xl` inset block
+  with the panel showing around it** — not an edge-to-edge stripe. The focused row is raised back
+  out of it on the panel's own colour with a soft shadow and **no border**. Getting this inside-out —
+  a plain panel with a filled focused row — is what our first pass did, and it is the difference
+  between a command palette and a dropdown.
 - Header: magnifier + placeholder `Search`, with an **`esc` chip** right-aligned inside the field.
 - Results are **grouped under a section label** — `Tasks` here — which leaves room for other result
   kinds without a redesign.
 - Each row is a speech-bubble icon plus the chat title. Titles run **much longer than the sidebar's**,
   truncating only at the palette's width.
-- The focused row carries a filled background, so the list is keyboard-navigable.
+- The focused row is a raised card on the inset band — `--panel` fill, hairline border, small shadow
+  — not a filled row on a flat panel.
 - A footer action, `New task`, carries the same `⌘ ⇧ O` chord the sidebar's New task row reveals on
   hover (§13) — so the chord is the product's, not that row's.
 
 It runs on `GET /chats?search=`, which is live, and the brief requires that search to cover message
 content as well as titles (PDF §8).
+
+**As built**, with three things worth knowing:
+
+- **The width held up.** 500px was estimated off a pasted screenshot; measuring ours against the live
+  product side by side at the same viewport put the two within ~2px. Still not off a lossless
+  capture, but no longer a guess.
+- **Three things were wrong on the first pass and are worth not repeating**: a `bg-fg/20` scrim
+  where the reference blurs; a `top-[22%]` offset where the reference centres; and a flat panel with
+  a filled focused row, where the reference recesses the list and raises the row out of it.
+- **`--panel` / `--panel-inset` were added for this** and are documented in `globals.css`. They swap
+  between themes, because an overlay cannot borrow `--bg`: in dark that is the canvas, so the panel
+  would be the same colour as the thing it floats over.
+- **The typed term settles before it is queried** (`useDebounced`, 200ms). Wiring an input straight
+  to a query key fires one request per character and races their responses — which is what the Tasks
+  page still does, and the reason that hook is in `lib/` rather than in this component.
+- **`⌘⇧O` is handled while the palette is open, not globally.** The chord is the product's rather
+  than the sidebar row's (§13), but a global listener for it collides with Firefox's Library window,
+  so the footer row is the reliable path and the chord is the shortcut for people already here.
+
+**Motion**: the panel fades and scales in (95 → 100, ~200ms ease-out) and the page blur ramps from
+0 to 6px alongside it — a backdrop-filter cannot be faded via the overlay's own opacity, so it is
+keyframed directly (`.search-palette-overlay` in `globals.css`). Corners are `rounded-2xl`. The blur
+radius stays a judgement call: a blur leaves no edge to measure.
+
+Keyboard: `⌘K`/`Ctrl+K` opens from anywhere, `↑↓` move the focused row and stop at the ends rather
+than wrapping, `Enter` opens it, `Esc` closes. The field is a `combobox` with
+`aria-activedescendant` over a `listbox`, so a screen reader follows the focused row without focus
+leaving the input.
 
 ---
 
@@ -787,6 +883,7 @@ Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-
 | `EmptyState` `TemplateGallery` | `components/shell/` | `01-shell/empty-state__*` | 3 |
 | `TasksPage` rows, toolbar, select mode, context menu | `app/(app)/chat/recent/` | `01-shell/tasks-page__*` | 3 |
 | `ToolDetailPanel` | `components/panels/ToolDetailPanel.tsx` | `04-tool-cards/detail-*` | 5 |
+| `SearchPalette` | `components/shell/SearchPalette.tsx` | none — observed live, §7.1 | built |
 | `FilesModal` `MediaLibrary` `ImagePreview` `AddCredits` | `components/modals/` | `07-modals/*` | 6 |
 
 ---
@@ -803,7 +900,9 @@ credits), `dropdown-menu` (filter-by, model pill), `context-menu` **with a subme
 `tooltip` (disabled controls, `Restore`, `Connect apps`, the `⌘⇧O` hint). Collapsibles, tabs and
 checkboxes stay hand-rolled — they are a few lines each and the captures do not match shadcn's
 defaults anyway. Phase 1 pulls in `cn` + `tooltip` only; later phases add a primitive when the phase
-that needs it lands.
+that needs it lands. Three are in: `tooltip`, `dropdown-menu` (filter-by, the model picker) and
+`dialog` (the search palette, §7.1) — which is where the focus trap and `Esc`-to-close the PDF grades
+now actually run.
 
 **UI-2 — `/chat` runs on the `new` sentinel and skips the chat query.** `GET /chats/new` would 404.
 On send, the created chat's real history is prefetched *before* `router.replace`, so the screen never
@@ -812,23 +911,38 @@ flashes a spinner between the send and the first read and no `ChatDTO` has to be
 **UI-3 — `/chat` is the new-chat page; `/` redirects.** Clones the reference URL for one redirect,
 and supersedes the `/chat/new` route in `LLD.md` §1's file map.
 
-**UI-4 — the model pill shows the chat's model and the path's availability, from two sources.** The
-PDF asks for "OpenRouter Free status" in the composer; the reference has no composer-level model
-control and puts `Magica Auto` in the top bar. We keep the reference's placement and satisfy the
-requirement there.
+**UI-4 — the model pill chooses the chat's model and reports the path's availability, from two
+sources.** The PDF asks for "OpenRouter Free status" in the composer; the reference has no
+composer-level model control and puts `Magica Auto` in the top bar. We keep the reference's placement
+and satisfy the requirement there.
 
-**Identity and availability are different questions and must not share a source.**
+**Choice and availability are different questions and must not share a source.**
 
 | What is shown | Source | Note |
 |---|---|---|
-| the model this chat is configured to use | `ChatDTO.modelId` | the fallback, for a chat that has not run a turn yet. Already on the wire, so no extra request |
-| the model that actually served a turn | `MessageDTO.aiModel` | written at message bootstrap, so it is set from the turn's start. **This is the label**, from the newest turn that recorded one |
+| the model the next turn will ask for | a local choice, else `ChatDTO.modelId`, else `ALLOWED_MODELS[0]` | **this is the label and the checked row**, resolved by `selectedModel()` |
+| the model that actually served a turn | `MessageDTO.aiModel` | in the **tooltip**, never the label — see below |
 | whether the shared path is refusing work | `GET /llm/status` → `rateLimitedUntil` | null once the cooldown elapses, so the server owns the clock |
+| which model hit the limit | `GET /llm/status` → `limitedModel` | annotates **one menu row**, never the trigger |
+
+**Never label the pill from `MessageDTO.aiModel`.** It named the label until the pill became a
+picker, and it cannot any more: under `openrouter/free` the router resolves a sub-model per request,
+so `aiModel` routinely names something that is not a row in the menu. A trigger reading
+`nemotron-nano-9b-v2` over a menu with `Auto` checked is a control that contradicts itself. The
+served model moved to the tooltip, which is the only place the screen still admits which model did
+the work — and under the router that is the only place it is ever visible.
 
 **Never label the pill from `LlmStatus.limitedModel`.** It is written in exactly one place — when a
 rate limit is recorded — so it is null until a limit has happened and then names the model that
 *failed*, not one that served. Using it would show nothing most of the time and a broken model's name
-the rest. It belongs only in copy about the limit itself.
+the rest. It belongs only in copy about the limit itself — which now includes a `rate limited` chip
+on the matching menu row, because that is copy about the limit and it is actionable there.
+
+**`SendMessage.modelId` is sent on every turn, never omitted.** The backend persists it to the chat
+on each send and the field carries a default, so leaving it out does not mean "keep what the chat
+has" — it silently resets the chat to the build default. A chat whose configured model is one this
+build no longer offers resolves to the default rather than to itself, because the send would be
+rejected and the trigger would name a row the menu does not contain.
 
 Three things about the rate-limited state:
 
@@ -1013,6 +1127,8 @@ recovery".
 | Question panel — text / image | `Enter` submit · `Esc` skip | hints rendered under the panel |
 | Question panel — select | `↑↓` navigate · `Enter` select · `Esc` skip | |
 | Sidebar New task | `⌘⇧O`, revealed as a chip on hover | `01-shell/sidebar__newtask-shortcut-hover__light.jpg` |
+| Sidebar toggle | `⌘B`, advertised in the toggle's tooltip | works from anywhere; the rail's logo slot is the toggle on hover |
+| Search palette | `⌘K` opens · `↑↓` navigate · `Enter` open · `Esc` close · `⌘⇧O` new task | §7.1. `combobox` + `aria-activedescendant` over a `listbox`; focus stays in the field |
 | Modals | focus trap, `Esc` closes, focus returns to the opener | Radix `dialog` (UI-1) |
 | Streaming text | `aria-live="polite"` region so a screen reader follows the answer | |
 | Tool cards / step groups | native `button` toggles with `aria-expanded` | |

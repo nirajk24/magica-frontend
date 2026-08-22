@@ -56,6 +56,9 @@ vi.mock("next/navigation", async () => {
   };
 });
 
+/** jsdom has no layout, so it implements no scrolling; a keyboard-driven list calls this on focus. */
+Element.prototype.scrollIntoView = vi.fn();
+
 /** Captured before any test runs, so resetting the store never needs a list of its fields. */
 const initialUIState = { ...useUI.getState() };
 

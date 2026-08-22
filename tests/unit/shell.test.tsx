@@ -15,6 +15,52 @@ import { env } from "@/lib/env";
 
 const API = `${env.NEXT_PUBLIC_API_URL}/api/v1`;
 
+describe("the collapsed rail", () => {
+  it("keeps search reachable and pins settings at the bottom", async () => {
+    useUI.setState({ sidebarCollapsed: true });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
+  it("expands from the logo slot, which is the toggle in disguise", async () => {
+    const user = userEvent.setup();
+    useUI.setState({ sidebarCollapsed: true });
+    renderWithProviders(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "Expand sidebar" }));
+
+    expect(useUI.getState().sidebarCollapsed).toBe(false);
+  });
+
+  it("toggles on the keyboard chord the tooltip advertises", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Sidebar />);
+
+    await user.keyboard("{Meta>}b{/Meta}");
+
+    expect(useUI.getState().sidebarCollapsed).toBe(true);
+
+    await user.keyboard("{Meta>}b{/Meta}");
+
+    expect(useUI.getState().sidebarCollapsed).toBe(false);
+  });
+
+  it("names a collapsed row on hover, since the rail has no room for labels", async () => {
+    const user = userEvent.setup();
+    useUI.setState({ sidebarCollapsed: true });
+    renderWithProviders(<Sidebar />);
+
+    await user.hover(screen.getByRole("link", { name: "Tasks" }));
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Tasks");
+  });
+});
+
 describe("the sidebar", () => {
   it("lists the reference's nav in its order", async () => {
     renderWithProviders(<Sidebar />);
@@ -106,7 +152,7 @@ describe("the top bar", () => {
   it("names the model the turn runs on", () => {
     renderWithProviders(<TopBar />);
 
-    expect(screen.getByText("Auto")).toBeInTheDocument();
+    expect(screen.getByText("Magica Auto")).toBeInTheDocument();
   });
 
   it("offers sign in and sign up instead of credits when signed out", () => {

@@ -22,7 +22,23 @@ const subscribe = () => () => {};
  * render pass a mount-flag effect would cost.
  *
  * Each control carries an `aria-label`, because an icon with no text is nameless otherwise.
+ *
+ * Switching wraps `setTheme` in a **view transition** where the browser has one: every element on
+ * the page changes colour in the same frame, and the transition crossfades the whole frame instead
+ * of asking each element to animate its own colours — which is the only way a theme switch animates
+ * without breaking every element that already declares a transition of its own. Browsers without
+ * the API (and people who prefer reduced motion) get the instant switch they always had.
  */
+function applyThemeSmoothly(apply: () => void) {
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduced || !document.startViewTransition) {
+    apply();
+    return;
+  }
+
+  document.startViewTransition(apply);
+}
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const hydrated = useSyncExternalStore(
@@ -32,7 +48,7 @@ export function ThemeToggle() {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-full border border-border p-1">
+    <div className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1">
       {OPTIONS.map(({ value, icon: Icon, label }) => {
         const active = hydrated && theme === value;
 
@@ -40,12 +56,12 @@ export function ThemeToggle() {
           <button
             key={value}
             type="button"
-            onClick={() => setTheme(value)}
+            onClick={() => applyThemeSmoothly(() => setTheme(value))}
             aria-label={label}
             aria-pressed={active}
             className={cn(
               "flex h-7 items-center justify-center rounded-full transition-colors",
-              active ? "bg-surface text-fg" : "text-fg-muted hover:text-fg",
+              active ? "bg-panel text-fg shadow-sm" : "text-fg-muted hover:text-fg",
             )}
           >
             <Icon className="size-4" aria-hidden />

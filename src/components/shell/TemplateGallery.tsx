@@ -10,8 +10,10 @@ const ALL = "All";
  * The empty state's template grid: category tabs over a three-column masonry of cards.
  *
  * The rhythm is measured: 32px from the composer to the tab row, a 33px-tall row, 32px to the first
- * card. The row sits on `--surface`, which is what the dark reference shows; the light capture shows
- * no band, and that token is close enough to white there to be nearly invisible either way.
+ * card. The row's band exists in ONE theme — the dark capture shows a `#191919` strip, the light
+ * capture shows bare text on the canvas — so it sits on `--tab-strip`, which is transparent in
+ * light. The active tab is the inverse: a white pill with a faint shadow in light, and in dark that
+ * same `--panel` fill vanishes into the strip, leaving the white text the capture shows.
  *
  * A card is **one tile**: the artwork runs flush to its top and side edges and the title and
  * description sit on a `--surface` panel beneath, inside the same rounded container. Measured — the
@@ -33,7 +35,7 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
       <div
         role="tablist"
         aria-label="Template categories"
-        className="flex h-9 items-center gap-6 overflow-x-auto rounded-card bg-surface px-4 text-sm"
+        className="flex h-9 items-center gap-4 overflow-x-auto rounded-card bg-tab-strip px-1 text-sm"
       >
         {[ALL, ...TEMPLATE_CATEGORIES].map((name) => (
           <button
@@ -43,8 +45,10 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
             aria-selected={category === name}
             onClick={() => setCategory(name)}
             className={cn(
-              "shrink-0 whitespace-nowrap transition-colors",
-              category === name ? "text-fg" : "text-fg-muted hover:text-fg",
+              "shrink-0 rounded-full px-3 py-1 whitespace-nowrap transition-colors",
+              category === name
+                ? "bg-panel font-medium text-fg shadow-sm"
+                : "text-fg-muted hover:text-fg",
             )}
           >
             {name}

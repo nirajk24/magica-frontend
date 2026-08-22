@@ -1,9 +1,12 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { PanelLeft, Search } from "lucide-react";
+import { PanelLeft, Search, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { DisabledAction } from "@/components/DisabledAction";
+import { MagicaLogo } from "@/components/MagicaMark";
 import { NAV_ITEMS } from "@/components/shell/nav";
 import { SidebarFooter } from "@/components/shell/SidebarFooter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,43 +30,72 @@ const SKELETON_ROWS = 6;
 export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const collapsed = useUI((state) => state.sidebarCollapsed);
   const toggleSidebar = useUI((state) => state.toggleSidebar);
+  const setSearchOpen = useUI((state) => state.setSearchOpen);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== "b" || !(event.metaKey || event.ctrlKey) || event.shiftKey)
+        return;
+
+      event.preventDefault();
+      toggleSidebar();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [toggleSidebar]);
 
   return (
     <aside
       aria-label="Sidebar"
       className={cn(
         "flex shrink-0 flex-col overflow-hidden rounded-card bg-bg-subtle transition-[width]",
-        collapsed ? "w-[52px]" : "w-[240px]",
+        collapsed ? "w-16 items-center" : "w-[240px]",
       )}
     >
-      <div className="flex items-center justify-between px-3 py-3">
-        {!collapsed && (
-          <Link href="/chat" className="px-1 text-[15px] font-semibold tracking-tight text-fg">
-            Magica
-          </Link>
-        )}
-
-        <div className="flex items-center gap-1">
-          {!collapsed && (
-            <DisabledIcon
-              icon={Search}
-              label="Search tasks"
-              reason="Search lives on the Tasks page in this build."
-            />
-          )}
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!collapsed}
-            className="rounded-md p-1 text-fg-subtle transition-colors hover:text-fg"
-          >
-            <PanelLeft className="size-4" aria-hidden />
-          </button>
+      {collapsed ? (
+        <div className="flex flex-col items-center gap-1 pt-3">
+          <LogoToggle onToggle={toggleSidebar} />
+          <RailButton label="Search" onClick={() => setSearchOpen(true)}>
+            <Search className="size-4" aria-hidden />
+          </RailButton>
         </div>
-      </div>
+      ) : (
+        <div className="flex w-full items-center justify-between px-3 py-3">
+          <Link
+            href="/chat"
+            aria-label="Magica"
+            className="flex items-center gap-1 px-1 text-[16px] font-semibold tracking-tight text-fg"
+          >
+            <MagicaLogo className="size-5" />
+            <span className="-ml-0.5">agica</span>
+          </Link>
 
-      <nav aria-label="Main" className="flex flex-col gap-0.5 px-2">
+          <div className="flex items-center gap-1">
+            <RailButton label="Search" onClick={() => setSearchOpen(true)}>
+              <Search className="size-4" aria-hidden />
+            </RailButton>
+            <Tooltip>
+              <TooltipTrigger
+                type="button"
+                onClick={toggleSidebar}
+                aria-label="Collapse sidebar"
+                aria-expanded
+                className="rounded-md p-1.5 text-fg-subtle transition-colors hover:text-fg"
+              >
+                <PanelLeft className="size-4" aria-hidden />
+              </TooltipTrigger>
+              <TooltipContent>Toggle sidebar ⌘B</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+      )}
+
+      <nav
+        aria-label="Main"
+        className={cn("flex flex-col gap-0.5", collapsed ? "mt-2 items-center" : "w-full px-2")}
+      >
         {NAV_ITEMS.map((item) => (
           <NavRow key={item.href} item={item} collapsed={collapsed} onNavigate={onNavigate} />
         ))}
@@ -71,8 +103,68 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
 
       {!collapsed && <RecentTasks onNavigate={onNavigate} />}
 
-      <div className="mt-auto">{!collapsed && <SidebarFooter />}</div>
+      <div className={cn("mt-auto", collapsed ? "pb-3" : "w-full")}>
+        {collapsed ? (
+          <DisabledAction
+            icon={Settings}
+            label="Settings"
+            reason="Settings aren't part of this build."
+            className="rounded-md p-2"
+          />
+        ) : (
+          <SidebarFooter />
+        )}
+      </div>
     </aside>
+  );
+}
+
+/**
+ * The rail's top slot, which is two controls in one place: the logo at rest, and the sidebar toggle
+ * the moment a pointer is over it — which is how the reference fits both into a rail one icon wide.
+ * The button is the toggle throughout; only the glyph swaps, so keyboard and screen-reader users
+ * always have the control.
+ */
+function LogoToggle({ onToggle }: { onToggle: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        type="button"
+        onClick={onToggle}
+        aria-label="Expand sidebar"
+        aria-expanded={false}
+        className="group grid size-9 place-items-center rounded-md text-fg transition-colors hover:bg-surface"
+      >
+        <MagicaLogo className="size-5 group-hover:hidden" />
+        <PanelLeft className="hidden size-4 text-fg-subtle group-hover:block" aria-hidden />
+      </TooltipTrigger>
+      <TooltipContent side="right">Toggle sidebar ⌘B</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** A small icon button with its name in a tooltip, which is all a collapsed rail can say. */
+function RailButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        type="button"
+        aria-label={label}
+        onClick={onClick}
+        className="grid size-9 place-items-center rounded-md text-fg-subtle transition-colors hover:bg-surface hover:text-fg"
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -97,9 +189,9 @@ function NavRow({
   );
 
   const className = cn(
-    "flex h-9 items-center gap-2.5 rounded-md px-2 text-sm transition-colors",
+    "flex items-center rounded-md text-sm transition-colors",
+    collapsed ? "size-9 justify-center" : "h-9 gap-2.5 px-2",
     active ? "bg-surface text-fg" : "text-fg-muted hover:bg-surface hover:text-fg",
-    collapsed && "justify-center",
   );
 
   if (item.placeholder) {
@@ -110,19 +202,30 @@ function NavRow({
           aria-disabled
           aria-label={item.label}
           onClick={(event) => event.preventDefault()}
-          className={cn(className, "cursor-not-allowed opacity-60")}
+          className={cn(className, "cursor-not-allowed", !collapsed && "opacity-60")}
         >
           {content}
         </TooltipTrigger>
-        <TooltipContent>{item.label} isn&apos;t part of this build.</TooltipContent>
+        <TooltipContent side={collapsed ? "right" : "bottom"}>
+          {collapsed ? item.label : `${item.label} isn't part of this build.`}
+        </TooltipContent>
       </Tooltip>
     );
   }
 
-  return (
+  const link = (
     <Link href={item.href} aria-label={item.label} onClick={onNavigate} className={className}>
       {content}
     </Link>
+  );
+
+  if (!collapsed) return link;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side="right">{item.label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -190,30 +293,5 @@ function SkeletonRows() {
         />
       ))}
     </div>
-  );
-}
-
-function DisabledIcon({
-  icon: Icon,
-  label,
-  reason,
-}: {
-  icon: typeof Search;
-  label: string;
-  reason: string;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        type="button"
-        aria-disabled
-        aria-label={label}
-        onClick={(event) => event.preventDefault()}
-        className="cursor-not-allowed rounded-md p-1 text-fg-subtle/60"
-      >
-        <Icon className="size-4" aria-hidden />
-      </TooltipTrigger>
-      <TooltipContent>{reason}</TooltipContent>
-    </Tooltip>
   );
 }

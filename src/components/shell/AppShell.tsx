@@ -6,6 +6,7 @@ import { useSelectedLayoutSegments } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { FullPageSpinner } from "@/components/FullPageSpinner";
 import { PANEL_WIDTH } from "@/components/panels/ToolDetailPanel";
+import { SearchPalette } from "@/components/shell/SearchPalette";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { cn } from "@/lib/cn";
@@ -41,6 +42,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-dvh gap-2 p-2">
+      <SearchPalette />
+
       <div className="hidden md:flex">
         <Sidebar />
       </div>

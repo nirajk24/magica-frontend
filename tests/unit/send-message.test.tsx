@@ -85,8 +85,29 @@ describe("sending a message", () => {
     await user.type(screen.getByLabelText("Message"), "make a poster{Enter}");
 
     await waitFor(() =>
-      expect(body).toEqual({ content: "make a poster", planMode: true }),
+      expect(body).toEqual({
+        content: "make a poster",
+        planMode: true,
+        modelId: fixtures.chat.modelId,
+      }),
     );
+  });
+
+  it("names the chat's model on every send, so an unchanged chat is not reset to the default", async () => {
+    const user = userEvent.setup();
+    let body: { modelId?: string } | null = null;
+    server.use(
+      noActiveRun,
+      http.post(MESSAGES, async ({ request }) => {
+        body = (await request.json()) as { modelId?: string };
+        return HttpResponse.json({ data: fixtures.sendMessageResult });
+      }),
+    );
+
+    renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
+    await user.type(screen.getByLabelText("Message"), "make a poster{Enter}");
+
+    await waitFor(() => expect(body?.modelId).toBe(fixtures.chat.modelId));
   });
 
   it("seeds the active run from the response rather than minting a second token", async () => {

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { ModelId } from "@/contracts";
 
 /**
  * An action that failed loudly enough to interrupt. `traceId` is the backend's, and it is rendered
@@ -14,15 +15,19 @@ const MAX_TOASTS = 3;
 
 type UIState = {
   drafts: Record<string, string>;
+  modelByChat: Record<string, ModelId>;
   sidebarCollapsed: boolean;
+  searchOpen: boolean;
   openPanel: { type: "tool"; invocationId: string } | null;
   stoppingRuns: string[];
   planModeChats: string[];
   toasts: Toast[];
   setDraft: (chatId: string, text: string) => void;
   clearDraft: (chatId: string) => void;
+  setModel: (chatId: string, modelId: ModelId) => void;
   togglePlanMode: (chatId: string) => void;
   toggleSidebar: () => void;
+  setSearchOpen: (open: boolean) => void;
   setOpenPanel: (panel: UIState["openPanel"]) => void;
   markStopping: (runId: string) => void;
   clearStopping: (runId: string) => void;
@@ -37,12 +42,18 @@ type UIState = {
  * INVARIANT: `partialize` must list only the fields that should survive a reload. Without it, an
  * open tool panel, a stale "stopping" run or a plan-mode toggle meant for one send is restored from
  * localStorage.
+ *
+ * `modelByChat` is a choice the next send has not carried yet, so it is deliberately not persisted:
+ * the server records the model on the chat as each send goes through, and a restored local override
+ * would outrank that and quietly contradict what the chat is actually configured with.
  */
 export const useUI = create<UIState>()(
   persist(
     (set) => ({
       drafts: {},
+      modelByChat: {},
       sidebarCollapsed: false,
+      searchOpen: false,
       openPanel: null,
       stoppingRuns: [],
       planModeChats: [],
@@ -58,6 +69,9 @@ export const useUI = create<UIState>()(
           return { drafts };
         }),
 
+      setModel: (chatId, modelId) =>
+        set((s) => ({ modelByChat: { ...s.modelByChat, [chatId]: modelId } })),
+
       togglePlanMode: (chatId) =>
         set((s) => ({
           planModeChats: s.planModeChats.includes(chatId)
@@ -66,6 +80,7 @@ export const useUI = create<UIState>()(
         })),
 
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setSearchOpen: (searchOpen) => set({ searchOpen }),
       setOpenPanel: (openPanel) => set({ openPanel }),
 
       markStopping: (runId) =>

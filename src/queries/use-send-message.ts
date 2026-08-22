@@ -8,7 +8,8 @@ import { ApiError } from "@/lib/api-client";
 import { qk } from "@/lib/query-client";
 import { useApi } from "@/lib/use-api";
 import { useUI } from "@/stores/ui";
-import { NEW_CHAT_ID } from "@/queries/use-chat";
+import { selectedModel } from "@/lib/models";
+import { NEW_CHAT_ID, useChatModel } from "@/queries/use-chat";
 
 /**
  * Attaches the screen to a run that has just started, whether it came from a send or from a retry —
@@ -44,6 +45,10 @@ export async function applyRunStart(
  *
  * `qk.activeRun` is seeded from the response instead of refetched. Every field comes from the parsed
  * result, and refetching would mint a second realtime token against a 10-connection cap.
+ *
+ * INVARIANT: `modelId` is sent on every turn, never omitted. The server persists it to the chat each
+ * time, and the field carries a default — so leaving it out does not mean "keep what the chat has",
+ * it silently resets a chat back to the build default.
  */
 export function useSendMessage(chatId: string) {
   const api = useApi();
@@ -51,10 +56,12 @@ export function useSendMessage(chatId: string) {
   const router = useRouter();
   const setDraft = useUI((state) => state.setDraft);
   const clearDraft = useUI((state) => state.clearDraft);
+  const pendingModel = useUI((state) => state.modelByChat[chatId]);
+  const modelId = selectedModel(pendingModel, useChatModel(chatId));
 
   return useMutation({
     mutationFn: ({ content, planMode }: ComposerSubmit) =>
-      api.sendMessage(chatId, { content, planMode }),
+      api.sendMessage(chatId, { content, planMode, modelId }),
 
     onMutate: ({ content }: ComposerSubmit) => {
       clearDraft(chatId);

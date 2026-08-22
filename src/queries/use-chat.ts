@@ -32,6 +32,11 @@ export function useChat(chatId: string) {
   });
 }
 
+/** The model a chat is configured with, or `undefined` for one the server has not created yet. */
+export function useChatModel(chatId: string): string | undefined {
+  return useChat(chatId).data?.pages[0]?.chat.modelId;
+}
+
 /**
  * The chat plus the rows the transcript should show.
  *

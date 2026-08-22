@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, ClipboardList, Mic, Paperclip } from "lucide-react";
+import { ArrowUp, ClipboardList, Mic, Paperclip, Plug } from "lucide-react";
 import { useLayoutEffect, useRef, type KeyboardEvent } from "react";
 import { DisabledAction } from "@/components/DisabledAction";
 import { Spinner } from "@/components/Spinner";
@@ -76,7 +76,7 @@ export function Composer({
   };
 
   return (
-    <div className="rounded-composer border border-border bg-surface bg-linear-to-b from-composer-from to-composer-to p-4">
+    <div className="rounded-composer border border-border bg-surface bg-linear-to-b from-composer-from to-composer-to p-4 transition-colors focus-within:border-border-strong">
       <textarea
         ref={textarea}
         rows={1}
@@ -94,6 +94,11 @@ export function Composer({
             icon={Paperclip}
             label="Attach a file"
             reason="Attachments aren't part of this build yet."
+          />
+          <DisabledAction
+            icon={Plug}
+            label="Connect apps"
+            reason="Integrations aren't part of this build."
           />
           <PlanModeToggle enabled={planMode} onToggle={() => togglePlanMode(chatId)} />
         </div>
@@ -137,6 +142,11 @@ function PlanModeToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () 
   );
 }
 
+/**
+ * At rest there is no disc at all — the capture shows a bare muted arrow until there is something to
+ * send, and the filled circle appears with the first character. The 34px hit target stays either
+ * way; only the fill comes and goes.
+ */
 function SendButton({
   canSend,
   pending,
@@ -154,7 +164,7 @@ function SendButton({
       onClick={onClick}
       className={cn(
         "flex size-[34px] items-center justify-center rounded-full transition-colors",
-        canSend ? "bg-fg text-bg" : "cursor-not-allowed bg-surface text-fg-subtle",
+        canSend ? "bg-fg text-bg" : "cursor-not-allowed text-fg-subtle",
       )}
     >
       {pending ? (

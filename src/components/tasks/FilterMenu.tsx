@@ -14,6 +14,9 @@ const OPTIONS = [
   { value: "pinned", label: "Pinned" },
 ] as const satisfies readonly { value: ChatsFilter; label: string }[];
 
+/** The reference's other two rows. Projects do not exist in this build, so they answer disabled. */
+const PROJECT_OPTIONS = ["Projects", "No project"] as const;
+
 /**
  * The reference's `Filter by All ⌄`. The value is sent to the server, which is what makes it a filter
  * rather than a view over the page already fetched.
@@ -33,13 +36,13 @@ export function FilterMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded-full border border-border px-3 text-sm text-fg">
+      <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-sm text-fg transition-colors hover:bg-border">
         <span className="text-fg-muted">Filter by</span>
         {active.label}
         <ChevronDown className="size-3.5 text-fg-subtle" aria-hidden />
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="min-w-[9rem]">
         {OPTIONS.map((option) => (
           <DropdownMenuItem key={option.value} onSelect={() => onChange(option.value)}>
             <Check
@@ -47,6 +50,12 @@ export function FilterMenu({
               aria-hidden
             />
             {option.label}
+          </DropdownMenuItem>
+        ))}
+        {PROJECT_OPTIONS.map((label) => (
+          <DropdownMenuItem key={label} disabled aria-disabled>
+            <Check className="size-3.5 opacity-0" aria-hidden />
+            {label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

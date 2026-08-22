@@ -452,6 +452,18 @@ Reference: `04-tool-cards/detail-side-panel__light.jpg`,
 
 ---
 
+### Built after Phase 5, ahead of Phase 6
+
+Two surfaces whose data was already live, taken in this order because each replaced a control that
+was on screen doing nothing.
+
+| Item | Files | Why it came first |
+|---|---|---|
+| **Model picker** | `lib/models.ts`, `shell/TopBar.tsx`, `ui/dropdown-menu.tsx`, `stores/ui.ts`, `queries/use-send-message.ts` | the backend began persisting `SendMessage.modelId` on **every** send, which both unblocked the picker and made omitting the field destructive — see UI-4 |
+| **Search palette** | `shell/SearchPalette.tsx`, `ui/dialog.tsx`, `lib/use-debounced.ts` | `GET /chats?search=` was already live, and the sidebar's magnifier was disabled with a reason that had turned out to be wrong |
+
+---
+
 ### Phase 6 — Deferred-by-design · ~10h · ordered, stop anywhere
 
 | Order | Item | Notes |

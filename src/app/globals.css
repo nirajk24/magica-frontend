@@ -29,13 +29,26 @@
  * to its canvas in dark, so darkening only one would introduce a seam the reference never shows.
  * `--surface` is unchanged, so raised elements read slightly more raised than the reference.
  *
+ * `--panel` / `--panel-inset` are a floating overlay's two levels, and they SWAP between themes.
+ * An overlay that leaves the page visible cannot borrow `--bg`: in dark that is the canvas, so the
+ * panel would be the same colour as what it floats over. The panel is the raised level (white in
+ * light, `--surface` in dark) and the inset is the recessed band a result list sits in (`--surface`
+ * in light, the canvas in dark). A row that is raised back out of the band takes `--panel` again, so
+ * the focused row and the panel always share one value and the band always differs from both.
+ *
+ * `--tab-strip` is the template tab row's band, and it exists in ONE theme: the dark capture shows a
+ * #191919 band behind the tabs, the light capture shows bare text on the canvas. It is transparent
+ * in light on purpose — giving it a light value re-introduces the strip the reference does not draw.
+ * `--border-strong` is a focus border (the composer's); the resting `--border` is a hairline that
+ * cannot carry focus. Both focus values are ESTIMATED — no focused-state capture exists.
+ *
  * `--danger-surface` is the stop button's tinted disc, and it is not `--danger` at an opacity: in
  * both themes its green and blue channels fall on the far side of the canvas from where an alpha
  * blend could put them. The dark value is exact, read off a lossless PNG; the light one comes from a
  * lossy JPEG and is approximate.
  *
  * `--composer-from` / `--composer-to` are a measured detail rather than a flourish: the light
- * composer carries a top-to-bottom gradient from #f2f2f2 to #f9f9f9, read off the lossless
+ * composer carries a whisper of a top-to-bottom gradient, #fafafa to #fdfdfd, read off the lossless
  * empty-state PNG. In dark it is flat #191919 with a #1b1b1b hairline, which the existing surface and
  * border tokens already describe — so the two stops are equal there.
  *
@@ -66,6 +79,12 @@
   --color-composer-from: var(--composer-from);
   --color-composer-to: var(--composer-to);
 
+  --color-panel: var(--panel);
+  --color-panel-inset: var(--panel-inset);
+
+  --color-border-strong: var(--border-strong);
+  --color-tab-strip: var(--tab-strip);
+
   --radius-bubble: 1.25rem;
   --radius-composer: 1rem;
   --radius-card: 0.5rem;
@@ -89,8 +108,14 @@
   --info: #3655e6;
   --amber: #e3ad47;
 
-  --composer-from: #f2f2f2;
-  --composer-to: #f9f9f9;
+  --composer-from: #fafafa;
+  --composer-to: #fdfdfd;
+
+  --panel: #ffffff;
+  --panel-inset: #f7f7f7;
+
+  --border-strong: #d9d9d9;
+  --tab-strip: transparent;
 }
 
 .dark {
@@ -113,12 +138,45 @@
 
   --composer-from: #191919;
   --composer-to: #191919;
+
+  --panel: #191919;
+  --panel-inset: #0f0f0f;
+
+  --border-strong: #3f3f3f;
+  --tab-strip: #191919;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-spinner] {
     animation: none;
   }
+
+  .search-palette-overlay {
+    animation: none;
+  }
+}
+
+/*
+ * The search palette blurs the page instead of tinting it, and the blur ramps in with the panel —
+ * a backdrop-filter cannot be faded via the element's own opacity, so it is keyframed directly.
+ * The 6px radius is a judgement call: a blur leaves no edge to measure off a capture.
+ */
+@keyframes page-blur-in {
+  from {
+    backdrop-filter: blur(0);
+  }
+  to {
+    backdrop-filter: blur(6px);
+  }
+}
+
+.search-palette-overlay {
+  backdrop-filter: blur(6px);
+  animation: page-blur-in 200ms ease-out both;
+}
+
+.search-palette-overlay[data-state="closed"] {
+  animation: page-blur-in 150ms ease-in reverse both;
 }
 
 body {

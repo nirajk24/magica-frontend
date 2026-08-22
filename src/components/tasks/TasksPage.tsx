@@ -27,7 +27,7 @@ export function TasksPage() {
   return (
     <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-8 py-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">Tasks</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-fg">Tasks</h1>
 
         <div className="flex items-center gap-2">
           <FilterMenu value={filter} onChange={setFilter} />
@@ -36,13 +36,13 @@ export function TasksPage() {
             icon={ListChecks}
             label="Select tasks"
             reason="Deleting and moving tasks isn't wired into this build yet."
-            className="flex h-9 items-center gap-2 rounded-full border border-border px-3 text-sm"
+            className="flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-sm"
             showLabel
           />
 
           <Link
             href="/chat"
-            className="flex h-9 items-center gap-2 rounded-full bg-fg px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+            className="flex h-10 items-center gap-2 rounded-full bg-fg px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90"
           >
             <CirclePlus className="size-4" aria-hidden />
             New task
@@ -50,7 +50,7 @@ export function TasksPage() {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2.5">
+      <label className="flex h-11 items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5">
         <Search className="size-4 shrink-0 text-fg-subtle" aria-hidden />
         <input
           type="search"
