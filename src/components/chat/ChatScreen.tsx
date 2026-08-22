@@ -5,12 +5,15 @@ import { useMemo, useState } from "react";
 import type { ActiveRun, MessageDTO } from "@/contracts";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
 import { MessageList, type TranscriptItem } from "@/components/chat/MessageList";
+import { EmptyStateHeader } from "@/components/shell/EmptyStateHeader";
+import { TemplateGallery } from "@/components/shell/TemplateGallery";
 import { Spinner } from "@/components/Spinner";
 import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
 import { useStopRun } from "@/queries/use-cancel-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
+import { useUI } from "@/stores/ui";
 
 const COLUMN = "mx-auto w-full max-w-[820px] px-6";
 
@@ -34,6 +37,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const { query, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
+  const setDraft = useUI((state) => state.setDraft);
   const stop = useStopRun(chatId, activeRun?.runId ?? null, activeRun === null && !query.isFetching);
   const [optimistic, setOptimistic] = useState<{ chatId: string; message: MessageDTO } | null>(
     null,
@@ -81,8 +85,10 @@ export function ChatScreen({ chatId }: { chatId: string }) {
         </div>
       )}
 
-      <div className={isNew ? "flex flex-1 items-center pb-24" : "shrink-0 pb-6"}>
+      <div className={isNew ? "min-h-0 flex-1 overflow-y-auto py-10" : "shrink-0 pb-6"}>
         <div className={COLUMN}>
+          {isNew && <EmptyStateHeader />}
+
           <Composer
             chatId={chatId}
             runActive={activeRun !== null}
@@ -101,6 +107,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
               )}
             </p>
           )}
+
+          {isNew && <TemplateGallery onPick={(template) => setDraft(chatId, template.prompt)} />}
         </div>
       </div>
     </div>

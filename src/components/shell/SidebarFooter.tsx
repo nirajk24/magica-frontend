@@ -37,31 +37,43 @@ export function SidebarFooter() {
         <>
           {isSignedIn && <CreditBlock />}
 
-          <DisabledAction
-            icon={Gift}
-            label="Claim Offer"
-            reason="Offers aren't part of this build."
-            className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm text-bg opacity-60"
-            showLabel
-          />
+          {!isSignedIn && (
+            <DisabledAction
+              icon={Gift}
+              label="Claim Offer"
+              reason="Offers aren't part of this build."
+              className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm text-bg opacity-60"
+              showLabel
+            />
+          )}
 
           {isSignedIn && (
-            <div className="flex gap-2">
-              <DisabledAction
-                icon={Settings}
-                label="Settings"
-                reason="Settings aren't part of this build."
-                className="flex flex-1 items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
-                showLabel
-              />
+            <>
+              <div className="flex gap-2">
+                <DisabledAction
+                  icon={Settings}
+                  label="Settings"
+                  reason="Settings aren't part of this build."
+                  className="flex flex-1 items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
+                  showLabel
+                />
+                <DisabledAction
+                  icon={Sparkles}
+                  label="Updates"
+                  reason="Release notes aren't part of this build."
+                  className="flex flex-1 items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
+                  showLabel
+                />
+              </div>
+
               <DisabledAction
                 icon={UserPlus}
-                label="Invite"
-                reason="Team invites aren't part of this build."
-                className="flex flex-1 items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
+                label="Invite team members"
+                reason="Teams aren't part of this build."
+                className="flex w-full items-center justify-between gap-2 rounded-card border border-border px-3 py-2 text-sm"
                 showLabel
               />
-            </div>
+            </>
           )}
 
           <ThemeToggle />
@@ -111,6 +123,10 @@ function CreditBlock() {
           {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
         </span>
       </div>
+
+      <p className="rounded-card border border-success/50 px-3 py-1.5 text-xs text-success">
+        Free tier — credits do not renew
+      </p>
 
       <DisabledAction
         icon={Sparkles}
