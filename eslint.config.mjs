@@ -9,6 +9,10 @@ const config = [
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "error",
+
+      // Generated assets come from arbitrary CDN hosts, which `images.remotePatterns` cannot
+      // enumerate, so remote media is a plain <img>. See UI-10 in UI-SPEC.md.
+      "@next/next/no-img-element": "off",
     },
   },
   { ignores: [".next/**", "node_modules/**", "src/contracts/**"] },
