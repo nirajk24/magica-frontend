@@ -63,9 +63,7 @@ export function SidebarFooter() {
       )}
 
       {isSignedIn ? (
-        <div className="flex items-center px-1 pt-1">
-          <UserButton showName />
-        </div>
+        <AccountRow />
       ) : (
         <SignInButton mode="modal">
           <button
@@ -77,6 +75,32 @@ export function SidebarFooter() {
         </SignInButton>
       )}
     </div>
+  );
+}
+
+/**
+ * The account row: avatar left, name right, in a full-width row that opens Clerk's menu.
+ *
+ * Clerk lays its own button out as `[name][avatar]` and gives it no width, so left to itself the
+ * identifier overflows the sidebar — an email is long and a dev instance uses one as the name. The
+ * appearance overrides give it the row to live in, reverse it to the reference's order, and truncate
+ * the identifier rather than letting it spill.
+ */
+function AccountRow() {
+  return (
+    <UserButton
+      showName
+      appearance={{
+        elements: {
+          rootBox: "w-full",
+          userButtonTrigger:
+            "w-full rounded-card border border-border px-2 py-1.5 transition-colors hover:bg-surface focus:shadow-none",
+          userButtonBox: "w-full min-w-0 flex-row-reverse justify-between gap-2",
+          userButtonOuterIdentifier: "min-w-0 truncate pl-0 text-sm text-fg",
+          userButtonAvatarBox: "size-6 shrink-0",
+        },
+      }}
+    />
   );
 }
 
