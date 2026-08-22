@@ -56,15 +56,16 @@ Two of these overturn assumptions worth calling out explicitly:
 
 | Route | Screen | Auth | Phase | Reference URL |
 |---|---|---|---|---|
-| `/` | redirect → `/chat` | — | **1** | — |
-| `/chat` | New chat. Composer only in Phase 1; full empty state in Phase 3 | required | **1** | `app.magica.com/chat` |
+| `/` | redirect → `/chat` | **public** | **1** | — |
+| `/chat` | New chat. Composer only in Phase 1; full empty state in Phase 3 | **public** | **1** | `app.magica.com/chat` |
 | `/chat/[chatId]` | **The chat screen** | required | **1** | `app.magica.com/chat/{id}` |
 | `/chat/recent` | Tasks page (chat list) | required | 3 | `app.magica.com/chat/recent` |
 | `/sign-in/[[...rest]]` | Clerk catch-all | public | 0 | Clerk-hosted equivalent |
 | `/projects` `/library` `/tools` `/api-mcp` `/unfair-advantage` | Placeholder pages | required | 7 | same paths |
 
-Everything except `/sign-in` lives under `src/app/(app)/`, whose layout is the auth boundary. No
-route is protected by a path pattern (see `proxy.ts`).
+Everything except `/sign-in` lives under `src/app/(app)/`. That layout is **not** an auth boundary —
+see UI-18. Each surface that reads a user's own data protects itself, and no route is protected by a
+path pattern (see `proxy.ts`).
 
 ### 1.1 Navigation flow
 
@@ -626,6 +627,22 @@ together in the reference, so the UI store holds them independently.
 
 **UI-17 — the docked question panel replaces the composer rather than floating over it.** The
 capture shows the composer gone, not covered, and the pager and hints occupying its space.
+
+**UI-18 — the chat screen is public; signing in is triggered by an action, not by arriving.** The
+reference lets an anonymous visitor reach `/chat` and asks for an account only when they act, so a
+blanket boundary on the shell would gate a screen the product leaves open. Consequences:
+
+- `(app)/layout.tsx` carries no auth check. `chat/[chatId]/layout.tsx` does, because a conversation
+  belongs to a user and cannot be read anonymously.
+- Sending while signed out opens Clerk's modal instead of calling the API, so no request ever leaves
+  without a token. The draft is already in the UI store, so the prompt survives the round trip.
+- After signing in the visitor presses send once more. Auto-resuming would need a pending-intent flag
+  and a listener on the session flipping, which is a race for one keystroke.
+- **This has no capture behind it.** None of the 77 shows an anonymous state — the two `clerk__*`
+  files are the signed-in Manage Account modal — so it rests on direct observation of the live
+  product, recorded here because the earlier blanket boundary was an assumption, never evidence.
+- **Open for Phase 3:** what an anonymous visitor sees in the sidebar and top bar. There is no
+  capture, and Phase 1 has neither, so it does not block.
 
 ---
 

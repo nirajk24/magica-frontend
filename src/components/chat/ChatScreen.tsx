@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { useState } from "react";
 import type { MessageDTO } from "@/contracts";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
@@ -16,14 +17,24 @@ const COLUMN = "mx-auto w-full max-w-[820px] px-6";
  *
  * A chat that does not exist yet has no transcript to scroll, so the composer centres in the column
  * the way the reference's `/chat` does; an existing chat pins it below the message list.
+ *
+ * An anonymous visitor gets the same screen. Sending asks for an account instead of calling the API,
+ * and because the draft lives in the UI store it is still there when they come back signed in.
  */
 export function ChatScreen({ chatId }: { chatId: string }) {
   const isNew = chatId === NEW_CHAT_ID;
+  const { isSignedIn } = useAuth();
+  const { openSignIn } = useClerk();
   const { query, messages } = useChatTranscript(chatId);
   const send = useSendMessage(chatId);
   const [optimistic, setOptimistic] = useState<MessageDTO | null>(null);
 
   const submit = (submission: ComposerSubmit) => {
+    if (!isSignedIn) {
+      openSignIn();
+      return;
+    }
+
     setOptimistic(optimisticUserMessage(submission.content));
     send.mutate(submission, { onSettled: () => setOptimistic(null) });
   };

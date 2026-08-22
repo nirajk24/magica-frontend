@@ -1,16 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
 import type { ReactNode } from "react";
 
 /**
- * The auth boundary for every signed-in surface. It runs because the route rendered, so no path
- * pattern can bypass it.
- *
- * Uses `redirectToSignIn` rather than `auth.protect()`, which answers 404 for a page request and
- * reads as a broken link.
+ * The signed-in shell. It carries no auth check: the reference lets an anonymous visitor reach the
+ * chat screen and only asks for an account when they act, so a blanket boundary here would gate a
+ * screen the product leaves open. Surfaces that read a user's own data protect themselves — see
+ * `chat/[chatId]/layout.tsx`.
  */
-export default async function AppLayout({ children }: { children: ReactNode }) {
-  const { userId, redirectToSignIn } = await auth();
-  if (!userId) redirectToSignIn();
-
+export default function AppLayout({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }

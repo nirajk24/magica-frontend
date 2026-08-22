@@ -302,6 +302,11 @@ catch-all, `api-client`, `query-client`, `env`, `pnpm sync-contracts`.
 **DoD** — sign in with Google, land on a protected page, `GET /api/v1/health` proxied through
 `api-client` with a parsed response, dark/light toggle flips every token.
 
+**Corrected in Phase 1:** the blanket auth boundary this phase put on `(app)/layout.tsx` was an
+assumption, not an observation. The reference serves `/chat` to anonymous visitors and asks for an
+account on the first action, so the boundary moved to the surfaces that read a user's own data.
+UI-SPEC UI-18.
+
 ---
 
 ### Phase 1 — The chat screen · ~8h · matches backend Phase 1

@@ -9,6 +9,7 @@ import { useUI } from "@/stores/ui";
 import { server } from "../msw/setup";
 import { errors } from "../msw/handlers";
 import { routerMock } from "../router-mock";
+import { clerkMock } from "../clerk-mock";
 import { renderWithProviders } from "../render";
 import * as fixtures from "../msw/fixtures";
 
@@ -114,6 +115,30 @@ describe("starting a conversation at /chat/new", () => {
 
     await waitFor(() => expect(routerMock.replace).toHaveBeenCalled());
     expect(queryClient.getQueryData(qk.chat(fixtures.CHAT_ID))).toBeDefined();
+  });
+});
+
+describe("sending while signed out", () => {
+  it("asks for an account instead of calling the API", async () => {
+    clerkMock.isSignedIn = false;
+    server.use(
+      http.post(MESSAGES, () => {
+        throw new Error("an anonymous visitor must not reach the send route");
+      }),
+    );
+
+    await send("new", "let me try this first");
+
+    expect(clerkMock.openSignIn).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the draft, so signing in does not cost the visitor their prompt", async () => {
+    clerkMock.isSignedIn = false;
+
+    await send("new", "a prompt worth keeping");
+
+    expect(useUI.getState().drafts.new).toBe("a prompt worth keeping");
+    expect(routerMock.replace).not.toHaveBeenCalled();
   });
 });
 

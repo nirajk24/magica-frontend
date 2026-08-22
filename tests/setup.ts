@@ -57,16 +57,28 @@ afterEach(async () => {
   const { routerMock } = await import("./router-mock");
   for (const spy of Object.values(routerMock)) spy.mockClear();
 
+  const { resetClerkMock } = await import("./clerk-mock");
+  resetClerkMock();
+
   const { useUI } = await import("@/stores/ui");
   useUI.persist.clearStorage();
   useUI.setState(initialUIState, true);
 });
 
 /**
- * Every surface in this app sits behind Clerk, so a signed-in user is the default in tests. Only
- * `useAuth` is faked: `useApi` then binds the real api-client, and a component test exercises the
- * whole chain down to MSW rather than a stubbed service.
+ * Signed in is the default, and `clerkMock` flips it per test. Only Clerk's hooks are faked, so
+ * `useApi` still binds the real api-client and a component test exercises the whole chain down to
+ * MSW rather than a stubbed service.
  */
-vi.mock("@clerk/nextjs", () => ({
-  useAuth: () => ({ getToken: async () => "test-token", isLoaded: true, isSignedIn: true }),
-}));
+vi.mock("@clerk/nextjs", async () => {
+  const { clerkMock } = await import("./clerk-mock");
+
+  return {
+    useAuth: () => ({
+      getToken: clerkMock.getToken,
+      isLoaded: true,
+      isSignedIn: clerkMock.isSignedIn,
+    }),
+    useClerk: () => ({ openSignIn: clerkMock.openSignIn }),
+  };
+});
