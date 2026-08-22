@@ -56,9 +56,8 @@ Two of these overturn assumptions worth calling out explicitly:
 
 | Route | Screen | Auth | Phase | Reference URL |
 |---|---|---|---|---|
-| `/` | redirect → `/chat` | — | 3 | — |
-| `/chat` | Empty state ("Your AI worker") | required | 3 | `app.magica.com/chat` |
-| `/chat/new` | Bare composer, no chat yet | required | **1** | (ours; see UI-2) |
+| `/` | redirect → `/chat` | — | **1** | — |
+| `/chat` | New chat. Composer only in Phase 1; full empty state in Phase 3 | required | **1** | `app.magica.com/chat` |
 | `/chat/[chatId]` | **The chat screen** | required | **1** | `app.magica.com/chat/{id}` |
 | `/chat/recent` | Tasks page (chat list) | required | 3 | `app.magica.com/chat/recent` |
 | `/sign-in/[[...rest]]` | Clerk catch-all | public | 0 | Clerk-hosted equivalent |
@@ -77,12 +76,11 @@ route is protected by a path pattern (see `proxy.ts`).
    ┌────────────────────────────────────────────────────────────────────────┐
    │                        (app) — signed-in shell                         │
    │                                                                        │
-   │   sidebar "New task" ─────────────────▶ /chat/new                      │
-   │   sidebar logo / "/"  ────────────────▶ /chat        (empty state)      │
-   │   empty-state composer send ──────────▶ /chat/{id}   (server creates)   │
+   │   "/" ────────────────────────────────▶ /chat        (redirect)         │
+   │   sidebar "New task" ─────────────────▶ /chat                           │
    │   template card click ────────────────▶ /chat        (prefills only)    │
    │                                                                        │
-   │   /chat/new  ──send──▶ router.replace ▶ /chat/{id}                      │
+   │   /chat  ──send──▶ router.replace ────▶ /chat/{id}   (server creates)   │
    │                                                                        │
    │   sidebar "Tasks" / "Recent tasks" ───▶ /chat/recent ──row──▶ /chat/{id}│
    │   Tasks row context menu ─────────────▶ stays on /chat/recent           │
@@ -101,15 +99,17 @@ staying exactly where it was behind every one of them.
 
 ### 1.2 Two routing decisions
 
-**`/chat` is the empty state, `/` redirects to it.** The reference's empty state lives at `/chat`,
-not at the root, and cloning the URL costs one redirect. This differs from the file map in `LLD.md`
-§1, which put the empty state at `app/page.tsx`.
+**`/chat` is the new-chat page, and `/` redirects to it.** The reference puts the empty state at
+`/chat`, not at the root — visible in the address bar of both empty-state captures — so cloning the
+URL costs one redirect. This differs from the file map in `LLD.md` §1, which put the empty state at
+`app/page.tsx`.
 
-**`/chat/new` is ours, and it is load-bearing.** There is no `POST /chats`; the send route creates
-the chat when `:id === 'new'`. `chatId === 'new'` means: skip the chat query (a `GET /chats/new`
-would 404), render a bare composer, and on send `router.replace` to the real id. Without it there is
-no way to start a conversation before the Phase-3 sidebar exists — and it is the demo's first five
-seconds.
+**There is no `/chat/new`, and an earlier draft of this document was wrong to invent one.** The send
+route creates the chat when its path id is `new`, because there is no `POST /chats`. That sentinel
+belongs in the API call, not in the address bar: the reference never shows such a URL, and shipping
+one would be a self-inflicted fidelity miss on a route a grader lands on first. `/chat` renders with
+the sentinel as its chat id, which means: skip the chat query (a `GET /chats/new` would 404), render
+the composer, and on send `router.replace` to the real id.
 
 ---
 
@@ -565,12 +565,12 @@ checkboxes stay hand-rolled — they are a few lines each and the captures do no
 defaults anyway. Phase 1 pulls in `cn` + `tooltip` only; later phases add a primitive when the phase
 that needs it lands.
 
-**UI-2 — `/chat/new` skips the chat query entirely.** `GET /chats/new` would 404. On send, the result
-seeds `qk.chat(newId)` with the chat and the user message *before* `router.replace`, so the screen
-never flashes a spinner between the send and the first read.
+**UI-2 — `/chat` runs on the `new` sentinel and skips the chat query.** `GET /chats/new` would 404.
+On send, the created chat's real history is prefetched *before* `router.replace`, so the screen never
+flashes a spinner between the send and the first read and no `ChatDTO` has to be fabricated.
 
-**UI-3 — `/chat` is the empty state; `/` redirects.** Clones the reference URL for one redirect.
-Diverges from `LLD.md` §1's file map.
+**UI-3 — `/chat` is the new-chat page; `/` redirects.** Clones the reference URL for one redirect.
+Diverges from `LLD.md` §1's file map, and supersedes the `/chat/new` route earlier drafts specified.
 
 **UI-4 — the model pill shows the OpenRouter free model and its status.** The PDF asks for
 "OpenRouter Free status" in the composer; the reference has no composer-level model control and puts

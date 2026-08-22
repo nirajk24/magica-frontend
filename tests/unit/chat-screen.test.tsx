@@ -48,6 +48,19 @@ describe("ChatScreen", () => {
     expect(screen.queryByText(/couldn't be loaded/i)).not.toBeInTheDocument();
   });
 
+  it("greets a new chat with the empty-state copy and no history affordances", () => {
+    renderWithProviders(<ChatScreen chatId="new" />);
+
+    expect(screen.getByPlaceholderText("Assign a task or ask anything...")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Load older messages" })).not.toBeInTheDocument();
+  });
+
+  it("uses the in-conversation placeholder for an existing chat", async () => {
+    renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
+
+    expect(await screen.findByPlaceholderText("Send a message...")).toBeInTheDocument();
+  });
+
   it("walks backwards through history one cursor at a time", async () => {
     const user = userEvent.setup();
     server.use(

@@ -345,18 +345,25 @@ throw; the single-authority filter hides a streaming row while an overlay owns t
 
 ---
 
-**`/chat/new` ships in Phase 1 (review #3).** There is no `POST /chats`, the send route creates the
-chat at `:id='new'`, the empty state is Phase 3 and the sidebar is Phase 3 — so without this there is
-literally no way to start a conversation in Phase 1.
+**`/chat` ships in Phase 1 — the new-chat route, corrected.** Earlier drafts of this plan put it at
+`/chat/new`. That URL does not exist in the reference: `app.magica.com/chat` **is** the new-chat page
+and `/` redirects to it, which the empty-state captures show in the address bar. `new` is the id the
+send route accepts in its path, and an API detail has no business appearing in a URL.
+
+There is no `POST /chats`, the sidebar is Phase 3 and the full empty state is Phase 3 — so without
+this route there is no way to start a conversation in Phase 1.
 
 ```
-/chat/new  → chatId === 'new' → SKIP the chat query (GET /chats/new would 404)
-           → render a bare composer
-send       → server creates the chat → router.replace(`/chat/${chatId}`) → query enables
+/           → redirect to /chat
+/chat       → chatId sentinel 'new' → SKIP the chat query (GET /chats/new would 404)
+            → composer, centred, no transcript area
+send        → POST /chats/new/messages → server creates the chat
+            → prefetch the real history → router.replace(`/chat/${chatId}`)
 ```
 
-Keep it minimal: composer only, no gallery, no sidebar. **This is also the demo's first five seconds**,
-so it is not throwaway scaffolding.
+Keep it minimal: composer only, no greeting, no gallery, no sidebar. Phase 3 adds the ghost logo,
+the live clock, "Your AI worker" and the template gallery above it. **This is also the demo's first
+five seconds**, so it is not throwaway scaffolding.
 
 ### Phase 2 — States and failures · ~4h · matches backend Phase 2
 

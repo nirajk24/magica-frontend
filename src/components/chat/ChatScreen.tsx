@@ -11,6 +11,12 @@ import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 
 const COLUMN = "mx-auto w-full max-w-[820px] px-6";
 
+/**
+ * The chat screen, in both of its layouts.
+ *
+ * A chat that does not exist yet has no transcript to scroll, so the composer centres in the column
+ * the way the reference's `/chat` does; an existing chat pins it below the message list.
+ */
 export function ChatScreen({ chatId }: { chatId: string }) {
   const isNew = chatId === NEW_CHAT_ID;
   const { query, messages } = useChatTranscript(chatId);
@@ -27,34 +33,31 @@ export function ChatScreen({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex h-dvh flex-col">
-      <div className="flex-1 overflow-y-auto">
-        <div className={`${COLUMN} py-10`}>
-          {query.isPending && !isNew ? (
-            <FullColumnSpinner />
-          ) : query.isError ? (
-            <LoadFailure error={query.error} />
-          ) : (
-            <>
-              {query.hasNextPage && (
-                <button
-                  type="button"
-                  onClick={() => query.fetchNextPage()}
-                  disabled={query.isFetchingNextPage}
-                  className="mx-auto mb-8 block rounded-card px-3 py-1.5 text-sm text-fg-muted transition-colors hover:bg-surface hover:text-fg disabled:opacity-60"
-                >
-                  {query.isFetchingNextPage ? "Loading…" : "Load older messages"}
-                </button>
-              )}
-
-              <MessageList messages={transcript} />
-            </>
-          )}
+      {!isNew && (
+        <div className="flex-1 overflow-y-auto">
+          <div className={`${COLUMN} py-10`}>
+            {query.isPending ? (
+              <FullColumnSpinner />
+            ) : query.isError ? (
+              <LoadFailure error={query.error} />
+            ) : (
+              <>
+                {query.hasNextPage && <LoadOlder query={query} />}
+                <MessageList messages={transcript} />
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="shrink-0 pb-6">
+      <div className={isNew ? "flex flex-1 items-center pb-24" : "shrink-0 pb-6"}>
         <div className={COLUMN}>
-          <Composer chatId={chatId} pending={send.isPending} onSubmit={submit} />
+          <Composer
+            chatId={chatId}
+            placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
+            pending={send.isPending}
+            onSubmit={submit}
+          />
 
           {failure && (
             <p role="alert" className="mt-2 px-1 text-sm text-danger">
@@ -95,6 +98,19 @@ function optimisticUserMessage(content: string): MessageDTO {
     runId: null,
     createdAt: new Date().toISOString(),
   };
+}
+
+function LoadOlder({ query }: { query: ReturnType<typeof useChatTranscript>["query"] }) {
+  return (
+    <button
+      type="button"
+      onClick={() => query.fetchNextPage()}
+      disabled={query.isFetchingNextPage}
+      className="mx-auto mb-8 block rounded-card px-3 py-1.5 text-sm text-fg-muted transition-colors hover:bg-surface hover:text-fg disabled:opacity-60"
+    >
+      {query.isFetchingNextPage ? "Loading…" : "Load older messages"}
+    </button>
+  );
 }
 
 function FullColumnSpinner() {
