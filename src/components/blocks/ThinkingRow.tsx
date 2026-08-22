@@ -8,26 +8,28 @@ import type { BlockProps } from "@/components/blocks/types";
  * The reasoning row.
  *
  * The label is the state: italic `Thinking` while the transcript is still arriving, italic `Reasoned`
- * once it has stopped. `durationMs` is written when the block closes, so the label is derived from
- * the data and needs no live-versus-persisted flag.
+ * once it has stopped. A closed row with no text is a live projection whose prose has not been
+ * persisted yet, so it renders as a bare row rather than an empty box.
  */
-export function ThinkingRow({ block }: BlockProps) {
+export function ThinkingRow({ block, streaming }: BlockProps) {
   if (block.type !== "thinking") return null;
 
-  const done = typeof block.durationMs === "number";
+  const body = block.thinking.length > 0;
 
   return (
     <TimelineRow
       icon={Brain}
-      label={done ? "Reasoned" : "Thinking"}
+      label={streaming ? "Thinking" : "Reasoned"}
       labelClassName="italic"
-      status={done ? undefined : "streaming"}
-      durationMs={done ? block.durationMs : undefined}
-      defaultOpen={!done}
+      status={streaming ? "streaming" : undefined}
+      durationMs={block.durationMs}
+      defaultOpen={streaming}
     >
-      <div className="rounded-card border border-border bg-bg-subtle p-3 text-sm leading-6 whitespace-pre-wrap text-fg-muted">
-        {block.thinking}
-      </div>
+      {body ? (
+        <div className="rounded-card border border-border bg-bg-subtle p-3 text-sm leading-6 whitespace-pre-wrap text-fg-muted">
+          {block.thinking}
+        </div>
+      ) : undefined}
     </TimelineRow>
   );
 }

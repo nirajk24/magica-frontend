@@ -1,17 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatScreen } from "@/components/chat/ChatScreen";
 import { env } from "@/lib/env";
 import { server } from "../msw/setup";
-import { errors } from "../msw/handlers";
+import { errors, noActiveRun } from "../msw/handlers";
 import { renderWithProviders } from "../render";
 import * as fixtures from "../msw/fixtures";
 
 const CHATS = `${env.NEXT_PUBLIC_API_URL}/api/v1/chats`;
 
 describe("ChatScreen", () => {
+  beforeEach(() => server.use(noActiveRun));
+
   it("renders the persisted conversation from REST", async () => {
     renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
 

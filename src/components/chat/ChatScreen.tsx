@@ -4,9 +4,11 @@ import { useAuth, useClerk } from "@clerk/nextjs";
 import { useState } from "react";
 import type { MessageDTO } from "@/contracts";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
+import { LiveRun } from "@/components/chat/LiveRun";
 import { MessageList } from "@/components/chat/MessageList";
 import { Spinner } from "@/components/Spinner";
 import { ApiError } from "@/lib/api-client";
+import { useActiveRun } from "@/queries/use-active-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 
@@ -20,12 +22,16 @@ const COLUMN = "mx-auto w-full max-w-[820px] px-6";
  *
  * An anonymous visitor gets the same screen. Sending asks for an account instead of calling the API,
  * and because the draft lives in the UI store it is still there when they come back signed in.
+ *
+ * While a run is active its persisted row is filtered out of the transcript and `LiveRun` owns the
+ * rendering, so the same content is never on screen twice.
  */
 export function ChatScreen({ chatId }: { chatId: string }) {
   const isNew = chatId === NEW_CHAT_ID;
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
-  const { query, messages } = useChatTranscript(chatId);
+  const activeRun = useActiveRun(chatId).data ?? null;
+  const { query, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
   const send = useSendMessage(chatId);
   const [optimistic, setOptimistic] = useState<MessageDTO | null>(null);
 
@@ -55,6 +61,16 @@ export function ChatScreen({ chatId }: { chatId: string }) {
               <>
                 {query.hasNextPage && <LoadOlder query={query} />}
                 <MessageList messages={transcript} />
+
+                {activeRun?.triggerRunId && (
+                  <div className="mt-8">
+                    <LiveRun
+                      key={`${activeRun.triggerRunId}:${activeRun.publicAccessToken}`}
+                      chatId={chatId}
+                      run={activeRun}
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -66,6 +82,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
           <Composer
             chatId={chatId}
             variant={isNew ? "new-chat" : "conversation"}
+            runActive={activeRun !== null}
             placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
             pending={send.isPending}
             onSubmit={submit}

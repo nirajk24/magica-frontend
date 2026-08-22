@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 import { qk } from "@/lib/query-client";
 import { useUI } from "@/stores/ui";
 import { server } from "../msw/setup";
-import { errors } from "../msw/handlers";
+import { errors, noActiveRun } from "../msw/handlers";
 import { routerMock } from "../router-mock";
 import { clerkMock } from "../clerk-mock";
 import { renderWithProviders } from "../render";
@@ -18,6 +18,7 @@ const MESSAGES = `${API}/chats/:chatId/messages`;
 
 const send = async (chatId: string, text: string) => {
   const user = userEvent.setup();
+  server.use(noActiveRun);
   const rendered = renderWithProviders(<ChatScreen chatId={chatId} />);
 
   await user.type(screen.getByLabelText("Message"), `${text}{Enter}`);
@@ -72,6 +73,7 @@ describe("sending a message", () => {
     const user = userEvent.setup();
     let body: unknown = null;
     server.use(
+      noActiveRun,
       http.post(MESSAGES, async ({ request }) => {
         body = await request.json();
         return HttpResponse.json({ data: fixtures.sendMessageResult });

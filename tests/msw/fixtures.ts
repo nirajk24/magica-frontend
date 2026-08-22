@@ -1,3 +1,5 @@
+import { http, HttpResponse } from "msw";
+import { env } from "@/lib/env";
 import type {
   ActiveRun,
   AttachmentDTO,
@@ -189,6 +191,13 @@ export const creditsPage: CreditsPage = {
   ],
   nextCursor: null,
 };
+
+/** A chat response carrying a specific message list, for tests about which rows are visible. */
+export function chatHandlerWith(messages: MessageDTO[]) {
+  return http.get(`${env.NEXT_PUBLIC_API_URL}/api/v1/chats/:chatId`, () =>
+    HttpResponse.json({ data: { ...chatWithMessages, messages } }),
+  );
+}
 
 /**
  * Mid-run realtime state. Not served over HTTP — `useRealtimeRun` talks to Trigger.dev, which MSW

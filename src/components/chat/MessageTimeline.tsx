@@ -21,14 +21,24 @@ export function MessageTimeline({ timeline }: { timeline: Timeline }) {
         <div key={segment.segment} className="flex flex-col gap-3">
           {segment.rows.length > 0 && (
             <StepGroup steps={segment.stepCount} streaming={segment.streaming}>
-              {segment.rows.map((block, index) => (
-                <Block key={`${segment.segment}-${index}`} block={block} tools={timeline.tools} />
+              {segment.rows.map((item, index) => (
+                <Block
+                  key={`${segment.segment}-${index}`}
+                  block={item.block}
+                  tools={timeline.tools}
+                  streaming={item.streaming}
+                />
               ))}
             </StepGroup>
           )}
 
-          {segment.prose.map((block, index) => (
-            <Block key={`${segment.segment}-prose-${index}`} block={block} tools={timeline.tools} />
+          {segment.prose.map((item, index) => (
+            <Block
+              key={`${segment.segment}-prose-${index}`}
+              block={item.block}
+              tools={timeline.tools}
+              streaming={item.streaming}
+            />
           ))}
         </div>
       ))}

@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { ContentBlock, MessageDTO } from "@/contracts";
-import { groupBlocks, timelineFromMessage } from "@/lib/timeline";
+import { groupBlocks, timelineFromMessage, timelineFromRun } from "@/lib/timeline";
 import * as fixtures from "../msw/fixtures";
+
+const items = (blocks: readonly ContentBlock[]) => blocks.map((block) => ({ block }));
 
 describe("groupBlocks", () => {
   it("splits text out as prose and keeps everything else as timeline rows", () => {
-    const [first, second] = groupBlocks(fixtures.assistantBlocks);
+    const [first, second] = groupBlocks(items(fixtures.assistantBlocks));
 
-    expect(first?.rows.map((row) => row.type)).toEqual(["thinking"]);
-    expect(first?.prose.map((row) => row.type)).toEqual(["text"]);
-    expect(second?.rows.map((row) => row.type)).toEqual(["tool_use", "usage"]);
-    expect(second?.prose.map((row) => row.type)).toEqual(["text"]);
+    expect(first?.rows.map((row) => row.block.type)).toEqual(["thinking"]);
+    expect(first?.prose.map((row) => row.block.type)).toEqual(["text"]);
+    expect(second?.rows.map((row) => row.block.type)).toEqual(["tool_use", "usage"]);
+    expect(second?.prose.map((row) => row.block.type)).toEqual(["text"]);
   });
 
   it("counts reasoning, tools and step updates as steps, but not usage", () => {
@@ -22,7 +24,7 @@ describe("groupBlocks", () => {
       { segment: 0, type: "text", text: "done" },
     ];
 
-    expect(groupBlocks(blocks)[0]?.stepCount).toBe(3);
+    expect(groupBlocks(items(blocks))[0]?.stepCount).toBe(3);
   });
 
   it("orders segments ascending even if the blocks arrive out of order", () => {
@@ -31,11 +33,11 @@ describe("groupBlocks", () => {
       { segment: 0, type: "text", text: "first" },
     ];
 
-    expect(groupBlocks(blocks).map((segment) => segment.segment)).toEqual([0, 2]);
+    expect(groupBlocks(items(blocks)).map((segment) => segment.segment)).toEqual([0, 2]);
   });
 
   it("marks only the streaming segment as streaming", () => {
-    const segments = groupBlocks(fixtures.assistantBlocks, 1);
+    const segments = groupBlocks(items(fixtures.assistantBlocks), 1);
 
     expect(segments.map((segment) => segment.streaming)).toEqual([false, true]);
   });
@@ -43,7 +45,7 @@ describe("groupBlocks", () => {
   it("survives a block type it has never seen", () => {
     const blocks = [{ segment: 0, type: "hologram", spin: 3 }] as unknown as ContentBlock[];
 
-    expect(groupBlocks(blocks)[0]?.rows).toHaveLength(1);
+    expect(groupBlocks(items(blocks))[0]?.rows).toHaveLength(1);
   });
 });
 
@@ -72,10 +74,95 @@ describe("timelineFromMessage", () => {
     const timeline = timelineFromMessage(message);
 
     expect(timeline.tools.get(fixtures.TOOL_USE_ID)?.resultSummary).toBe("1 image");
-    expect(timeline.segments[1]?.rows.map((row) => row.type)).toEqual(["tool_use", "usage"]);
+    expect(timeline.segments[1]?.rows.map((row) => row.block.type)).toEqual(["tool_use", "usage"]);
   });
 
   it("returns no segments for a message that has no blocks", () => {
     expect(timelineFromMessage(fixtures.userMessage).segments).toEqual([]);
+  });
+});
+
+describe("timelineFromRun", () => {
+  it("cuts each text block out of the stream by its own chars", () => {
+    const timeline = timelineFromRun(fixtures.runMetadata, fixtures.streamedText);
+
+    expect(timeline.segments[0]?.prose.map((item) => item.block)).toEqual([
+      { segment: 0, type: "text", text: "I'll generate that for you." },
+    ]);
+  });
+
+  it("gives the open block the remainder of the stream, mid-word", () => {
+    const timeline = timelineFromRun(fixtures.runMetadata, fixtures.streamedText);
+    const open = timeline.segments[1]?.prose.at(-1);
+
+    expect(open?.streaming).toBe(true);
+    expect(open?.block).toEqual({
+      segment: 1,
+      type: "text",
+      text: "Here is your mountain at sun",
+    });
+  });
+
+  it("does not let reasoning consume the stream, which would shift every later block", () => {
+    const shifted = timelineFromRun(
+      {
+        ...fixtures.runMetadata,
+        blocks: [
+          { segment: 0, type: "thinking", chars: 31 },
+          ...fixtures.runMetadata.blocks.slice(1),
+        ],
+      },
+      fixtures.streamedText,
+    );
+
+    expect(shifted.segments[0]?.prose[0]?.block).toMatchObject({
+      text: "I'll generate that for you.",
+    });
+  });
+
+  it("streams the reasoning tail into the open thinking row", () => {
+    const timeline = timelineFromRun(
+      {
+        ...fixtures.runMetadata,
+        blocks: [{ segment: 0, type: "thinking" }],
+        reasoningText: "The user wants a landscape",
+      },
+      "",
+    );
+    const row = timeline.segments[0]?.rows[0];
+
+    expect(row?.streaming).toBe(true);
+    expect(row?.block).toMatchObject({ thinking: "The user wants a landscape" });
+  });
+
+  it("leaves an earlier thinking row bare, because only the tail is live", () => {
+    const timeline = timelineFromRun(fixtures.runMetadata, fixtures.streamedText);
+    const row = timeline.segments[0]?.rows[0];
+
+    expect(row?.streaming).toBeUndefined();
+    expect(row?.block).toMatchObject({ type: "thinking", thinking: "" });
+  });
+
+  it("normalises live invocations into the same ToolView a stored message produces", () => {
+    const timeline = timelineFromRun(fixtures.runMetadata, fixtures.streamedText);
+
+    expect(timeline.tools.get(fixtures.TOOL_USE_ID)).toMatchObject({
+      toolName: "gpt_image_2",
+      status: "running",
+      creditUsed: "5880",
+      display: { label: "Generating image" },
+    });
+  });
+
+  it("marks the newest segment as the streaming one", () => {
+    const timeline = timelineFromRun(fixtures.runMetadata, fixtures.streamedText);
+
+    expect(timeline.segments.map((segment) => segment.streaming)).toEqual([false, true]);
+  });
+
+  it("survives an empty stream and an empty projection", () => {
+    const timeline = timelineFromRun({ ...fixtures.runMetadata, blocks: [] }, "");
+
+    expect(timeline.segments).toEqual([]);
   });
 });

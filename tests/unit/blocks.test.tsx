@@ -52,8 +52,8 @@ describe("the block registry", () => {
     ["text", { segment: 0, type: "text", text: "hello there" }, "hello there"],
     [
       "thinking",
-      { segment: 0, type: "thinking", thinking: "weighing it up" },
-      "weighing it up",
+      { segment: 0, type: "thinking", thinking: "weighing it up", durationMs: 900 },
+      "Reasoned",
     ],
     [
       "usage",
@@ -80,7 +80,11 @@ describe("the block registry", () => {
 describe("the reasoning row", () => {
   it("reads Thinking while the transcript is still arriving, and is open", () => {
     renderWithProviders(
-      <Block block={{ segment: 0, type: "thinking", thinking: "partial wo" }} tools={NO_TOOLS} />,
+      <Block
+        block={{ segment: 0, type: "thinking", thinking: "partial wo" }}
+        tools={NO_TOOLS}
+        streaming
+      />,
     );
 
     expect(screen.getByRole("button", { expanded: true })).toHaveTextContent("Thinking");

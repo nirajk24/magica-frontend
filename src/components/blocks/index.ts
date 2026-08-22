@@ -34,6 +34,6 @@ export function rendererFor(type: string): FC<BlockProps> {
 }
 
 /** Dispatches a block to its renderer. `createElement` because the component is chosen at runtime. */
-export function Block({ block, tools }: BlockProps): ReactElement {
-  return createElement(rendererFor(block.type), { block, tools });
+export function Block({ block, tools, streaming }: BlockProps): ReactElement {
+  return createElement(rendererFor(block.type), { block, tools, streaming });
 }
