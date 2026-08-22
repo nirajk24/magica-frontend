@@ -29,12 +29,12 @@ export const ApiErrorEnvelope = z.object({
 export const Ok = z.object({ ok: z.literal(true) });
 
 /**
- * The kinds of interaction a turn can park on. Declared once because it appears in the run
- * metadata, the active-run response, the resolution union, the registry's `interaction` field and
- * the `Waitpoint` table — five places that must not be able to disagree.
+ * The kinds of interaction a turn can park on. Declared once and reused by run metadata, the
+ * active-run response, `WaitpointResolution`, the registry's `interaction` field and the
+ * `Waitpoint` table.
  *
- * Adding a kind is one entry here plus one variant in `WaitpointResolution`; the orchestrator is
- * kind-agnostic and does not change.
+ * Adding a kind is one entry here plus one variant in `WaitpointResolution`. The orchestrator is
+ * kind-agnostic.
  */
 export const WaitpointKind = z.enum(["plan_approval", "questions"]);
 export type WaitpointKind = z.infer<typeof WaitpointKind>;
