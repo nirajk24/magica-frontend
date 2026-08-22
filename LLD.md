@@ -249,7 +249,10 @@ export function useRunStream(chatId: string) {
                     // null for the first moment after send, and subscribing to undefined throws
   const { parts } = useRealtimeStream<string>(STREAM_AGENT_TEXT, { … });  // replays from 0
 
-  // 1. token refresh at ~12 min AND on auth error / unexpected close while non-terminal
+  // 1. token refresh at ~12 min AND on auth error / unexpected close while non-terminal.
+  //    TEAR DOWN the old subscription explicitly before resubscribing (F13) — the free tier allows
+  //    10 concurrent realtime connections, so a leaked one per refresh silently stops updates on a
+  //    long session, which looks exactly like a broken stream. Never rely on garbage collection.
   // 2. after 3 bounded retries → REST polling every 5s (the doc's required fallback)
   // 3. on terminal → invalidate qk.chat(chatId); overlay unmounts once the persisted row appears
   return { metadata: run?.metadata as RunMetadata | undefined,
@@ -455,7 +458,7 @@ correctness for a hover state.
 | No single-authority filter | two identical bubbles during handover | filter `status==='streaming'` while an overlay owns the run |
 | `if (isLive)` inside a renderer | live and persisted views drift apart | same component, one shape |
 | Virtualizing too early | can't tell if the bug is rows or the virtualizer | virtuoso last |
-| Realtime subscription not closed | free tier caps at **10 concurrent connections** | close on unmount; one tab for the demo |
+| Realtime subscription not closed | free tier caps at **10 concurrent connections** | close on unmount AND explicitly before every token-refresh resubscribe (F13); one tab for the demo |
 | Persisting the whole Zustand store | transient panel state restored on reload | `partialize` to drafts + sidebar only |
 | `as T` instead of `schema.parse` | backend drift surfaces as `undefined` deep in a component | parse at the api-client boundary |
 | Hand-written query keys | invalidation silently stops working | the `qk` factory |
