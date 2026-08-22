@@ -32,6 +32,7 @@ export const RunMetadata = z.object({
       id: z.string(),
       toolUseId: z.string(),
       toolName: z.string(),
+      subModelId: z.string().optional(),
       display: ToolDisplay,
       state: InvocationStatus,
       durationMs: z.number().optional(),

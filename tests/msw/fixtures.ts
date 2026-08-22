@@ -25,6 +25,7 @@ export const TRIGGER_RUN_ID = "run_abc123";
 export const USER_MESSAGE_ID = "01999f00-0000-7000-8000-000000000100";
 export const ASSISTANT_MESSAGE_ID = "01999f00-0000-7000-8000-000000000101";
 export const TOOL_USE_ID = "call_9f8e7d6c5b4a";
+export const SUB_MODEL_ID = "gpt-image-2-text";
 export const IMAGE_URL = "https://cdn.magica.com/fixtures/mountain.png";
 
 export const chat: ChatDTO = {
@@ -94,6 +95,7 @@ export const toolInvocation: ToolInvocationDTO = {
   id: "01999f00-0000-7000-8000-000000000200",
   toolUseId: TOOL_USE_ID,
   toolName: "gpt_image_2",
+  subModelId: SUB_MODEL_ID,
   display: { label: "Generating image", icon: "image" },
   status: "completed",
   input: { prompt: "a mountain at sunrise" },
@@ -220,6 +222,7 @@ export const runMetadata: RunMetadata = {
       id: toolInvocation.id,
       toolUseId: TOOL_USE_ID,
       toolName: "gpt_image_2",
+      subModelId: SUB_MODEL_ID,
       display: { label: "Generating image", icon: "image" },
       state: "running",
       credits: "5880",
