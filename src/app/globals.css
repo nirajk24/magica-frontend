@@ -19,6 +19,12 @@
  * from the Skill row's bolt. Only --success needs a light variant; the rest already clear AA on
  * white, and --amber is an icon fill rather than text.
  *
+ * `--bg` / `--bg-subtle` in dark are the ONE pair that is deliberately not the sampled value. Every
+ * lossless dark capture puts the reference's canvas at #121212; ours sits at #0f0f0f because the
+ * darker ground was preferred on review. They move together — the reference's sidebar is identical
+ * to its canvas in dark, so darkening only one would introduce a seam the reference never shows.
+ * `--surface` is unchanged, so raised elements read slightly more raised than the reference.
+ *
  * `--danger-surface` is the stop button's tinted disc, and it is not `--danger` at an opacity: in
  * both themes its green and blue channels fall on the far side of the canvas from where an alpha
  * blend could put them. The dark value is exact, read off a lossless PNG; the light one comes from a
@@ -85,8 +91,8 @@
 
 .dark {
   color-scheme: dark;
-  --bg: #121212;
-  --bg-subtle: #121212;
+  --bg: #0f0f0f;
+  --bg-subtle: #0f0f0f;
   --surface: #191919;
   --border: #1b1b1b;
   --fg: #efefef;

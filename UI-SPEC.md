@@ -366,7 +366,9 @@ A `7ms` row is a cache hit and is information, not noise.
 
 ### 3.6 Assets
 
-Rendered once, after the prose, ≈425px wide at an 820px column, rounded ≈8px.
+Rendered once, after the prose, rounded ≈8px. The reference measures **≈425px** at an 820px column;
+**ours render at 340px** — a deliberate fifth narrower, so a turn's answer and its image sit on screen
+together (D-11). One constant drives images, video and audio so the three cannot drift.
 
 **Hover shows two dark rounded icon buttons at the top-right**, and each carries a tooltip below it:
 `Use as reference` on the left and `Download` on the right. We ship only `Download` — using an output
@@ -892,6 +894,8 @@ off or could be better, just flag it."
 | D-8 | **Projects / Library / Tools / API-MCP / Unfair Advantage are placeholder pages** | Locked scope: the sidebar rows exist for fidelity, the pages do not |
 | D-9 | **Clerk stays on its development instance**, watermark included | A production instance needs a custom domain we will not buy |
 | D-10 | **No `Use as reference` button on a generated asset** — only `Download` | Feeding an output back as the next turn's input needs the attachment pipeline, which is Phase 6 at the earliest. One button that works beats two where one lies |
+| D-11 | **Generated assets render at 340px, not the measured ≈425px** | A fifth narrower keeps a turn's answer and its image on screen together. Preferred on review against the running product |
+| D-12 | **The dark canvas is `#0f0f0f`, not the sampled `#121212`** | Every lossless dark capture puts the reference at `#121212`; the darker ground was preferred on review. `--bg` and `--bg-subtle` move together, because the reference's dark sidebar is identical to its canvas and darkening one alone would introduce a seam the reference never shows. `--surface` is unchanged, so raised elements read slightly more raised |
 
 ---
 
