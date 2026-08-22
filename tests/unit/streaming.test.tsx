@@ -111,3 +111,14 @@ describe("one authority renders a run", () => {
     expect(await screen.findByText("partial answer being written")).toBeInTheDocument();
   });
 });
+
+describe("a running tool card", () => {
+  it("says what the tool was asked to do, from the metadata's truncated input", () => {
+    renderWithProviders(
+      <StreamingOverlay metadata={fixtures.runMetadata} streamedText={fixtures.streamedText} />,
+    );
+
+    expect(screen.getByText("a mountain at sunrise")).toBeInTheDocument();
+    expect(screen.getByText("Prompt")).toBeInTheDocument();
+  });
+});

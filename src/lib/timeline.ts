@@ -183,7 +183,11 @@ export function timelineFromMessage(message: MessageDTO): Timeline {
  * block by the length of the thinking transcript.
  *
  * A thinking block is open when nothing follows it, which is why `reasoningText` lands on the last
- * one; earlier ones render as bare `Reasoned` rows until the persisted message fills them in.
+ * one; `rememberedReasoning` is what stops an earlier one going blank when a later one opens.
+ *
+ * A live invocation's `input` is the backend's **truncated** projection, so a running card can say
+ * what the tool was asked to do. The completed card reads the untruncated input from the persisted
+ * message through `timelineFromMessage`, which is why both go through the same `ToolView`.
  */
 export function timelineFromRun(
   metadata: RunMetadata,
@@ -207,7 +211,7 @@ export function timelineFromRun(
         subModelId: invocation.subModelId ?? null,
         display: invocation.display,
         status: invocation.state,
-        input: undefined,
+        input: invocation.input,
         output: null,
         errorMessage: null,
         creditUsed: invocation.credits ?? null,
