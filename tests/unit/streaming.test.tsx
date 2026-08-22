@@ -51,7 +51,7 @@ describe("StreamingOverlay", () => {
       <StreamingOverlay metadata={fixtures.runMetadata} streamedText={fixtures.streamedText} />,
     );
 
-    expect(screen.getByText("Working · 1 step")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Working · 1 step/ })).toBeInTheDocument();
   });
 
   it("announces the streaming region to assistive technology", () => {
@@ -76,7 +76,7 @@ describe("StreamingOverlay", () => {
       />,
     );
 
-    expect(screen.getByText("0.01M")).toBeInTheDocument();
+    expect(screen.getByText("0.0059M")).toBeInTheDocument();
     expect(screen.getByText("8.4s")).toBeInTheDocument();
   });
 });

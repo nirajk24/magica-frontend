@@ -57,10 +57,7 @@ export async function request<T>(
     },
   });
 
-  const json: unknown = await res
-    .json()
-    .then((v: unknown) => v)
-    .catch(() => null);
+  const json: unknown = await res.json().catch(() => null);
 
   if (!res.ok) {
     const parsed = ApiErrorEnvelope.safeParse(json);

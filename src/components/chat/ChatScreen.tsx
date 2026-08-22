@@ -33,7 +33,10 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const { query, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
-  const [optimistic, setOptimistic] = useState<MessageDTO | null>(null);
+  const [optimistic, setOptimistic] = useState<{ chatId: string; message: MessageDTO } | null>(
+    null,
+  );
+  const pending = optimistic?.chatId === chatId ? optimistic.message : null;
 
   const submit = (submission: ComposerSubmit) => {
     if (!isSignedIn) {
@@ -41,19 +44,20 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       return;
     }
 
-    setOptimistic(optimisticUserMessage(submission.content));
+    setOptimistic({ chatId, message: optimisticUserMessage(submission.content) });
     send.mutate(submission, { onSettled: () => setOptimistic(null) });
   };
 
   const failure = send.isError ? sendFailureMessage(send.error) : null;
 
   const items = useMemo<TranscriptItem[]>(() => {
-    const rows: TranscriptItem[] = [...messages, ...(optimistic ? [optimistic] : [])].map(
-      (message) => ({ kind: "message", message }),
-    );
+    const rows: TranscriptItem[] = [...messages, ...(pending ? [pending] : [])].map((message) => ({
+      kind: "message",
+      message,
+    }));
 
     return live ? [...rows, { kind: "live", chatId, run: live }] : rows;
-  }, [messages, optimistic, live, chatId]);
+  }, [messages, pending, live, chatId]);
 
   return (
     <div className="flex h-dvh flex-col">
@@ -120,7 +124,9 @@ function liveRunToRender(activeRun: ActiveRun | null, messages: readonly Message
  * The bubble shown between pressing Enter and the server confirming.
  *
  * It is deliberately not a `MessageDTO` from the cache — see `useSendMessage`. The id is a local
- * marker and never reaches the server.
+ * marker and never reaches the server. It is held against the chat it was typed into, because
+ * `/chat` sends and then replaces the route: React may keep this component, and an unkeyed bubble
+ * would sit beside the real message for a render.
  */
 function optimisticUserMessage(content: string): MessageDTO {
   return {

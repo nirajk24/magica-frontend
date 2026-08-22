@@ -11,6 +11,8 @@ export type ToolView = {
   id: string;
   toolUseId: string;
   toolName: string;
+  /** The provider sub-model that produced the output, when the tool used one. */
+  subModelId: string | null;
   display: ToolInvocationDTO["display"];
   status: ToolInvocationDTO["status"];
   input: unknown;
@@ -44,6 +46,14 @@ export type TimelineSegment = {
 export type Timeline = {
   segments: TimelineSegment[];
   tools: ReadonlyMap<string, ToolView>;
+  /**
+   * URLs this turn renders as media in its own right.
+   *
+   * Free models write result URLs into their prose however firmly the prompt forbids it, so prose
+   * cannot be trusted to leave them out. Anything in here is dropped from the markdown, because it
+   * is already on screen by construction.
+   */
+  assetUrls: ReadonlySet<string>;
 };
 
 const COUNTS_AS_STEP: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["type"]>([
@@ -52,14 +62,24 @@ const COUNTS_AS_STEP: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["
   "step_update",
 ]);
 
-/** `tool_result` is folded into its tool card, so it never renders as a row of its own. */
-const HIDDEN_ROW: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["type"]>(["tool_result"]);
+/**
+ * Blocks that never render as a timeline row.
+ *
+ * `tool_result` is folded into its tool card. `usage` is required by the brief but appears nowhere in
+ * the reference transcript, and inside a step group it vanishes the moment the group collapses — so
+ * the assistant footer renders it from `Message.tokenUsage` instead.
+ */
+const HIDDEN_ROW: ReadonlySet<ContentBlock["type"]> = new Set<ContentBlock["type"]>([
+  "tool_result",
+  "usage",
+]);
 
 function toolViewFromInvocation(invocation: ToolInvocationDTO): ToolView {
   return {
     id: invocation.id,
     toolUseId: invocation.toolUseId,
     toolName: invocation.toolName,
+    subModelId: invocation.subModelId,
     display: invocation.display,
     status: invocation.status,
     input: invocation.input,
@@ -128,7 +148,11 @@ export function timelineFromMessage(message: MessageDTO): Timeline {
     if (tool && block.summary !== undefined) tool.resultSummary = block.summary;
   }
 
-  return { segments: groupBlocks(blocks.map((block) => ({ block }))), tools };
+  return {
+    segments: groupBlocks(blocks.map((block) => ({ block }))),
+    tools,
+    assetUrls: new Set((message.assets ?? []).map((asset) => asset.url)),
+  };
 }
 
 /**
@@ -151,6 +175,7 @@ export function timelineFromRun(metadata: RunMetadata, streamedText: string): Ti
         id: invocation.id,
         toolUseId: invocation.toolUseId,
         toolName: invocation.toolName,
+        subModelId: invocation.subModelId ?? null,
         display: invocation.display,
         status: invocation.state,
         input: undefined,
@@ -210,5 +235,9 @@ export function timelineFromRun(metadata: RunMetadata, streamedText: string): Ti
 
   const streamingSegment = metadata.blocks.at(-1)?.segment ?? null;
 
-  return { segments: groupBlocks(items, streamingSegment), tools };
+  return {
+    segments: groupBlocks(items, streamingSegment),
+    tools,
+    assetUrls: new Set(metadata.invocations.flatMap((invocation) => invocation.resultUrls ?? [])),
+  };
 }

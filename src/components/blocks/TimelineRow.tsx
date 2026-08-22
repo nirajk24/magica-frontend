@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, ChevronDown, ChevronRight, Clock, Loader2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleCheck, CircleX, Clock, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import type { ToolView } from "@/lib/timeline";
 import { formatDuration } from "@/lib/format";
@@ -14,23 +15,32 @@ type RowStatus = ToolView["status"] | "streaming";
  * drift apart.
  *
  * A row with no `children` is a one-liner and renders no chevron.
+ *
+ * The colour hierarchy is sampled, not chosen: icons and durations are `--fg`, and the reasoning
+ * label is the only muted one. The Skill bolt is the single coloured icon in the reference — `--amber`,
+ * which is the pixel that token was sampled from in the first place.
  */
 export function TimelineRow({
   icon: Icon,
+  iconClassName,
   label,
   labelClassName,
   status,
   durationMs,
   right,
+  chevron = "end",
   defaultOpen = false,
   children,
 }: {
   icon: React.ComponentType<{ className?: string }>;
+  iconClassName?: string;
   label: string;
   labelClassName?: string;
   status?: RowStatus;
   durationMs?: number | null;
   right?: ReactNode;
+  /** Reasoning rows keep the chevron beside the label; tool cards push it to the far right. */
+  chevron?: "inline" | "end";
   defaultOpen?: boolean;
   children?: ReactNode;
 }) {
@@ -40,11 +50,12 @@ export function TimelineRow({
 
   const header = (
     <>
-      <Icon className="size-4 shrink-0 text-fg-muted" />
+      <Icon className={cn("size-4 shrink-0 text-fg", iconClassName)} />
       <span className={cn("text-sm font-medium text-fg", labelClassName)}>{label}</span>
+      {expandable && chevron === "inline" && <Chevron className="size-4 text-fg-muted" aria-hidden />}
       <StatusGlyph status={status} />
       {typeof durationMs === "number" && (
-        <span className="flex items-center gap-1 font-mono text-xs text-fg-muted">
+        <span className="flex items-center gap-1 font-mono text-xs text-fg">
           <Clock className="size-3" aria-hidden />
           {formatDuration(durationMs)}
         </span>
@@ -62,10 +73,12 @@ export function TimelineRow({
           className="flex items-center gap-2 text-left"
         >
           {header}
-          <span className="ml-auto flex items-center gap-2">
-            {right}
-            <Chevron className="size-4 text-fg-subtle" aria-hidden />
-          </span>
+          {chevron === "end" && (
+            <span className="ml-auto flex items-center gap-2">
+              {right}
+              <Chevron className="size-4 text-fg-subtle" aria-hidden />
+            </span>
+          )}
         </button>
       ) : (
         <div className="flex items-center gap-2">
@@ -84,52 +97,95 @@ function StatusGlyph({ status }: { status?: RowStatus }) {
     return <Loader2 className="size-3.5 animate-spin text-info" aria-label="Running" />;
   }
   if (status === "completed") {
-    return <Check className="size-3.5 text-success" aria-label="Completed" />;
+    return <CircleCheck className="size-3.5 text-success" aria-label="Completed" />;
   }
   if (status === "failed") {
-    return <X className="size-3.5 text-danger" aria-label="Failed" />;
+    return <CircleX className="size-3.5 text-danger" aria-label="Failed" />;
   }
 
   return null;
 }
 
-/** The label/value grid a tool card's body is made of, with the reference's `View more` cut-off. */
+export type DetailRow = readonly [string, ReactNode];
+
+/**
+ * The label/value grid a tool card's body is made of, with the reference's `View more` cut-off.
+ *
+ * `trailingRows` sit after that link rather than inside the slice — the reference orders an
+ * AI Generation card `Size · Quality · View more · Output`, so the output is never what `View more`
+ * is hiding, and a divider separates it from the fields above.
+ *
+ * Detail text is 12px. Measured by comparing the same word — `Quality` — in both, after fixing each
+ * screenshot's device scale: 10.4 CSS px of glyph against our 12.5.
+ */
 export function DetailRows({
   rows,
   visible = 5,
+  trailingRows = [],
   footer,
 }: {
-  rows: readonly (readonly [string, string])[];
+  rows: readonly DetailRow[];
   visible?: number;
+  trailingRows?: readonly DetailRow[];
   footer?: ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const shown = expanded ? rows : rows.slice(0, visible);
+  if (rows.length === 0 && trailingRows.length === 0 && !footer) return null;
 
-  if (rows.length === 0 && !footer) return null;
+  const shown = rows.slice(0, visible);
 
   return (
     <div className="rounded-card border border-border bg-bg-subtle p-3">
-      <dl className="grid grid-cols-[minmax(0,90px)_1fr] gap-x-4 gap-y-2 text-sm">
-        {shown.map(([label, value]) => (
-          <div key={label} className="col-span-2 grid grid-cols-subgrid">
-            <dt className="text-fg-muted">{label}</dt>
-            <dd className="break-words text-fg">{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <Grid rows={shown} />
 
       {rows.length > visible && (
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="mt-2 text-sm text-info"
-        >
-          {expanded ? "View less" : "View more"}
-        </button>
+        <DisabledAction
+          label="View more"
+          reason="The full tool detail panel isn't part of this build yet."
+        />
+      )}
+
+      {trailingRows.length > 0 && (
+        <div className="mt-2.5 border-t border-border pt-2.5">
+          <Grid rows={trailingRows} />
+        </div>
       )}
 
       {footer}
     </div>
+  );
+}
+
+/**
+ * `View more` opens the tool detail side panel in the reference, not an in-card expansion — so until
+ * that panel exists it states why it does nothing rather than inventing a different behaviour.
+ */
+function DisabledAction({ label, reason }: { label: string; reason: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        type="button"
+        aria-disabled
+        onClick={(event) => event.preventDefault()}
+        className="mt-2 cursor-not-allowed text-xs text-info/60"
+      >
+        {label}
+      </TooltipTrigger>
+      <TooltipContent>{reason}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Grid({ rows }: { rows: readonly DetailRow[] }) {
+  if (rows.length === 0) return null;
+
+  return (
+    <dl className="grid grid-cols-[minmax(0,90px)_1fr] gap-x-4 gap-y-2.5 text-xs leading-5">
+      {rows.map(([label, value]) => (
+        <div key={label} className="col-span-2 grid grid-cols-subgrid">
+          <dt className="text-fg-muted">{label}</dt>
+          <dd className="break-words text-fg">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

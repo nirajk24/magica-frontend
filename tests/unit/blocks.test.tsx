@@ -15,6 +15,7 @@ const toolView = (over: Partial<ToolView> = {}): ToolView => ({
   id: "inv-1",
   toolUseId: fixtures.TOOL_USE_ID,
   toolName: "gpt_image_2",
+  subModelId: null,
   display: { label: "Generating image", icon: "image" },
   status: "completed",
   input: { prompt: "a mountain at sunrise", quality: "Low", size: "1024x1024" },
@@ -91,7 +92,7 @@ describe("the reasoning row", () => {
     expect(screen.getByText("partial wo")).toBeVisible();
   });
 
-  it("reads Reasoned with its duration once closed, and starts collapsed", async () => {
+  it("reads Reasoned once closed, starts collapsed, and shows no duration", async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <Block
@@ -103,7 +104,7 @@ describe("the reasoning row", () => {
     const header = screen.getByRole("button", { expanded: false });
 
     expect(header).toHaveTextContent("Reasoned");
-    expect(header).toHaveTextContent("2.4s");
+    expect(header).not.toHaveTextContent("2.4s");
     expect(screen.queryByText("the whole thought")).not.toBeInTheDocument();
 
     await user.click(header);
@@ -137,7 +138,7 @@ describe("a tool card", () => {
     renderWithProviders(<ToolCard tool={toolView()} />);
 
     expect(screen.getByText("8.4s")).toBeInTheDocument();
-    expect(screen.getByText("0.01M")).toBeInTheDocument();
+    expect(screen.getByText("0.0059M")).toBeInTheDocument();
   });
 
   it("charges nothing on a failed call, so no chip appears", () => {
@@ -242,7 +243,122 @@ describe("step groups", () => {
 
     renderWithProviders(<MessageTimeline timeline={timeline} />);
 
-    expect(screen.getByText("Working · 1 step")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Working · 1 step/ })).toBeInTheDocument();
     expect(screen.getByText("Generating image")).toBeInTheDocument();
+  });
+});
+
+describe("the timeline's colour hierarchy, sampled from the dark captures", () => {
+  const classesOf = (text: string) => screen.getByText(text).className;
+
+  it("mutes the reasoning label and leaves its transcript at full contrast", () => {
+    renderWithProviders(
+      <Block
+        block={{ segment: 0, type: "thinking", thinking: "a thought", durationMs: 900 }}
+        tools={NO_TOOLS}
+      />,
+    );
+
+    expect(classesOf("Reasoned")).toContain("text-fg-muted");
+  });
+
+  it("does not mute a tool label", () => {
+    renderWithProviders(<ToolCard tool={toolView()} />);
+
+    expect(classesOf("Generating image")).not.toContain("text-fg-muted");
+  });
+
+  it("does not mute a duration", () => {
+    renderWithProviders(<ToolCard tool={toolView()} />);
+
+    expect(screen.getByText("8.4s").className).not.toContain("text-fg-muted");
+  });
+
+  it("drops the trailing newline models leave on reasoning, so the box fits its text", () => {
+    renderWithProviders(
+      <Block
+        block={{ segment: 0, type: "thinking", thinking: "one line\n\n", durationMs: 900 }}
+        tools={NO_TOOLS}
+        streaming
+      />,
+    );
+
+    expect(screen.getByText("one line").textContent).toBe("one line");
+  });
+});
+
+describe("row anatomy measured off the reference", () => {
+  it("circles the completed and failed glyphs", () => {
+    const { unmount } = renderWithProviders(<ToolCard tool={toolView()} />);
+
+    expect(screen.getByLabelText("Completed")).toHaveClass("lucide-circle-check");
+    unmount();
+
+    renderWithProviders(<ToolCard tool={toolView({ status: "failed", creditUsed: "0" })} />);
+
+    expect(screen.getByLabelText("Failed")).toHaveClass("lucide-circle-x");
+  });
+
+  it("colours the skill bolt amber and the schema wrench blue, and nothing else", () => {
+    renderWithProviders(
+      <ToolCard tool={toolView({ display: { label: "Skill", icon: "skill" } })} />,
+    );
+
+    expect(document.querySelector(".text-amber")).not.toBeNull();
+    expect(document.querySelector(".text-info")).toBeNull();
+  });
+
+  it("shows the generated output as a labelled row, after View more", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ToolCard
+        tool={toolView({
+          input: { tool: "generate", prompt: "p", size: "Auto", quality: "Low", n: 1, background: "Auto" },
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Generating image/ }));
+
+    const viewMore = screen.getByRole("button", { name: "View more" });
+    const output = screen.getByText("Output");
+
+    expect(viewMore.compareDocumentPosition(output)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("says what View more will do rather than expanding the card itself", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ToolCard
+        tool={toolView({
+          input: { a: "1", b: "2", c: "3", d: "4", e: "5", hidden: "6" },
+        })}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Generating image/ }));
+
+    const viewMore = screen.getByRole("button", { name: "View more" });
+
+    expect(viewMore).toHaveAttribute("aria-disabled", "true");
+
+    await user.hover(viewMore);
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/detail panel/i);
+  });
+
+  it("names the sub-model that answered, which the input never records", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Block
+        block={{ segment: 0, type: "tool_use", id: "call_m", name: "gpt_image_2", input: { prompt: "p" } }}
+        tools={new Map([["call_m", toolView({ subModelId: "gpt-image-2-text" })]])}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Generating image/ }));
+
+    expect(screen.getByText("Model")).toBeInTheDocument();
+    expect(screen.getByText("gpt-image-2-text")).toBeInTheDocument();
   });
 });

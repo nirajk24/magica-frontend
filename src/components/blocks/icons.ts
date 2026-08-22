@@ -31,3 +31,18 @@ const ICONS: Record<string, LucideIcon> = {
 export function iconFor(name: string): LucideIcon {
   return ICONS[name] ?? Wrench;
 }
+
+/**
+ * Icons are colour-coded per tool in the reference, not uniformly neutral.
+ *
+ * Sampled: the skill bolt is `--amber`, the schema wrench is `--info`, and the brain, sparkles and
+ * clipboard are plain `--fg`. Anything unmeasured stays neutral rather than guessing a colour.
+ */
+const ICON_COLOURS: Record<string, string> = {
+  skill: "text-amber",
+  schema: "text-info",
+};
+
+export function iconColourFor(name: string): string | undefined {
+  return ICON_COLOURS[name];
+}

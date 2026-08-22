@@ -6,11 +6,19 @@ import { fieldLabel, fieldValue } from "@/components/blocks/tool-output";
 /**
  * The media-generation card. Identical chrome to the generic one; the only difference is that the
  * reference orders these fields deliberately and hides the rest behind `View more`.
+ *
+ * `Model` comes from the invocation's `subModelId` rather than the tool input, because the sub-model
+ * is chosen at execution time — the input records what was asked for, not what answered.
  */
 const ORDER = ["tool", "model", "prompt", "size", "quality", "aspect_ratio", "resolution"];
 
 export function AiGenerationCard({ tool }: ToolCardProps) {
-  return <ToolCard tool={tool} rows={orderedRows(tool.input)} visible={5} />;
+  const rows = orderedRows(tool.input);
+  const detail: [string, string][] = tool.subModelId
+    ? [["Model", tool.subModelId], ...rows.filter(([label]) => label !== "Model")]
+    : rows;
+
+  return <ToolCard tool={tool} rows={detail} visible={5} />;
 }
 
 function orderedRows(input: unknown): [string, string][] {

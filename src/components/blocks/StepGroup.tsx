@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 /**
  * The reference's `Working · N steps` / `Completed N steps` collapsible group.
@@ -9,6 +10,10 @@ import { useState, type ReactNode } from "react";
  * A live group is open so the user watches the steps arrive; a finished one collapses to its header,
  * which is what the terminal captures show. `steps` counts reasoning, tool calls and step updates —
  * not the token-usage footer.
+ *
+ * The chevron follows the captures: present while the group is open, absent when it is closed. No
+ * capture can show a hovered-but-closed header, so hover and keyboard focus reveal it — the header is
+ * the click target either way, and an affordance nobody can find is worse than a small divergence.
  */
 export function StepGroup({
   steps,
@@ -21,10 +26,7 @@ export function StepGroup({
 }) {
   const [open, setOpen] = useState(streaming);
   const Chevron = open ? ChevronDown : ChevronRight;
-
-  const label = streaming
-    ? `Working · ${steps} ${steps === 1 ? "step" : "steps"}`
-    : `Completed ${steps} ${steps === 1 ? "step" : "steps"}`;
+  const unit = steps === 1 ? "step" : "steps";
 
   return (
     <div className="flex flex-col gap-3">
@@ -32,10 +34,28 @@ export function StepGroup({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-fit items-center gap-1 text-sm text-fg-muted transition-colors hover:text-fg"
+        className="group/steps flex w-fit items-center gap-1 text-sm text-fg-muted transition-colors hover:text-fg"
       >
-        {label}
-        <Chevron className="size-4" aria-hidden />
+        {streaming ? (
+          <span>
+            Working ·{" "}
+            <span className="font-medium text-fg">
+              {steps} {unit}
+            </span>
+          </span>
+        ) : (
+          <span>
+            Completed {steps} {unit}
+          </span>
+        )}
+
+        <Chevron
+          aria-hidden
+          className={cn(
+            "size-4 transition-opacity",
+            open ? "opacity-100" : "opacity-0 group-hover/steps:opacity-100 group-focus-visible/steps:opacity-100",
+          )}
+        />
       </button>
 
       {open && <div className="flex flex-col gap-3">{children}</div>}

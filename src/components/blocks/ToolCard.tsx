@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import type { ToolView } from "@/lib/timeline";
-import { DetailRows, TimelineRow } from "@/components/blocks/TimelineRow";
-import { iconFor } from "@/components/blocks/icons";
+import { DetailRows, TimelineRow, type DetailRow } from "@/components/blocks/TimelineRow";
+import { iconColourFor, iconFor } from "@/components/blocks/icons";
 import { inputRows, outputUrls } from "@/components/blocks/tool-output";
 import { formatCredits } from "@/lib/format";
 
@@ -20,7 +20,7 @@ export function ToolCard({
   tool,
   rows,
   visible,
-}: ToolCardProps & { rows?: readonly (readonly [string, string])[]; visible?: number }) {
+}: ToolCardProps & { rows?: readonly DetailRow[]; visible?: number }) {
   const Icon = iconFor(tool.display.icon);
   const detail = rows ?? inputRows(tool.input);
   const urls = outputUrls(tool);
@@ -28,6 +28,7 @@ export function ToolCard({
   return (
     <TimelineRow
       icon={Icon}
+      iconClassName={iconColourFor(tool.display.icon)}
       label={tool.display.label}
       status={tool.status}
       durationMs={tool.durationMs}
@@ -37,13 +38,15 @@ export function ToolCard({
       <DetailRows
         rows={detail}
         visible={visible ?? 5}
+        trailingRows={
+          urls.length > 0
+            ? [["Output", <OutputStrip key="output" urls={urls} label={tool.display.label} />]]
+            : []
+        }
         footer={
-          <>
-            {tool.errorMessage && (
-              <p className="mt-3 text-sm leading-6 text-danger">{tool.errorMessage}</p>
-            )}
-            {urls.length > 0 && <OutputStrip urls={urls} label={tool.display.label} />}
-          </>
+          tool.errorMessage ? (
+            <p className="mt-3 text-sm leading-6 text-danger">{tool.errorMessage}</p>
+          ) : null
         }
       />
     </TimelineRow>
@@ -59,7 +62,7 @@ export function CreditsChip({ tool }: ToolCardProps): ReactNode {
 
 export function OutputStrip({ urls, label }: { urls: readonly string[]; label: string }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {urls.map((url) => (
         <img
           key={url}

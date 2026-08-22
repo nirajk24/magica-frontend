@@ -1,34 +1,48 @@
 import { describe, expect, it } from "vitest";
-import { formatCredits, formatDuration, formatMessageTime } from "@/lib/format";
+import { CREDIT_DIGITS, formatCredits, formatDuration, formatMessageTime } from "@/lib/format";
 
 describe("formatCredits", () => {
   it.each([
     ["0", "0.00M"],
-    ["5880", "0.01M"],
-    ["20000", "0.02M"],
+    ["10400", "0.010M"],
     ["420000", "0.42M"],
+    ["580000", "0.58M"],
+    ["300000", "0.30M"],
     ["210800", "0.21M"],
-    ["29994120", "29.99M"],
-    ["30000000", "30.00M"],
-  ])("renders %s microcredits as %s", (input, expected) => {
+    ["160000", "0.16M"],
+  ])("renders %s microcredits as %s, matching the captured strings", (input, expected) => {
     expect(formatCredits(input)).toBe(expected);
   });
 
-  it("keeps four decimals for a plan estimate", () => {
-    expect(formatCredits("210800", 4)).toBe("0.2108M");
+  it("keeps two significant digits rather than two decimals, so cheap calls stay distinct", () => {
+    expect(formatCredits("5880")).toBe("0.0059M");
+    expect(formatCredits("588")).toBe("0.00059M");
+    expect(formatCredits("5880")).not.toBe(formatCredits("588"));
   });
 
-  it("rounds rather than truncates, so a real charge never reads as free", () => {
-    expect(formatCredits("5000")).toBe("0.01M");
-    expect(formatCredits("4999")).toBe("0.00M");
+  it("renders a balance to four significant digits", () => {
+    expect(formatCredits("29994120", CREDIT_DIGITS.balance)).toBe("29.99M");
+    expect(formatCredits("28300000", CREDIT_DIGITS.balance)).toBe("28.30M");
+    expect(formatCredits("30000000", CREDIT_DIGITS.balance)).toBe("30.00M");
+  });
+
+  it("renders a plan estimate to four significant digits", () => {
+    expect(formatCredits("210800", CREDIT_DIGITS.balance)).toBe("0.2108M");
+    expect(formatCredits("3402000", CREDIT_DIGITS.balance)).toBe("3.402M");
+    expect(formatCredits("164700", CREDIT_DIGITS.balance)).toBe("0.1647M");
+  });
+
+  it("does not gain a digit when rounding carries into a new power of ten", () => {
+    expect(formatCredits("99900")).toBe("0.10M");
+    expect(formatCredits("9990000")).toBe("10M");
   });
 
   it("keeps full precision on a balance no double can hold exactly", () => {
-    expect(formatCredits("9007199254740993", 6)).toBe("9007199254.740993M");
+    expect(formatCredits("9007199254740993", 16)).toBe("9007199254.740993M");
   });
 
   it("renders a refund with its sign", () => {
-    expect(formatCredits("-5880")).toBe("-0.01M");
+    expect(formatCredits("-5880")).toBe("-0.0059M");
   });
 });
 

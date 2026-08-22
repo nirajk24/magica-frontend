@@ -47,6 +47,7 @@ function placeholderTool(toolUseId: string, name: string, input: unknown): ToolV
     id: toolUseId,
     toolUseId,
     toolName: name,
+    subModelId: null,
     display: { label: name, icon: "tool" },
     status: "pending",
     input,

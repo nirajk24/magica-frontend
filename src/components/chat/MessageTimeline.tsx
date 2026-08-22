@@ -27,6 +27,7 @@ export function MessageTimeline({ timeline }: { timeline: Timeline }) {
                   block={item.block}
                   tools={timeline.tools}
                   streaming={item.streaming}
+                  assetUrls={timeline.assetUrls}
                 />
               ))}
             </StepGroup>
@@ -38,6 +39,7 @@ export function MessageTimeline({ timeline }: { timeline: Timeline }) {
               block={item.block}
               tools={timeline.tools}
               streaming={item.streaming}
+              assetUrls={timeline.assetUrls}
             />
           ))}
         </div>

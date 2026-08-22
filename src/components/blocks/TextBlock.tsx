@@ -3,12 +3,12 @@
 import { Markdown } from "@/components/chat/Markdown";
 import type { BlockProps } from "@/components/blocks/types";
 
-export function TextBlock({ block }: BlockProps) {
+export function TextBlock({ block, assetUrls }: BlockProps) {
   if (block.type !== "text") return null;
 
   return (
     <div className="text-[15px] leading-7 text-fg">
-      <Markdown>{block.text}</Markdown>
+      <Markdown suppressUrls={assetUrls}>{block.text}</Markdown>
     </div>
   );
 }

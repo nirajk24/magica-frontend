@@ -56,7 +56,7 @@ describe("MessageRow — assistant", () => {
   it("shows the turn's credit total", () => {
     renderWithProviders(<MessageRow message={fixtures.assistantMessage} />);
 
-    expect(screen.getByText("0.01M credits")).toBeInTheDocument();
+    expect(screen.getByText(/0\.0059M credits/)).toBeInTheDocument();
   });
 
   it("omits the credit line for a turn that cost nothing", () => {
