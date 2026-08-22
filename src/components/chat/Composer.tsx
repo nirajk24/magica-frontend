@@ -154,7 +154,7 @@ function SendButton({
       onClick={onClick}
       className={cn(
         "flex size-[34px] items-center justify-center rounded-full transition-colors",
-        canSend ? "bg-fg text-bg" : "cursor-not-allowed bg-bg-subtle text-fg-subtle",
+        canSend ? "bg-fg text-bg" : "cursor-not-allowed bg-surface text-fg-subtle",
       )}
     >
       {pending ? (

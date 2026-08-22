@@ -4,6 +4,7 @@ import { useRealtimeRun, useRealtimeStream } from "@trigger.dev/react-hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { RunMetadata, STREAM_AGENT_TEXT, type ActiveRun } from "@/contracts";
+import { ThinkingRow } from "@/components/blocks/ThinkingRow";
 import { ConnectionPill } from "@/components/chat/ConnectionPill";
 import { StreamingOverlay } from "@/components/chat/StreamingOverlay";
 import { qk } from "@/lib/query-client";
@@ -98,15 +99,37 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
   }, [finished, chatId, queryClient]);
 
   const metadata = parseMetadata(realtimeRun?.metadata);
-  if (!metadata && connection === "live") return null;
 
   return (
     <div className="flex flex-col">
       <ConnectionPill connection={connection} />
-      {metadata && <StreamingOverlay metadata={metadata} streamedText={parts.join("")} />}
+      {metadata ? (
+        <StreamingOverlay metadata={metadata} streamedText={parts.join("")} />
+      ) : (
+        <PendingTurn />
+      )}
     </div>
   );
 }
+
+/**
+ * The window between a turn being dispatched and its first metadata arriving.
+ *
+ * The reference fills it with a bare `Thinking` row — user bubble top-right, the row alone
+ * top-left, the stop control already red. Rendering nothing instead leaves the screen looking as
+ * though the send did not land, which is exactly when a user sends again.
+ */
+function PendingTurn() {
+  return (
+    <ThinkingRow
+      block={{ segment: 0, type: "thinking", thinking: "" }}
+      tools={EMPTY_TOOLS}
+      streaming
+    />
+  );
+}
+
+const EMPTY_TOOLS = new Map();
 
 /**
  * Run metadata arrives as loose JSON from another process, so it is parsed rather than cast. A shape

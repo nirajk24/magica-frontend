@@ -18,13 +18,13 @@ export function AttachmentGallery({ attachments }: { attachments: readonly Attac
             key={attachment.id}
             src={attachment.url}
             alt={attachment.name}
-            className="w-full rounded-card bg-bg-subtle"
+            className="w-full rounded-card bg-surface"
             loading="lazy"
           />
         ) : (
           <div
             key={attachment.id}
-            className="flex h-40 w-full items-center justify-center rounded-card bg-bg-subtle text-xs text-fg-subtle"
+            className="flex h-40 w-full items-center justify-center rounded-card bg-surface text-xs text-fg-subtle"
           >
             {attachment.status === "failed" ? "Attachment unavailable" : attachment.name}
           </div>

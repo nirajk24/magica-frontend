@@ -50,7 +50,7 @@ export function TasksPage() {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 rounded-card border border-border bg-bg-subtle px-3 py-2.5">
+      <label className="flex items-center gap-2 rounded-card border border-border bg-surface px-3 py-2.5">
         <Search className="size-4 shrink-0 text-fg-subtle" aria-hidden />
         <input
           type="search"
