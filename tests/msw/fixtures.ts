@@ -285,6 +285,7 @@ export const runMetadata: RunMetadata = {
       subModelId: SUB_MODEL_ID,
       display: { label: "Generating image", icon: "image" },
       state: "running",
+      input: { tool: "generate", prompt: "a mountain at sunrise", size: "1024x1024" },
       credits: "5880",
     },
   ],
