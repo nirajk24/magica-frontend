@@ -123,11 +123,14 @@ export function DetailRows({
   visible = 5,
   trailingRows = [],
   footer,
+  onViewMore,
 }: {
   rows: readonly DetailRow[];
   visible?: number;
   trailingRows?: readonly DetailRow[];
   footer?: ReactNode;
+  /** Opens the tool detail panel. Without it the link states why it does nothing. */
+  onViewMore?: () => void;
 }) {
   if (rows.length === 0 && trailingRows.length === 0 && !footer) return null;
 
@@ -137,12 +140,21 @@ export function DetailRows({
     <div className="rounded-card border border-border bg-bg-subtle p-3">
       <Grid rows={shown} />
 
-      {rows.length > visible && (
-        <DisabledAction
-          label="View more"
-          reason="The full tool detail panel isn't part of this build yet."
-        />
-      )}
+      {rows.length > visible &&
+        (onViewMore ? (
+          <button
+            type="button"
+            onClick={onViewMore}
+            className="mt-2 text-xs text-info transition-colors hover:underline"
+          >
+            View more
+          </button>
+        ) : (
+          <DisabledAction
+            label="View more"
+            reason="The full tool detail panel isn't part of this build yet."
+          />
+        ))}
 
       {trailingRows.length > 0 && (
         <div className="mt-2.5 border-t border-border pt-2.5">

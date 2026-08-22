@@ -77,3 +77,49 @@ export function inputRows(input: unknown): [string, string][] {
     fieldValue(value),
   ]);
 }
+
+/**
+ * The order the reference lists a media tool's fields in. Anything unlisted keeps its own order
+ * after them, so a tool this repo has never seen still renders every field it was given.
+ */
+const FIELD_ORDER = ["tool", "model", "prompt", "size", "quality", "aspect_ratio", "resolution"];
+
+/**
+ * Input rows in the reference's order, with `Model` taken from the invocation rather than the input.
+ *
+ * The input records what was asked for; `subModelId` is chosen at execution time, which is why the
+ * reference can show `gpt-image-2-text` for a call whose input never mentions it.
+ *
+ * Shared by the card and the detail panel so the two cannot list the same tool differently.
+ */
+export function orderedInputRows(input: unknown, subModelId?: string | null): [string, string][] {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return subModelId ? [["Model", subModelId]] : [];
+  }
+
+  const entries = input as Record<string, unknown>;
+  const seen = new Set<string>();
+  const rows: [string, string][] = [];
+
+  for (const key of FIELD_ORDER) {
+    if (key in entries) {
+      rows.push([fieldLabel(key), fieldValue(entries[key])]);
+      seen.add(key);
+    }
+  }
+  for (const [key, value] of Object.entries(entries)) {
+    if (!seen.has(key)) rows.push([fieldLabel(key), fieldValue(value)]);
+  }
+
+  return subModelId
+    ? [["Model", subModelId], ...rows.filter(([label]) => label !== "Model")]
+    : rows;
+}
+
+/** Image URLs carried by a tool's input, which the detail panel shows as `Input Images`. */
+export function inputImageUrls(input: unknown): string[] {
+  const urls: string[] = [];
+  collectUrls(input, 0, urls);
+
+  return urls.filter((url) => !/\.(mp4|webm|mov)(\?|$)/i.test(url));
+}

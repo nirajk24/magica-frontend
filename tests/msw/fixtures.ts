@@ -105,6 +105,25 @@ export const toolInvocation: ToolInvocationDTO = {
   durationMs: 8_412,
 };
 
+/**
+ * A generation with the full field set the reference shows, so `View more` has something to hide.
+ * The default `toolInvocation` carries one field and never crosses the card's five-row cut-off.
+ */
+export const detailedToolInvocation: ToolInvocationDTO = {
+  ...toolInvocation,
+  id: "01999f00-0000-7000-8000-000000000201",
+  input: {
+    tool: "generate",
+    prompt:
+      "Convert this app UI screenshot into a polished dark mode with extra visual flair, preserving exact layout, text content, and positioning of every element.",
+    size: "Auto",
+    quality: "High",
+    aspect_ratio: "1:1",
+    resolution: "1080p",
+    image_url: "https://cdn.magica.com/fixtures/screenshot.png",
+  },
+};
+
 export const assistantMessage: MessageDTO = {
   id: ASSISTANT_MESSAGE_ID,
   role: "assistant",
@@ -122,6 +141,16 @@ export const assistantMessage: MessageDTO = {
   metadata: null,
   runId: RUN_ID,
   createdAt: "2026-08-22T10:02:14.000Z",
+};
+
+/** The same turn, with the generation carrying the full input the detail panel exists to show. */
+export const detailedAssistantMessage: MessageDTO = {
+  ...assistantMessage,
+  id: "01999f00-0000-7000-8000-000000000105",
+  contentBlocks: assistantBlocks.map((block) =>
+    block.type === "tool_use" ? { ...block, input: detailedToolInvocation.input } : block,
+  ),
+  toolInvocations: [detailedToolInvocation],
 };
 
 export const failedAssistantMessage: MessageDTO = {

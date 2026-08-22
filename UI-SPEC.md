@@ -332,8 +332,8 @@ A `7ms` row is a cache hit and is information, not noise.
   fields above.
 - **`View more` opens the tool detail side panel; it does not expand the card.** Confirmed by
   clicking it in the live product: the card's visible fields do not change and the right-hand panel
-  opens with the same detail plus `Output Format` and `Credits used`. The panel is Phase 5, so until
-  then the link states why it does nothing rather than inventing an in-card expansion.
+  opens with the same detail plus `Credits used`. The card shows five rows; the panel is where the
+  rest live, and both read the same ordering helper so they cannot describe one call differently.
 - **Detail-row text is 12px**, against 15px prose. Measured by comparing the same word — `Quality` —
   in both, after fixing each screenshot's device scale from a known height: 10.4 CSS px of glyph in
   the reference against our 12.5. The reasoning transcript is the same 12px.
@@ -343,8 +343,8 @@ A `7ms` row is a cache hit and is information, not noise.
 - Body: a two-column label/value grid, label column ≈ 90px and muted. In light themes the body has a
   hairline border; in dark it is a raised filled surface. Depth reverses — that is why `globals.css`
   carries two palettes.
-- `View more` is an accent-coloured link. It **opens the tool detail panel** (Phase 5); it does not
-  reveal the remaining fields in place.
+- `View more` is an accent-coloured link. It **opens the tool detail panel**; it does not reveal the
+  remaining fields in place. It renders only when there are more fields than the card shows.
 - A failed card keeps its detail rows and appends the provider's sanitized error as a red paragraph
   **inside the same body**, after `View more`. The error is **12px — the same size as the detail
   rows**, not the prose size: `Error: 400 Your` and `Quality` have 15px and 16px ink bands in the same
@@ -666,8 +666,8 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 
 | Overlay | Kind | Anchor / geometry | Phase | Capture |
 |---|---|---|---|---|
-| Tool detail | right-side **overlay**, ≈530px, full height, shadowed | content behind stays put and is clipped, **not** squeezed | 5 | `04-tool-cards/detail-side-panel__light.jpg` |
-| Tool detail, maximized | full-window, `Restore` tooltip on the toggle | — | 5 | `04-tool-cards/detail-fullscreen__input-images__light.jpg` |
+| Tool detail | right-side **overlay**, **538px** measured, full height, shadowed | content behind stays put and is clipped, **not** squeezed — the plan card under it is cut mid-word rather than reflowed | 5 | `04-tool-cards/detail-side-panel__light.jpg` |
+| Tool detail, maximized | full-window, `Restore` tooltip on the toggle | same content, only the width changes | 5 | `04-tool-cards/detail-fullscreen__input-images__light.jpg` |
 | Files in this task | centred modal ≈470px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
 | Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
 | Image preview | centred wide modal, two columns | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
@@ -676,6 +676,15 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 | Add credits | centred modal ≈390px | title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits` | 6 | `07-modals/add-credits__amounts-autorecharge__light.jpg` |
 | Attach popover | above the paperclip | `Select Asset` / `+ Upload` | 6 | `02-composer/attach-popover__select-asset-upload__light.jpg` |
 | Settings / Upgrade / Clerk | reference-only | — | — | `07-modals/{settings__account__dark,upgrade__*,clerk__*}` |
+
+**The panel's body is not the card's two-column grid.** It is a flowing list of `Label: value` lines
+at ~15px, on a **42px field pitch**, with the prompt wrapping full width — measured off
+`detail-side-panel__light.jpg` at 1x. `Input Images:` carries a rule under the label with the
+thumbnails beneath it. The header is the tool's own icon and label on the left, maximize and close on
+the right.
+
+`Escape` closes it. It is an overlay rather than a modal — the transcript behind stays readable, so
+there is no focus trap and no backdrop.
 
 The side panel and the image preview can be open **at the same time** (`ui-flows.md`), so overlay
 state is not a single slot.

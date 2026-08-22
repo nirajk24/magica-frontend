@@ -326,9 +326,9 @@ describe("row anatomy measured off the reference", () => {
     expect(viewMore.compareDocumentPosition(output)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it("says what View more will do rather than expanding the card itself", async () => {
+  it("opens the detail panel from View more rather than expanding the card itself", async () => {
     const user = userEvent.setup();
-    renderWithProviders(
+    const { container } = renderWithProviders(
       <ToolCard
         tool={toolView({
           input: { a: "1", b: "2", c: "3", d: "4", e: "5", hidden: "6" },
@@ -337,14 +337,10 @@ describe("row anatomy measured off the reference", () => {
     );
 
     await user.click(screen.getByRole("button", { name: /Generating image/ }));
+    await user.click(screen.getByRole("button", { name: "View more" }));
 
-    const viewMore = screen.getByRole("button", { name: "View more" });
-
-    expect(viewMore).toHaveAttribute("aria-disabled", "true");
-
-    await user.hover(viewMore);
-
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/detail panel/i);
+    expect(screen.getByRole("dialog")).toHaveTextContent("Hidden:");
+    expect(container).not.toHaveTextContent("Hidden");
   });
 
   it("names the sub-model that answered, which the input never records", async () => {
