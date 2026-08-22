@@ -167,8 +167,15 @@ connections**. Symptom: a stream that dies a few minutes in, intermittently, onl
 
 It is refetched **only** on: send, run-terminal, and the ~12-minute refresh timer. Nothing else.
 
-Defaults for everything else: `staleTime: 30s`, `retry: 3` with backoff, `refetchOnWindowFocus: false` (it would refetch
-mid-stream and fight the overlay).
+Defaults for everything else: `staleTime: 30s`, `refetchOnWindowFocus: false` (it would refetch
+mid-stream and fight the overlay), and `retry: shouldRetry`.
+
+**`retry` is a predicate, not a count.** A flat `retry: 3` repeats every failure, so a 400, a 402 or
+a 409 is sent three times before the UI can show the message it already has — and an
+`INSUFFICIENT_CREDITS` answer takes three round trips to reach the top-up CTA. `shouldRetry` retries
+only `INTERNAL` and `RATE_LIMITED`, never a `ZodError` (contract drift will not fix itself), and
+always retries an unrecognised error, because that is a dropped connection and it is what retries
+are for.
 
 ### 2.3 `stores/ui.ts`
 
@@ -204,7 +211,7 @@ transient fields being written to disk.
 ```tsx
 // components/blocks/index.ts
 export const blockRenderers: Record<string, FC<BlockProps>> = {
-  text: TextBlock, thinking: ThinkingRow, reasoning: ThinkingRow,
+  text: TextBlock, thinking: ThinkingRow,
   tool_use: ToolCardSwitch, usage: UsageRow, citations: CitationsRow,
   step_update: StepUpdateRow,
 };
