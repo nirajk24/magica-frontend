@@ -251,6 +251,11 @@ and in the expanded captures a `⌄` follows the label. No capture can show a ho
 header, so hover and keyboard focus reveal it — the header is the click target either way, and an
 affordance nobody can find is worse than that small divergence.
 
+**A group holding a failed tool stays expanded.** Every capture of a *collapsed* group is a group
+that succeeded, so this costs no fidelity, and the alternative hides the tool's error behind a click
+on a turn whose whole job is to explain itself. The rule lives on the timeline segment rather than in
+a renderer, so live and persisted turns inherit it from the same place (UI-20).
+
 `Working · N steps` also **emphasises the count** — the label is muted and the `N steps` is not.
 `Completed N steps` is uniformly muted.
 
@@ -324,7 +329,10 @@ A `7ms` row is a cache hit and is information, not noise.
 - `View more` is an accent-coloured link. It **opens the tool detail panel** (Phase 5); it does not
   reveal the remaining fields in place.
 - A failed card keeps its detail rows and appends the provider's sanitized error as a red paragraph
-  **inside the same body**. No credits chip, because nothing was charged.
+  **inside the same body**, after `View more`. The error is **12px — the same size as the detail
+  rows**, not the prose size: `Error: 400 Your` and `Quality` have 15px and 16px ink bands in the same
+  lossless capture. No credits chip, because nothing was charged — the failed header carries only the
+  chevron on its right edge (`ai-gen__FAILED-red-error+self-recovery__dark.png`).
 
 | Status | Glyph | Notes |
 |---|---|---|
@@ -412,13 +420,30 @@ Captures: `02-composer/*` · every chat capture.
 - Attach popover, anchored above the paperclip: caption "Add a file from your device or select one
   from your library", then `Select Asset` (ghost, full width) and `+ Upload` (solid, full width).
 
-Phase-1 reality: the send control is **disabled** while a run is active. The red stop button ships in
-Phase 2 with the cancel route (UI-8).
+**The stop control is the send button's disc in red**, not a different shape or size. Measured on a
+lossless dark capture whose device scale was fixed from the 24 CSS px menu bar: the disc is 43 device
+px → **34 CSS px**, the same footprint as the send arrow, and it holds a **14 CSS px** rounded square.
+
+- The square's fill is `#ba3a28` — **exactly the `--danger` already sampled from the failed tool
+  card**, so the stop button needs no red of its own.
+- The disc behind it is a separate tint, `--danger-surface`: `#441812` in dark, read losslessly, and
+  ≈`#e6d0d2` in light, read off a JPEG and therefore approximate. **It is not `--danger` at an
+  opacity** — in both themes its green and blue channels land on the far side of the canvas from
+  anywhere an alpha blend could reach, so an opacity utility reproduces neither.
+- Captures: `04-tool-cards/ai-gen__FAILED-safety+reasoned-retry+tracker-1of3__dark.png` (lossless,
+  the authority for both sizes and the square's colour) ·
+  `06-messages/capabilities-answer+scroll-btn+image-hover__light.jpg` (the light disc).
 
 ### 3.9 Floating scroll-to-bottom
 
-A circular ⬇ button centred above the composer, visible only when scrolled up
-(`06-messages/capabilities-answer+scroll-btn+image-hover__light.jpg`). Phase 2.
+A circular ⬇ button centred on the content column, visible only when scrolled up
+(`06-messages/capabilities-answer+scroll-btn+image-hover__light.jpg`).
+
+Measured at 1x: **≈31px across**, and its lower edge sits **24px above the composer's top border**
+(button bottom 932, composer border 957). The diameter is a chord estimate rather than a clean read —
+the capture places the button over a white region of a generated image, so no edge of the disc
+resolves against its background. 32px is the value built; the fill and border have **no evidence
+behind them** for the same reason.
 
 ### 3.10 Turn states
 
@@ -435,6 +460,27 @@ A circular ⬇ button centred above the composer, visible only when scrolled up
 The interrupted state is derived from `status === 'cancelled'`, **not** from a `"(Response stopped)"`
 text suffix. The reference's own API appends that suffix; rendering it as content would put a string
 in the transcript that the user never typed.
+
+**The interrupted row, measured** off `06-messages/interrupted__response-was-interrupted-pill__dark.jpg`
+at 1x. It sits between the step group and the footer, so the partial output above it does not move.
+
+| Property | Value | How it was read |
+|---|---|---|
+| Width | the full content column (x 417→1259) | its edges align with the step-group header and the user bubble |
+| Fill | **none** — the interior reads identical to the canvas | sampled mid-row, away from the text |
+| Border | 1px, `--border` | an 8px JPEG block averaging 19 against a 17 canvas is a 27-value hairline |
+| Height | ≈40px — 15px text on a 24px line, 8px padding each side | border bands centred at y 235.5 and 275.5 |
+| Icon | 16px, 12px in from the left edge, 8px before the text | ink bounded x 428→444, y 246→261 |
+| Text size | **15px**, the same as prose — *not* the step group's 14px | `Response` and the 15px bubble line `You…p` have identical 14px cap-to-descender bands in the same frame |
+| Text colour | `--fg-subtle`, one step dimmer than the step-group header | ink 0.51 of the way from canvas to `Completed 9 steps`, which is `--fg-muted` |
+
+A **failed** turn reuses that row's geometry in `--danger`, carrying `message.errorMessage`. No
+capture shows a terminal failed turn — the two `04-tool-cards/ai-gen__FAILED*` captures are of failed
+*tool cards* inside a run that was still going — so the colour swap is inference from the row that is
+captured, not a reading of one that is not.
+
+**Retry sits at the row's far end**, so the captured left-hand side is unchanged (D-2). It is disabled
+with a tooltip while another run holds the chat, rather than firing a request the server would refuse.
 
 ### 3.11 Reload recovery
 
@@ -598,6 +644,9 @@ Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-
 | `AssetStrip` | `components/chat/AssetStrip.tsx` | `03-streaming/terminal-text-streaming__…` | 1 |
 | `AttachmentChip` | `components/chat/AttachmentChip.tsx` | `02-composer/attachment-chip__…` | 6 |
 | `ScrollToBottom` | `components/chat/ScrollToBottom.tsx` | `06-messages/capabilities-answer+scroll-btn…` | 2 |
+| `TurnOutcome` | `components/chat/TurnOutcome.tsx` | `06-messages/interrupted__…dark.jpg` | 2 |
+| `ConnectionPill` | `components/chat/ConnectionPill.tsx` | none — UI-21 | 2 |
+| `Toaster` | `components/Toaster.tsx` | none — UI-19 | 2 |
 | `TextBlock` `ThinkingRow` `UsageRow` `CitationsRow` `StepUpdateRow` | `components/blocks/` | §3.4 | 1 |
 | `StepGroup` | `components/blocks/StepGroup.tsx` | `06-messages/terminal__two-step-groups…` | 1 |
 | `ToolCard` (generic fallback) | `components/blocks/ToolCard.tsx` | — | 1 |
@@ -654,8 +703,16 @@ account management behind it.
 like/dislike before Phase 6, fork, mic, `Duplicate`, `Add to project`, and the placeholder nav pages.
 People click these; disabled-with-a-reason is honest, silently inert is a bug.
 
-**UI-8 — Phase 1 disables the send control during a run; the red stop lands in Phase 2** with
-`POST /runs/:id/cancel`. Same rule as UI-7.
+**UI-8 — the send control becomes the red stop while a run is active**, wired to
+`POST /runs/:id/cancel`. It takes our own `AgentRun.id`, never Trigger.dev's `triggerRunId` — the two
+are not interchangeable and only the former resolves a cancel.
+
+`ActiveRun.status` is only `queued | running | waiting` and `GET /chats/:id/active-run` filters on
+exactly those, so a cancelled run makes that route answer **`null`**. There is no `"cancelled"` value
+to watch for; that null is the signal. `stoppingRuns` holds the control in its stopped state across
+the window between the click and the persisted row arriving — the run is gone from the active-run
+route before the cancelled row has been read back, and without the hold the button would flip to a
+send arrow and back.
 
 **UI-9 — `usage` and `citations` both render inside the step group.** Neither appears in any capture,
 and both are named in the PDF's content-block list. A finished group is collapsed, so at rest neither
@@ -716,6 +773,27 @@ blanket boundary on the shell would gate a screen the product leaves open. Conse
   product, recorded here because the earlier blanket boundary was an assumption, never evidence.
 - **Open for Phase 3:** what an anonymous visitor sees in the sidebar and top bar. There is no
   capture, and Phase 1 has neither, so it does not block.
+
+**UI-19 — one error surface per kind of failure.** A send failure stays inline beneath the composer,
+because that is where its restored draft is and the user is already looking there. A cancel or retry
+failure has no such anchor, so it goes to a toast. Both carry the backend's `traceId`.
+
+Toasts **do not dismiss themselves on a timer**: the whole point of the `traceId` is that it can be
+quoted, and a message that disappears before it is read cannot be. They are capped so a run of
+failures cannot stack without limit. **No capture shows a toast anywhere in the reference** — this is
+our own design, listed under §15's known gaps rather than presented as observed.
+
+**UI-20 — a step group holding a failed tool stays expanded.** A finished group collapses, which is
+what every terminal capture shows; but every capture of a collapsed group is a group that *succeeded*.
+Leaving a failure collapsed would put the tool's error one click away on the one turn whose whole job
+is to explain itself. The flag is computed on the timeline segment, not in a renderer, so live and
+persisted turns get it from the same place.
+
+**UI-21 — the reconnecting pill reports state that already exists.** `LiveRun` already tracks
+`live | reconnecting | polling` across the token refresh, the bounded retries and the REST fallback;
+the pill renders it and computes nothing. It has no capture — the reference gives no sign of its
+transport — so the copy is ours. Silence during a degraded stream is indistinguishable from a turn
+that has stopped moving, which is the failure this exists to prevent.
 
 ---
 
@@ -844,6 +922,13 @@ recovery".
    streaming turn at 430px is not.
 3. **Search with results** — the Tasks-page search *field* is captured, an active query is not.
 4. **`usage` and `citations` rows** — named in the PDF, absent from every capture. UI-9.
-6. **The generated-asset image preview** — the library only captured an *uploaded* file's preview, so
+5. **The generated-asset image preview** — the library only captured an *uploaded* file's preview, so
    the `Prompt` and `Model` rows were found by clicking a generated one in the live product.
-5. **`stopping` state** — named in the PDF's status model, not captured. Derived client-side.
+6. **`stopping` state** — named in the PDF's status model, not captured. Derived client-side.
+7. **A terminal failed turn.** Both `ai-gen__FAILED*` captures show a failed *tool card* inside a run
+   that kept going; none shows the message-level failed state at rest. Its row borrows the geometry of
+   the captured interrupted row.
+8. **Error toasts.** No capture shows one. UI-19.
+9. **Any degraded-transport state.** The reconnecting and polling states are ours. UI-21.
+10. **The scroll-to-bottom button's fill and border.** The one capture places it over a white region
+    of an image, so no edge resolves. Its diameter is a chord estimate; its colours have no evidence.

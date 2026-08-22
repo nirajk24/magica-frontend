@@ -388,6 +388,17 @@ splitting it out would have meant a visibly unfinished message row. It renders c
 like/dislike **disabled with a tooltip** (`PATCH /messages/:id/feedback` is a Phase-6 route;
 disabled-with-a-reason is honest, wired-to-nothing is a bug someone will click) · time.
 
+Two mechanisms this phase depends on and does not build: `stoppingRuns` in `stores/ui.ts`, and the
+`connection` state `LiveRun` already computes across the token refresh, the bounded retries and the
+REST fallback. Both existed unrendered; the stop button and the reconnecting pill surface them.
+
+Retry reuses the send path rather than a parallel one — `POST /messages/:id/retry` answers with the
+same `SendMessageResult` a send does, so both call one `applyRunStart`.
+
+**What MSW cannot prove here.** That cancel stops a real run, that retry resets the assistant row,
+and the degraded-transport states: all three cross Trigger.dev, which MSW does not intercept. They
+are browser checks against a running backend, not unit tests, and saying so is part of the phase.
+
 Reference: `06-messages/interrupted__response-was-interrupted-pill__dark.jpg`,
 `04-tool-cards/ai-gen__FAILED-safety+reasoned-retry+tracker-1of3__dark.png`.
 
