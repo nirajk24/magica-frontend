@@ -1,14 +1,27 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /*
- * Every value below was sampled from docs/reference/design/01-shell/empty-state__{light,dark}.png,
- * not chosen. Two findings drive the structure:
+ * Palette values are sampled from the reference captures, not chosen.
+ *
+ * Neutrals came from 01-shell/empty-state__{light,dark}.png. Two findings drive the structure:
  *
  * 1. Depth reverses between themes. In light, recessed surfaces go DARKER than the canvas
  *    (sidebar #f9f9f9 on #ffffff). In dark, the sidebar is IDENTICAL to the canvas and raised
  *    surfaces go LIGHTER (composer #191919 on #121212). Swapping a single scale would put a
  *    light sidebar on a dark canvas, which the reference never does.
  * 2. `--accent` is the same indigo in both themes. It is not part of the inversion.
+ *
+ * The semantic accents were sampled from the DARK captures only, because the light captures are
+ * lossy JPEGs whose text antialiasing shifts the hue. Each value agreed across three independent
+ * dark PNGs: --danger from the failed tool card and the Delete menu item, --info from the plan
+ * progress bar and the questions `View more` link, --success from three tool-card ticks, --amber
+ * from the Skill row's bolt. Only --success needs a light variant; the rest already clear AA on
+ * white, and --amber is an icon fill rather than text.
+ *
+ * The `--color-background` / `--color-foreground` pair exists so Shadcn primitives drop in
+ * unmodified — their generated classes use that vocabulary, and aliasing once here is cheaper and
+ * safer than editing every component the CLI writes.
  */
 @theme {
   --color-bg: var(--bg);
@@ -21,6 +34,15 @@
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
 
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-amber: var(--amber);
+
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+
+  --radius-bubble: 1.25rem;
   --radius-composer: 0.75rem;
   --radius-card: 0.5rem;
 }
@@ -35,6 +57,11 @@
   --fg-subtle: #6c6c6c;
   --accent: #4a3dd8;
   --accent-fg: #ffffff;
+
+  --success: #157f3c;
+  --danger: #ba3a28;
+  --info: #3655e6;
+  --amber: #e3ad47;
 }
 
 .dark {
@@ -47,6 +74,11 @@
   --fg-subtle: #575757;
   --accent: #4a3dd8;
   --accent-fg: #ffffff;
+
+  --success: #63a869;
+  --danger: #ba3a28;
+  --info: #3655e6;
+  --amber: #e3ad47;
 }
 
 body {
