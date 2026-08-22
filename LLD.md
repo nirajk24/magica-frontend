@@ -2,11 +2,11 @@
 
 Companion to the backend's `LLD.md` and the shared `ARCHITECTURE.md`. The backend owns behaviour;
 this repo owns rendering. **Every visual decision here traces to a capture in the reference library
-(`docs/reference/design/`, 77 files, 10 folders) — nothing is designed from imagination.**
+(77 files, 10 folders) — nothing is designed from imagination.**
 
-**Before writing code, read `docs/dry-run-phase0-1.md`.** A paper trace of Phases 0–1 found two
-blockers that land in *this* repo: auth is **Bearer, never cookies** (F1), and `runId` vs
-`triggerRunId` must never be conflated (F2). Both are already folded into the sections below.
+**Two constraints decide more than they look like they should:** auth is **Bearer, never cookies**,
+and `runId` vs `triggerRunId` must never be conflated. Both are spelled out in the sections below —
+getting either wrong fails late and confusingly.
 
 ---
 
@@ -128,7 +128,7 @@ export const api = {
 };
 ```
 
-**Bearer, not cookies — and this is not a preference (dry-run F1).** Two repos means two Vercel
+**Bearer, not cookies — and this is not a preference.** Two repos means two Vercel
 origins. A Clerk session cookie set on the frontend domain is never sent to the backend domain, so
 `credentials: "include"` fails on the first real cross-origin request — in production, not locally.
 The token comes from Clerk's `getToken()` and is fetched **immediately before every request**: the JWT
@@ -142,8 +142,8 @@ out at the boundary with a readable error, not three components deep as `undefin
 
 **`ApiError.code` is the discriminant the UI switches on** — `INSUFFICIENT_CREDITS` opens the top-up
 CTA, `RUN_ALREADY_ACTIVE` is swallowed (a run is already going), `VALIDATION_ERROR` renders
-field-level copy. `traceId` goes in a copyable corner of the error toast; a grader who reports a bug
-with a traceId is a grader you can actually help.
+field-level copy. `traceId` goes in a copyable corner of the error toast — a bug report that carries
+one is a bug report you can act on.
 
 ### 2.2 `lib/query-client.ts` — keys as a factory, not strings
 
@@ -241,14 +241,14 @@ is the frontend half of the "one authoritative registry" claim: labels and icons
 collapsible groups. Group blocks by `segment`, render a `StepGroup` header per group.
 
 **N counts timeline rows in the segment — reasoning blocks AND tool invocations, not just tools.**
-(This was corrected in session 4; the earlier rule produced one giant group for a 10-step turn.)
+(Counting tools alone would collapse a 10-step turn into one giant group.)
 
 ### 3.3 `useRunStream` — the realtime hook
 
 ```ts
 export function useRunStream(chatId: string) {
   const { data: activeRun } = useActiveRun(chatId);          // mints a fresh 15-min token
-  // TWO IDS (dry-run F2): `triggerRunId` (run_xxx) is the ONLY one useRealtimeRun accepts;
+  // TWO IDS: `triggerRunId` (run_xxx) is the ONLY one useRealtimeRun accepts;
   // `runId` (our UUIDv7) is what cancel/retry take. Conflating them fails late and confusingly.
   const { run } = useRealtimeRun(activeRun?.triggerRunId, {
                     accessToken: activeRun?.publicAccessToken,
@@ -257,7 +257,7 @@ export function useRunStream(chatId: string) {
   const { parts } = useRealtimeStream<string>(STREAM_AGENT_TEXT, { … });  // replays from 0
 
   // 1. token refresh at ~12 min AND on auth error / unexpected close while non-terminal.
-  //    TEAR DOWN the old subscription explicitly before resubscribing (F13) — the free tier allows
+  //    TEAR DOWN the old subscription explicitly before resubscribing — the free tier allows
   //    10 concurrent realtime connections, so a leaked one per refresh silently stops updates on a
   //    long session, which looks exactly like a broken stream. Never rely on garbage collection.
   // 2. after 3 bounded retries → REST polling every 5s (the doc's required fallback)
@@ -350,10 +350,10 @@ throw; the single-authority filter hides a streaming row while an overlay owns t
 
 ---
 
-**`/chat` ships in Phase 1 — the new-chat route, corrected.** Earlier drafts of this plan put it at
-`/chat/new`. That URL does not exist in the reference: `app.magica.com/chat` **is** the new-chat page
-and `/` redirects to it, which the empty-state captures show in the address bar. `new` is the id the
-send route accepts in its path, and an API detail has no business appearing in a URL.
+**`/chat` ships in Phase 1 — the new-chat route.** Not `/chat/new`: that URL does not exist in the
+reference. `app.magica.com/chat` **is** the new-chat page and `/` redirects to it, which the
+empty-state captures show in the address bar. `new` is the id the send route accepts in its path, and
+an API detail has no business appearing in a URL.
 
 There is no `POST /chats`, the sidebar is Phase 3 and the full empty state is Phase 3 — so without
 this route there is no way to start a conversation in Phase 1.
@@ -375,14 +375,13 @@ five seconds**, so it is not throwaway scaffolding.
 Stop button (send arrow → red square; `stoppingRuns` set locally and held until terminal), failed
 turn (`errorMessage` + partial output + tool outcomes + **Retry**), cancelled turn (gray
 `Response was interrupted` pill — derived from status, *not* from a `"(Response stopped)"` text
-suffix), reconnecting pill, `ScrollToBottom`, `AssistantFooter` (credits · copy · **like/dislike rendered DISABLED — `PATCH /messages/:id/feedback` is a Phase-6 route (review #22); disabled-with-tooltip is honest, wired-to-nothing is a bug a grader will click** ·
+suffix), reconnecting pill, `ScrollToBottom`, `AssistantFooter` (credits · copy · **like/dislike rendered DISABLED — `PATCH /messages/:id/feedback` is a Phase-6 route; disabled-with-tooltip is honest, wired-to-nothing is a bug someone will click** ·
 time), error toasts carrying `traceId`.
 
 Reference: `06-messages/interrupted__response-was-interrupted-pill__dark.jpg`,
 `04-tool-cards/ai-gen__FAILED-safety+reasoned-retry+tracker-1of3__dark.png`.
 
-**DoD** — every failed turn is explainable from the screen alone, with a way forward. That sentence
-is the graded requirement, verbatim.
+**DoD** — every failed turn is explainable from the screen alone, with a way forward.
 
 ---
 
@@ -396,7 +395,7 @@ gallery), Tasks page (`/chat/recent`: h1, filter, search field, relative dates, 
 Reference: all of `01-shell/`, plus `08-credits/`.
 
 **Skeletons are not optional polish** — five distinct loading states are captured
-(`09-recovery/*`, `07-modals/files__loading-spinner`), and a grader comparing screens will see a
+(`09-recovery/*`, `07-modals/files__loading-spinner`), and anyone comparing screens will see a
 blank flash where the reference shows a skeleton.
 
 ---
@@ -445,9 +444,8 @@ Reference: `04-tool-cards/detail-side-panel__light.jpg`,
 Hover states, focus rings, transitions, accessibility pass (keyboard nav, ARIA live region for
 streaming text, focus trap in modals — the doc has an accessibility row), template gallery art.
 
-**Timebox this hard.** Fidelity is 20% and polish 10%, but they are earned by *structure matching the
-captures*, not by pixel-peeping one component. When time runs out, stop; do not trade Phase 1–4
-correctness for a hover state.
+**Timebox this hard.** Fidelity is earned by *structure matching the captures*, not by pixel-peeping
+one component. When time runs out, stop; do not trade Phase 1–4 correctness for a hover state.
 
 ---
 
@@ -463,8 +461,7 @@ correctness for a hover state.
    state has a capture, it is in scope; if it doesn't, check `ui-flows.md` before inventing one.
 5. **One deliberate exception:** the insufficient-credits state has no capture (reaching it would burn
    the whole credit balance). Design it in the captured language — same card, pill and colour
-   vocabulary as the failed-tool card — and note it in the README as a known, deliberate gap
-   (decision #34).
+   vocabulary as the failed-tool card — and note it in the README as a known, deliberate gap.
 
 ---
 
@@ -477,7 +474,7 @@ correctness for a hover state.
 | No single-authority filter | two identical bubbles during handover | filter `status==='streaming'` while an overlay owns the run |
 | `if (isLive)` inside a renderer | live and persisted views drift apart | same component, one shape |
 | Virtualizing too early | can't tell if the bug is rows or the virtualizer | virtuoso last |
-| Realtime subscription not closed | free tier caps at **10 concurrent connections** | close on unmount AND explicitly before every token-refresh resubscribe (F13); one tab for the demo |
+| Realtime subscription not closed | free tier caps at **10 concurrent connections** | close on unmount AND explicitly before every token-refresh resubscribe; one tab for the demo |
 | Persisting the whole Zustand store | transient panel state restored on reload | `partialize` to drafts + sidebar only |
 | `as T` instead of `schema.parse` | backend drift surfaces as `undefined` deep in a component | parse at the api-client boundary |
 | Hand-written query keys | invalidation silently stops working | the `qk` factory |
@@ -497,14 +494,14 @@ The two repos interlock. Frontend never waits, because MSW gives it the contract
 | 4 plan approval | 4 plan card | waitpoints |
 | 6 deferred | 6 deferred | questions, uploads, library |
 
-**The synced `contracts/` directory is COMMITTED to this repo (review #23).** These are two
+**The synced `contracts/` directory is COMMITTED to this repo.** These are two
 independent repos, so Vercel's frontend build has no sibling checkout to sync from — an uncommitted
 `contracts/` means the deploy fails at import time. Consequences:
 - `contracts/` is committed, and never hand-edited. The backend is the source of truth.
 - The build script runs `pnpm sync-contracts --check`, which exits non-zero if the committed copy
   differs from the backend's. Drift then fails the build instead of shipping two disagreeing schemas.
-- Re-sync is a deliberate commit ("sync contracts"), which also gives a reviewer a clean audit trail
-  of when the contract changed.
+- Re-sync is a deliberate commit ("sync contracts"), which leaves a clean audit trail of when the
+  contract changed.
 
 **Contracts are the handshake.** `pnpm sync-contracts` copies `contracts/` from backend to frontend;
 the frontend builds against MSW handlers generated from those same schemas. So a frontend phase can

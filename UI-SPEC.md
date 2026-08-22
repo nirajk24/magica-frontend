@@ -22,7 +22,7 @@ browser beside the capture, not gospel.
 
 ## 0. What the PDF requires of the UI, verbatim
 
-The lines below are the graded requirements. Everything in this document exists to satisfy one of
+The lines below are the requirements this document exists to satisfy. Everything here answers one of
 them.
 
 | PDF § | Requirement |
@@ -46,7 +46,7 @@ them.
 Two of these overturn assumptions worth calling out explicitly:
 
 - **Virtualization is required, not an optimization.** §9 names it in the requirement itself and the
-  winners list names it again. It stays in Phase 1 (step 8) — see UI-14.
+  §9 names it explicitly. It stays in Phase 1 (step 8) — see UI-14.
 - **Plan mode is required and the reference has no such control.** A deliberate,
   README-flagged divergence — see D-1.
 
@@ -105,10 +105,10 @@ staying exactly where it was behind every one of them.
 URL costs one redirect. This differs from the file map in `LLD.md` §1, which put the empty state at
 `app/page.tsx`.
 
-**There is no `/chat/new`, and an earlier draft of this document was wrong to invent one.** The send
-route creates the chat when its path id is `new`, because there is no `POST /chats`. That sentinel
-belongs in the API call, not in the address bar: the reference never shows such a URL, and shipping
-one would be a self-inflicted fidelity miss on a route a grader lands on first. `/chat` renders with
+**There is no `/chat/new`.** The send route creates the chat when its path id is `new`, because
+there is no `POST /chats`. That sentinel belongs in the API call, not in the address bar: the
+reference never shows such a URL, and inventing one is a fidelity miss on the first route anyone
+lands on. `/chat` renders with
 the sentinel as its chat id, which means: skip the chat query (a `GET /chats/new` would 404), render
 the composer, and on send `router.replace` to the real id.
 
@@ -185,7 +185,7 @@ is no folder icon — nothing to scope files to.
 
 ## 3. Screen — the chat screen · `/chat/[chatId]` · Phase 1
 
-The graded screen. Captures, in the order they answer questions:
+The product's primary screen. Captures, in the order they answer questions:
 
 | Question | Capture |
 |---|---|
@@ -320,7 +320,7 @@ Two lines, both small and muted:
 
 Icons in order: copy · fork/branch · like · dislike, then the time. **Like and dislike render
 disabled with a tooltip until Phase 6** — `PATCH /messages/:id/feedback` is a Phase-6 route, and a
-button wired to nothing is a bug a grader will click. Fork is not in scope at all and is disabled on
+button wired to nothing is a bug someone will click. Fork is not in scope at all and is disabled on
 the same grounds (UI-7).
 
 ### 3.8 Composer
@@ -358,7 +358,7 @@ Captures: `02-composer/*` · every chat capture.
   and the composer height expressed in units of its own placeholder glyph height — which is
   scale-free. The 96px figure comes straight off the 1x empty-state PNG.
 - Placeholder: `Send a message...` inside a chat, `Assign a task or ask anything...` on the empty
-  state. Copy is graded — use exactly these.
+  state. Use exactly this copy.
 - Auto-grows with content; Enter sends, Shift+Enter inserts a newline.
 - Left icon row: paperclip (attach popover) and, in the reference, a plug = "Connect apps" tooltip.
   Integrations are out of scope, so **the plug slot becomes our plan-mode toggle** (D-1).
@@ -453,7 +453,7 @@ The frontend renders the number it is given and never computes or estimates one.
 ## 5. Screen — the Options waitpoint ("Asking questions") · Phase 6
 
 Captures: all 7 files in `10-questions/`. This is the PDF's "Options" waitpoint (p109) and it is
-graded under "easy to add … waitpoint types" (p538).
+called out under "easy to add … waitpoint types" (p538).
 
 **In the transcript** — a timeline card: `💬 Asking questions ⟳` + chevron; body is a label/value
 table with `Message` (a framing sentence) then `Q1 *`, `Q2 *`, … where the asterisk means required;
@@ -574,7 +574,7 @@ Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-
 
 ## 10. UI decisions
 
-Numbered so a review can cite one. Reasons that outlive this file belong in `docs/decisions.md`.
+Numbered so a review can cite one. Reasons that outlive this file belong in the design docs.
 
 **UI-1 — Shadcn/ui is adopted, and this closes the open question.** The PDF lists
 `UI Components — Shadcn/ui` in the non-negotiable stack table, so it is a requirement rather than a
@@ -590,8 +590,8 @@ that needs it lands.
 On send, the created chat's real history is prefetched *before* `router.replace`, so the screen never
 flashes a spinner between the send and the first read and no `ChatDTO` has to be fabricated.
 
-**UI-3 — `/chat` is the new-chat page; `/` redirects.** Clones the reference URL for one redirect.
-Diverges from `LLD.md` §1's file map, and supersedes the `/chat/new` route earlier drafts specified.
+**UI-3 — `/chat` is the new-chat page; `/` redirects.** Clones the reference URL for one redirect,
+and supersedes the `/chat/new` route in `LLD.md` §1's file map.
 
 **UI-4 — the model pill shows the OpenRouter free model and its status.** The PDF asks for
 "OpenRouter Free status" in the composer; the reference has no composer-level model control and puts
@@ -608,7 +608,7 @@ account management behind it.
 
 **UI-7 — out-of-scope controls render disabled with a tooltip, never wired to nothing.** Applies to
 like/dislike before Phase 6, fork, mic, `Duplicate`, `Add to project`, and the placeholder nav pages.
-A grader clicks these; disabled-with-a-reason is honest, silently inert is a bug.
+People click these; disabled-with-a-reason is honest, silently inert is a bug.
 
 **UI-8 — Phase 1 disables the send control during a run; the red stop lands in Phase 2** with
 `POST /runs/:id/cancel`. Same rule as UI-7.
@@ -619,8 +619,7 @@ group means they are hidden by the default collapse on a completed turn — whic
 captures show — and visible on expand, which is what the PDF asks for.
 
 **UI-10 — plain `<img>` for remote assets, not `next/image`.** Asset hosts are arbitrary CDNs, so
-`images.remotePatterns` cannot be enumerated. Costs one ESLint rule off, recorded in
-`docs/decisions.md`.
+`images.remotePatterns` cannot be enumerated. Costs one ESLint rule off.
 
 **UI-11 — assets and attachments render with a sized placeholder.** The reload capture shows grey
 blocks at the image's dimensions, not collapsed rows. Without this, a reload mid-run reflows the
@@ -634,9 +633,9 @@ and clock, which the server cannot know; rendering them during SSR guarantees a 
 the credits query and the model pill forward with it. The chat screen looks top-bare until Phase 3.
 
 **UI-14 — `react-virtuoso` stays in Phase 1, as step 8.** The PDF names a virtualized message list
-in the §9 requirement *and* in the winners list, so it is graded surface, not an optimization. It is
-still built **last** in the phase — virtualization on top of working rows is easy, debugging both at
-once is not. Two consequences of doing it properly:
+in §9, so it is required surface rather than an optimization. It is still built **last** in the
+phase — virtualization on top of working rows is easy, debugging both at once is not. Two
+consequences of doing it properly:
 
 - **The live run is a list item, not something rendered under the list.** One scroller, so the
   streaming turn scrolls with the conversation and `followOutput` keeps it in view.
@@ -677,16 +676,16 @@ blanket boundary on the shell would gate a screen the product leaves open. Conse
 ## 11. Deliberate divergences from the reference
 
 Each one is README-flagged. The PDF invites this: "if you spot something in the reference that seems
-off or could be better, just flag it to the reviewer."
+off or could be better, just flag it."
 
 | # | Divergence | Why |
 |---|---|---|
 | D-1 | **Plan-mode toggle in the composer**, in the slot the reference gives the "Connect apps" plug | PDF §4 requires plan mode in the composer; the reference has no such control (plans are agent-initiated). Integrations are out of scope, so the slot is free |
 | D-2 | **Retry on an interrupted turn.** The reference has none — its user simply re-sent | The PDF requires retryable failed/cancelled turns in five places |
-| D-3 | **No payment surfaces.** Add Credits is a free top-up: no `$` rows, no upgrade plan, no billing details | The trial forbids paid services. Same modal shape and copy where it still applies |
+| D-3 | **No payment surfaces.** Add Credits is a free top-up: no `$` rows, no upgrade plan, no billing details | Paid services are out of scope. Same modal shape and copy where it still applies |
 | D-4 | **Insufficient-credits state is our own design** | Reaching it in the reference would burn the whole credit balance. Built from the captured vocabulary — the failed-tool card's pill, colour and card language |
 | D-5 | **Generated assets render once**, after the text | The reference briefly double-renders during terminal streaming (markdown link + asset strip) before settling. Rendering the artefact would be cloning a bug |
-| D-6 | **No `hasMoreMessages` field** | It is exactly `messagesNextCursor !== null`. Internal API shape is not graded on fidelity; the UI is |
+| D-6 | **No `hasMoreMessages` field** | It is exactly `messagesNextCursor !== null`. Fidelity is judged on the visible product, not on our own API shape |
 | D-7 | **Voice input not built**; mic is visual only | Out of scope, and the PDF never asks for it |
 | D-8 | **Projects / Library / Tools / API-MCP / Unfair Advantage are placeholder pages** | Locked scope: the sidebar rows exist for fidelity, the pages do not |
 | D-9 | **Clerk stays on its development instance**, watermark included | A production instance needs a custom domain we will not buy |
@@ -695,7 +694,7 @@ off or could be better, just flag it to the reviewer."
 
 ## 12. Loading and skeleton inventory
 
-"Skeletons are not optional polish" — five distinct loading states are captured, and a grader
+"Skeletons are not optional polish" — five distinct loading states are captured, and anyone
 comparing screens sees a blank flash where the reference shows a skeleton.
 
 | Where | Loading treatment | Capture |

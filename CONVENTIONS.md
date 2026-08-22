@@ -23,7 +23,7 @@ adding anything.
   finite stale time rebuilds the subscription against a free-tier cap of 10 concurrent connections.
 - **Tear down a realtime subscription before resubscribing.** Same 10-connection cap; a leaked
   subscription per token refresh looks exactly like a broken stream on a long session.
-- **Build all UI from `docs/reference/design/`** (77 captures, 10 folders). The live product is the
+- **Build all UI from the reference captures** (77 files, 10 folders). The live product is the
   pixel reference — do not invent layout. Sample colours from the captures rather than guessing;
   depth *reverses* between themes, which is why `globals.css` has two full palettes.
 - **A block renderer must never crash on an unknown type.** The backend can ship a tool before the
@@ -48,13 +48,11 @@ adding anything.
 No inline comments. JSDoc only on exported boundaries — **one or two lines saying what it does**, plus
 at most one sentence for an invariant a caller can break. No narration of how the code came to be, no
 defending a choice against alternatives. Strict TS and Zod schemas are the documentation. Reasons
-live in `docs/decisions.md`, not in the code.
+live in the design docs, not in the code.
 
 ## Commits
 
-- **Stage only.** `git add` explicit paths and hand over the summary; Niraj commits. Never
-  `git add -A`.
-- **Solo commits. No `Co-Authored-By`, no AI attribution, ever.** The history is graded.
-- Subject line only unless a body is genuinely needed. Fewer, larger commits — one per coherent unit
-  of work, not one per file.
+- Subject line only unless a body is genuinely needed. One commit per coherent unit of work, not one
+  per file.
+- `git add` explicit paths, never `git add -A`.
 - Never commit secrets. Keys live only in gitignored `.env`.
