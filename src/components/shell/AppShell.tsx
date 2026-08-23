@@ -3,7 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import { useSelectedLayoutSegments } from "next/navigation";
-import { Suspense, useState, type ReactNode } from "react";
+import { Suspense, useState, type CSSProperties, type ReactNode } from "react";
 import { FullPageSpinner } from "@/components/FullPageSpinner";
 import { PANEL_WIDTH } from "@/components/panels/ToolDetailPanel";
 import { AddCreditsModal } from "@/components/credits/AddCreditsModal";
@@ -25,7 +25,10 @@ import { useUI } from "@/stores/ui";
  *
  * The tool detail panel is the opposite: the reference narrows the content column to make room for
  * it rather than letting it cover the transcript, so the column reserves the panel's width while it
- * is open and animates back when it closes.
+ * is open and animates back when it closes. The reserve is a breakpoint-gated class over a CSS
+ * variable rather than an inline `paddingRight`, because the panel is wider than a phone — below
+ * `md` it covers the screen at `max-w-full` and reserving its width would push the transcript out
+ * of the viewport entirely.
  *
  * INVARIANT: nothing renders until Clerk has resolved. `isSignedIn` is `false` while it is still
  * loading, so painting before then shows a signed-out shell — sign-in buttons, an empty task list —
@@ -69,8 +72,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div
-        style={{ paddingRight: panelOpen ? PANEL_WIDTH : 0 }}
-        className="flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out"
+        style={{ "--panel-reserve": panelOpen ? `${PANEL_WIDTH}px` : "0px" } as CSSProperties}
+        className="flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out md:pr-(--panel-reserve)"
       >
         <div className="flex items-center">
           <button

@@ -2,7 +2,6 @@
 
 import { ChevronDown, ChevronRight, CircleCheck, CircleX, Clock, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { DisabledAction } from "@/components/DisabledAction";
 import { cn } from "@/lib/cn";
 import type { ToolView } from "@/lib/timeline";
 import { formatDuration } from "@/lib/format";
@@ -138,8 +137,8 @@ export function DetailRows({
   visible?: number;
   trailingRows?: readonly DetailRow[];
   footer?: ReactNode;
-  /** Opens the tool detail panel. Without it the link states why it does nothing. */
-  onViewMore?: () => void;
+  /** Opens the tool detail panel on the rows this card had to truncate. */
+  onViewMore: () => void;
 }) {
   if (rows.length === 0 && trailingRows.length === 0 && !footer) return null;
 
@@ -149,23 +148,15 @@ export function DetailRows({
     <div className="rounded-card border border-border p-3">
       <Grid rows={shown} />
 
-      {rows.length > visible &&
-        (onViewMore ? (
-          <button
-            type="button"
-            onClick={onViewMore}
-            className="mt-2 text-xs text-info transition-colors hover:underline"
-          >
-            View more
-          </button>
-        ) : (
-          <DisabledAction
-            label="View more"
-            showLabel
-            reason="The full tool detail panel isn't part of this build yet."
-            className="mt-2 text-xs"
-          />
-        ))}
+      {rows.length > visible && (
+        <button
+          type="button"
+          onClick={onViewMore}
+          className="mt-2 text-xs text-info transition-colors hover:underline"
+        >
+          View more
+        </button>
+      )}
 
       {trailingRows.length > 0 && (
         <div className="mt-2.5 border-t border-border pt-2.5">
