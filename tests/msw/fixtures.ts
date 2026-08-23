@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { env } from "@/lib/env";
 import type {
+  ActivePlan,
   ActiveRun,
   AttachmentDTO,
   ChatDTO,
@@ -288,6 +289,26 @@ export const waitingOnPlan: ActiveRun = {
   ...activeRun,
   status: "waiting",
   pendingWaitpoint: { id: WAITPOINT_ID, kind: "plan_approval", payload: planApprovalPayload },
+};
+
+/**
+ * A plan mid-execution, as `Chat.activePlan` and `metadata.activePlan` both carry it: one step done
+ * with its note, one in flight, one waiting — every visual state of the progress card at once.
+ */
+export const activePlan: ActivePlan = {
+  title: "Poster in three steps",
+  executionMode: "step_by_step",
+  steps: [
+    {
+      key: "generate",
+      title: "Generate the base image",
+      estimatedCredits: "420000",
+      status: "completed",
+      note: "Generated at 1024x1536",
+    },
+    { key: "crop", title: "Crop to poster ratio", estimatedCredits: "11000", status: "in_progress" },
+    { key: "refine", title: "Refine the palette", estimatedCredits: "160000", status: "pending" },
+  ],
 };
 
 /** A run parked on a questions waitpoint. */
