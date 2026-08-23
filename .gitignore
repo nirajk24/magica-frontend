@@ -23,6 +23,9 @@ playwright-report/
 test-results/
 .vitest/
 
+# a signed-in browser session: a real credential, never committed
+e2e/.auth/
+
 # trigger.dev
 .trigger/
 

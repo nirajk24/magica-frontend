@@ -14,7 +14,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sync-contracts": "tsx scripts/sync-contracts.ts"
+    "sync-contracts": "tsx scripts/sync-contracts.ts",
+    "e2e": "playwright test --project=public",
+    "e2e:live": "E2E_LIVE_TURN=1 playwright test --project=live",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.8.0",
@@ -38,6 +41,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",
