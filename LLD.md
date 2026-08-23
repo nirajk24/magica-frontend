@@ -1,546 +1,323 @@
-# Magica Frontend — Low-Level Design & Phased Build Plan
+# Low-Level Design
 
-Companion to the backend's `LLD.md` and the shared `ARCHITECTURE.md`. The backend owns behaviour;
-this repo owns rendering. **Every visual decision here traces to a capture in the reference library
-(77 files, 10 folders) — nothing is designed from imagination.**
+How this client is built: what owns which state, how a live turn and a finished one end up on screen
+through the same components, and the traps this stack sets.
 
-**This file is the *plan*; `UI-SPEC.md` is the *spec*.** Phases, build order and DoD live here; what a
-screen looks like, which capture proves it, the measured values and the numbered `UI-n` / `D-n`
-decisions live there. When the two disagree, UI-SPEC wins — it is corrected against the live product
-as things are found, and several of this file's original assumptions have already been overturned that
-way.
-
-**Two constraints decide more than they look like they should:** auth is **Bearer, never cookies**,
-and `runId` vs `triggerRunId` must never be conflated. Both are spelled out in the sections below —
-getting either wrong fails late and confusingly.
+`src/contracts/` is generated from the backend and is the authority on every shape. This document
+describes the design around those schemas rather than restating them.
 
 ---
 
-## 0. The four rules that keep this repo honest
+## 1. Four rules
 
-**1. No raw `fetch` in a component. Ever.**
-`component → query hook → api-client → typed contract`. A component that fetches is a component you
-cannot test, cannot cache, and cannot make consistent with the rest of the screen.
+Everything else follows from these.
 
-**2. Server state and UI state are different things, stored differently.**
+**No component calls `fetch`.** One HTTP client, one place tokens are attached, one place errors
+become typed. A component that fetches is a component nobody can test without a network.
 
-| | TanStack Query | Zustand |
-|---|---|---|
-| Owns | anything the server knows: chats, messages, credits, active run | anything only this browser knows: draft text, which panel is open, sidebar collapsed |
-| Survives reload | yes — refetched | no, unless explicitly persisted to localStorage |
-| Wrong use | storing a draft here (it isn't server state) | storing messages here (they'd go stale and never refetch) |
+**Server state and UI state never mix.** TanStack Query owns everything the server said; Zustand
+owns everything it did not. If you find yourself syncing one into the other, the data is in the
+wrong store.
 
-If you ever find yourself syncing one into the other, the data is in the wrong store.
+**One authority renders a run.** A turn is either live or persisted, never both — and the transition
+between them must not blank the screen or duplicate it.
 
-**3. One authority renders a run at a time.**
-While a `StreamingOverlay` is mounted for `runId`, the message list **filters out** any persisted row
-with `status === "streaming"` for that run. Otherwise you get two bubbles saying the same thing — a
-duplicate the PDF explicitly calls out. One rule, one place: the list selector.
-
-**4. Live and persisted render through the same components.**
-`RunMetadata.blocks` (live) and `Message.contentBlocks` (persisted) are the same shape — one is a
-projection of the other. The block renderer map does not know which it is looking at. **That
-equivalence is why reload recovery is free rather than a second code path.** If you write an
-`if (isLive)` branch inside a renderer, you have broken it.
+**Live and persisted render through the same components.** A renderer that can tell which source it
+is looking at has broken reload recovery, because the two will drift.
 
 ---
 
-## 1. Repo layout
+## 2. Structure
 
 ```
-magica-frontend/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx              Phase 0 — html shell, fonts, theme class
-│   │   ├── providers.tsx           Phase 0 — ClerkProvider > QueryClientProvider > ThemeProvider
-│   │   ├── page.tsx                Phase 3 — empty state (new task)
-│   │   ├── chat/[chatId]/page.tsx  Phase 1 — THE screen
-│   │   ├── chat/recent/page.tsx    Phase 3 — Tasks page
-│   │   └── sign-in/[[...rest]]/    Phase 0 — Clerk catch-all
-│   ├── contracts/                  ★ synced copy — `pnpm sync-contracts`. NEVER hand-edited
-│   ├── lib/
-│   │   ├── api-client.ts           Phase 0 — the only fetch() in the repo
-│   │   ├── query-client.ts         Phase 0 — defaults + query key factory
-│   │   ├── realtime.ts             Phase 1 — useRunStream(): metadata + text + token refresh
-│   │   ├── env.ts                  Phase 0 — Zod over NEXT_PUBLIC_*
-│   │   └── uppy.ts                 Phase 6
-│   ├── queries/
-│   │   ├── use-chat.ts             Phase 1 — chat + messages page
-│   │   ├── use-send-message.ts     Phase 1 — mutation + optimistic user bubble
-│   │   ├── use-active-run.ts       Phase 1 — recovery + token minting
-│   │   ├── use-cancel-run.ts       Phase 2
-│   │   ├── use-retry-message.ts    Phase 2
-│   │   ├── use-resolve-waitpoint.ts Phase 4
-│   │   ├── use-chats.ts            Phase 3 — sidebar list (infinite)
-│   │   └── use-credits.ts          Phase 3
-│   ├── stores/ui.ts                Phase 1 — drafts (persisted), panels, sidebar
-│   ├── components/
-│   │   ├── ui/                     shadcn primitives
-│   │   ├── shell/{Sidebar,TopBar,CreditsChip,ThemeToggle,UserFooter}.tsx
-│   │   ├── chat/{MessageList,MessageRow,StreamingOverlay,Composer,
-│   │   │         AttachmentChip,ScrollToBottom,AssistantFooter}.tsx
-│   │   ├── blocks/                 ★ THE RENDERER REGISTRY
-│   │   │   ├── index.ts            blockRenderers + toolCardRenderers maps
-│   │   │   ├── TextBlock.tsx  ThinkingRow.tsx  StepGroup.tsx
-│   │   │   ├── ToolCard.tsx        generic fallback — reads registry `display`
-│   │   │   ├── AiGenerationCard.tsx  ModelSchemaCard.tsx  SkillRow.tsx
-│   │   │   ├── PlanCard.tsx        Phase 4
-│   │   │   └── QuestionsCard.tsx   Phase 6
-│   │   ├── panels/ToolDetailPanel.tsx
-│   │   ├── questions/QuestionPanel.tsx   Phase 6 — docked, replaces composer
-│   │   └── modals/{FilesModal,MediaLibrary,ImagePreview,AddCredits}.tsx
-│   └── templates/gallery.ts
-└── tests/{unit,e2e}/
+src/
+├── app/                          App Router
+│   ├── layout.tsx                root document
+│   ├── providers.tsx             auth → query client → theme → tooltips → toasts
+│   ├── globals.css               design tokens: two full palettes
+│   ├── (app)/                    the shell group
+│   │   ├── layout.tsx            renders the shell — deliberately not an auth boundary
+│   │   ├── chat/page.tsx         the new-chat screen (public)
+│   │   ├── chat/[chatId]/        layout.tsx is the auth boundary; page.tsx renders the screen
+│   │   ├── chat/recent/          the task list
+│   │   ├── usage/                credit usage
+│   │   └── …                     placeholder surfaces
+│   └── sign-in/                  hosted sign-in
+├── proxy.ts                      auth middleware — exposes the session, enforces nothing
+├── contracts/                    GENERATED from the backend. Never hand-edited
+├── lib/                          non-React building blocks and thin hooks
+├── queries/                      one file per server-state concern
+├── stores/ui.ts                  the only Zustand store
+├── templates/                    empty-state prompt gallery
+└── components/
+    ├── ui/                       Radix primitives
+    ├── shell/                    app shell, sidebar, top bar, search palette, empty state
+    ├── chat/                     the chat screen, message list, composer, live run
+    ├── blocks/                   block and tool-card renderers, plan cards
+    ├── questions/                the docked question panel
+    ├── panels/                   the tool detail panel
+    ├── files/ credits/ tasks/    modals and secondary screens
+    └── usage/                    usage tables
 ```
 
----
+### `lib/`
 
-## 2. Foundation (Phase 0)
-
-### 2.1 `lib/api-client.ts` — the only `fetch` in the repo
-
-```ts
-class ApiError extends Error {
-  constructor(public code: ErrorCode, message: string,
-              public traceId: string, public details?: unknown) { super(message); }
-}
-
-async function request<T>(path: string, init: RequestInit,
-                          schema: z.ZodType<T>): Promise<T> {
-  const token = await getToken();                 // ← immediately before EVERY fetch. ~60s JWT.
-  const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/api/v1${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json",
-               Authorization: `Bearer ${token}`, ...init.headers },
-  });
-  const json = await res.json();
-  if (!res.ok) {
-    const e = ApiErrorEnvelope.parse(json).error;
-    throw new ApiError(e.code, e.message, e.traceId, e.details);
-  }
-  return schema.parse(json.data);                 // ← parse, don't cast
-}
-
-export const api = {
-  getChat:      (id: string, cursor?: string) => request(`/chats/${id}?…`, {}, ChatWithMessages),
-  sendMessage:  (id: string, body: SendMessage) => request(`/chats/${id}/messages`,
-                   { method: "POST", body: JSON.stringify(body) }, SendMessageResult),
-  getActiveRun: (id: string) => request(`/chats/${id}/active-run`, {}, ActiveRun.nullable()),
-  cancelRun:    (id: string) => request(`/runs/${id}/cancel`, { method: "POST" }, Ok),
-  retryMessage: (id: string) => request(`/messages/${id}/retry`, { method: "POST" }, SendMessageResult),
-  resolveWaitpoint: (id: string, r: WaitpointResolution) => …,
-  listChats:    (q: ChatsQuery) => …,
-  getCredits:   () => …,
-};
-```
-
-**Bearer, not cookies — and this is not a preference.** Two repos means two Vercel
-origins. A Clerk session cookie set on the frontend domain is never sent to the backend domain, so
-`credentials: "include"` fails on the first real cross-origin request — in production, not locally.
-The token comes from Clerk's `getToken()` and is fetched **immediately before every request**: the JWT
-lives about 60 seconds, so caching it in a module variable produces intermittent 401s that look like
-a backend bug. The backend runs `clerkMiddleware({ authorizedParties: [FRONTEND_URL] })` with CORS in
-the same middleware and the **OPTIONS short-circuit before auth** — a preflight carries no
-Authorization header, so auth-first answers 401 and the real request is never sent.
-
-`schema.parse(json.data)` rather than `as T` is the point. If the backend changes a field, you find
-out at the boundary with a readable error, not three components deep as `undefined`.
-
-**`ApiError.code` is the discriminant the UI switches on** — `INSUFFICIENT_CREDITS` opens the top-up
-CTA, `RUN_ALREADY_ACTIVE` is swallowed (a run is already going), `VALIDATION_ERROR` renders
-field-level copy. `traceId` goes in a copyable corner of the error toast — a bug report that carries
-one is a bug report you can act on.
-
-### 2.2 `lib/query-client.ts` — keys as a factory, not strings
-
-```ts
-export const qk = {
-  chats: (f?: ChatsFilter) => ["chats", f ?? "all"] as const,
-  chat: (id: string) => ["chat", id] as const,
-  activeRun: (chatId: string) => ["active-run", chatId] as const,
-  credits: () => ["credits"] as const,
-  attachments: (f: AttachmentFilter) => ["attachments", f] as const,
-};
-```
-
-Hand-written key arrays scattered across files is how invalidation silently stops working. One
-factory means `qk.chat(id)` is the same key everywhere.
-
-**`qk.activeRun` must be `staleTime: Infinity`.** It mints a **fresh token on every call**, so a
-30-second stale time means the token changes every 30s, `useRealtimeRun`'s `accessToken` prop changes,
-and the subscription tears down and rebuilds — against a free-tier cap of **10 concurrent realtime
-connections**. Symptom: a stream that dies a few minutes in, intermittently, only in the deployed app.
-
-It is refetched **only** on: send, run-terminal, and the ~12-minute refresh timer. Nothing else.
-
-Defaults for everything else: `staleTime: 30s`, `refetchOnWindowFocus: false` (it would refetch
-mid-stream and fight the overlay), and `retry: shouldRetry`.
-
-**`retry` is a predicate, not a count.** A flat `retry: 3` repeats every failure, so a 400, a 402 or
-a 409 is sent three times before the UI can show the message it already has — and an
-`INSUFFICIENT_CREDITS` answer takes three round trips to reach the top-up CTA. `shouldRetry` retries
-only `INTERNAL` and `RATE_LIMITED`, never a `ZodError` (contract drift will not fix itself), and
-always retries an unrecognised error, because that is a dropped connection and it is what retries
-are for.
-
-### 2.3 `stores/ui.ts`
-
-```ts
-export const useUI = create(persist((set) => ({
-  drafts: {} as Record<string, string>,           // PERSISTED — survives reload (localStorage)
-  setDraft: (chatId, text) => …,
-  sidebarCollapsed: false,                        // persisted
-  // NOT persisted — transient:
-  openPanel: null as { type: "tool"; invocationId: string } | null,
-  stoppingRuns: new Set<string>(),                // the PDF's "stopping" state, client-only
-}), { name: "magica-ui", partialize: (s) => ({ drafts: s.drafts,
-                                               sidebarCollapsed: s.sidebarCollapsed }) }));
-```
-
-**Why drafts are localStorage and not the server:** the reference product's `PATCH send-message` is a
-presence heartbeat, not draft sync — it carries no content field (api-notes, corrected in decision
-#20). So server-side draft sync would be inventing a feature. `partialize` is what stops the
-transient fields being written to disk.
+| Module | Owns |
+|---|---|
+| `api-client.ts` | the only `fetch`. Typed methods, bearer auth, error mapping |
+| `use-api.ts` | binds the auth token getter to the client; what components actually call |
+| `query-client.ts` | the `qk` query-key factory, retry policy, client construction |
+| `env.ts` | validated public environment |
+| `timeline.ts` | **the rendering model** — normalises a live run *and* a stored message into one shape |
+| `transcript.ts` | flattens message pages and removes the row the overlay is currently rendering |
+| `waitpoints.ts` | parses loose JSON payloads into their kind's schema |
+| `uploader.ts` | direct uploads: one assembly per file |
+| `format.ts` | credits, durations, timestamps, byte sizes |
+| `prose.ts` | removes URLs already rendered as media |
+| `failure.ts` | turns any thrown thing into user-facing text plus a trace id |
+| `models.ts`, `task-files.ts`, `cn.ts`, `use-hydrated.ts`, `use-debounced.ts` | supporting |
 
 ---
 
-## 3. The rendering model — the most important section
+## 3. The API layer
 
-### 3.1 One component, two data sources
+`lib/api-client.ts` exposes one `request<T>(path, init, schema, getToken)` and a `createApi`
+factory of typed methods. Components never import it directly — they call `useApi()`, which
+memoises the client against the auth hook.
+
+**Bearer tokens, never cookies.** Client and API are separate origins, so cookie auth cannot work.
+The token is fetched **immediately before each request**: the JWT lives about a minute, so caching
+it produces intermittent, hard-to-reproduce 401s.
+
+**Responses are parsed, never cast.** A successful body goes through the contract schema before any
+component sees it, so backend drift surfaces as a typed error at the boundary rather than as
+`undefined` deep in a render.
+
+**The body parse is guarded.** An unrouted path returns the framework's HTML 404; calling `.json()`
+unguarded throws and discards the status, turning a routing mistake into an unrecognisable error.
+
+**Retries are selective.** Only internal errors and rate limits retry. A schema failure never
+retries — it means the backend changed shape and no number of attempts will fix it. Anything
+unrecognised is treated as a transport failure and retried, because that is the safe default for a
+network.
+
+**Contracts are synced, not published.** `pnpm sync-contracts` copies the backend's schemas in with
+a generated-file header; the copy is committed, because this repository builds alone. `pnpm build`
+runs `sync-contracts --check` first, so a drifted copy fails the build rather than a screen. The
+check no-ops when the backend is not on disk, so a deploy from a clean checkout still builds.
+
+---
+
+## 4. State
+
+### TanStack Query owns
+
+Chat list, message history (both infinite), the active run, credits, usage, attachments, model
+availability — one file each under `queries/`.
+
+Defaults worth knowing: a 30-second stale time, and **no refetch on window focus** — alt-tabbing
+mid-turn would otherwise fight the streaming overlay.
+
+`qk` is a key factory rather than inline arrays, so the list prefix is shared by every filtered and
+searched variant and one invalidation covers them all.
+
+Two deliberate exceptions to "always refetch":
+
+- **The active run has an infinite stale time.** Each fetch mints a fresh realtime token, and
+  refetching on a timer would rebuild the subscription against a connection cap.
+- **Some responses seed the cache instead of triggering a refetch.** A send response already
+  contains the active run; refetching would mint a second token for the same run. A top-up response
+  already contains the new balance.
+
+### Zustand owns
+
+One store: drafts, per-chat model override, sidebar collapse, which modals and panels are open,
+which runs are mid-stop, plan-mode flags, toasts, and which step groups are expanded.
+
+**Only drafts and sidebar collapse persist.** Two calls are worth defending:
+
+- The per-chat model override is **not** persisted, because a restored local value would outrank
+  what the server recorded on the chat.
+- Expanded step groups live in the store rather than in the component, because virtualized rows
+  unmount when scrolled past and would silently re-collapse.
+
+### Local state
+
+Genuinely ephemeral things only: the optimistic user bubble (keyed by chat so a route change cannot
+duplicate it), dismissed interaction ids, in-flight upload items, per-block remembered reasoning,
+and table sort/selection.
+
+**Optimistic updates are rationed.** Only feedback ratings patch the cache, with rollback. The
+optimistic user bubble is held in component state and never written into the message cache: a
+hand-built message object in a cache whose every other row was parsed from a response is a lie
+waiting to be read as truth.
+
+---
+
+## 5. The rendering model
+
+This is the most important section in the repository.
+
+`lib/timeline.ts` exports two functions that produce the **same** shape:
 
 ```
-                    ┌─ RunMetadata.blocks  (live, projection)  ─┐
-  MessageTimeline ──┤                                            ├──▶ blockRenderers[type]
-                    └─ Message.contentBlocks (persisted, full)  ─┘
+timelineFromRun(metadata, streamedText, rememberedReasoning) ─┐
+                                                              ├─▶ Timeline { segments, tools, assetUrls }
+timelineFromMessage(message) ─────────────────────────────────┘
 ```
 
-```tsx
-// components/blocks/index.ts
-export const blockRenderers: Record<string, FC<BlockProps>> = {
-  text: TextBlock, thinking: ThinkingRow,
-  tool_use: ToolCardSwitch, usage: UsageRow, citations: CitationsRow,
-  step_update: StepUpdateRow,
-};
+Everything downstream renders a `Timeline` and cannot tell which produced it. `streaming` is a *row
+state*, never a source discriminator.
 
-export const toolCardRenderers: Record<string, FC<ToolCardProps>> = {
-  gpt_image_2: AiGenerationCard,
-  crop_image: AiGenerationCard,
-  merge_videos: AiGenerationCard,
-  get_model_schema: ModelSchemaCard,
-  load_skill: SkillRow, read_skill_asset: SkillRow,
-  submit_plan: PlanCard,
-  ask_questions: QuestionsCard,
-};
+**How prose is reassembled.** The run metadata snapshot carries block *structure* only; the text
+arrives on a separate append-only stream. Each text block records how many characters it consumed,
+and the renderer slices the stream accordingly. Only text blocks consume it — reasoning travels in
+its own metadata field, so counting it would shift every later block by the whole thinking
+transcript.
 
-// Unknown type → generic fallback using the registry's `display.label` + `display.icon`.
-// It must NEVER crash: a backend that ships a new tool before the FE knows about it
-// still renders something sensible. That is what forward-compatible means here.
-```
+**Why reasoning is remembered.** The snapshot reports only the *current* block's reasoning, so an
+earlier one would blank the moment a later one opened. The overlay keeps what each block said as it
+passes.
 
-Adding a block type or a bespoke card = **one map entry**. This mirrors the backend registry, and it
-is the frontend half of the "one authoritative registry" claim: labels and icons come from
-`ToolInvocationDTO.display`, which comes from `defineTool`.
-
-### 3.2 Step groups
-
-`segment` on each block drives the reference's repeated `Working · N steps` / `Completed N steps`
-collapsible groups. Group blocks by `segment`, render a `StepGroup` header per group.
-
-**N counts timeline rows in the segment — reasoning blocks AND tool invocations, not just tools.**
-(Counting tools alone would collapse a 10-step turn into one giant group.)
-
-### 3.3 `useRunStream` — the realtime hook
-
-```ts
-export function useRunStream(chatId: string) {
-  const { data: activeRun } = useActiveRun(chatId);          // mints a fresh 15-min token
-  // TWO IDS: `triggerRunId` (run_xxx) is the ONLY one useRealtimeRun accepts;
-  // `runId` (our UUIDv7) is what cancel/retry take. Conflating them fails late and confusingly.
-  const { run } = useRealtimeRun(activeRun?.triggerRunId, {
-                    accessToken: activeRun?.publicAccessToken,
-                    enabled: !!activeRun?.triggerRunId });   // NOT !!activeRun — triggerRunId is
-                    // null for the first moment after send, and subscribing to undefined throws
-  const { parts } = useRealtimeStream<string>(STREAM_AGENT_TEXT, { … });  // replays from 0
-
-  // 1. token refresh at ~12 min AND on auth error / unexpected close while non-terminal.
-  //    TEAR DOWN the old subscription explicitly before resubscribing — the free tier allows
-  //    10 concurrent realtime connections, so a leaked one per refresh silently stops updates on a
-  //    long session, which looks exactly like a broken stream. Never rely on garbage collection.
-  // 2. after 3 bounded retries → REST polling every 5s (the doc's required fallback)
-  // 3. on terminal → invalidate qk.chat(chatId); overlay unmounts once the persisted row appears
-  return { metadata: run?.metadata as RunMetadata | undefined,
-           streamedText: parts.join(""), connection };
-}
-```
-
-Three failure paths, all required by the doc, all in one hook:
-**token expiry** (runs with waitpoints legally outlive a 15-min token), **bounded retries**, and
-**REST fallback**. Streams v2 replays from chunk 0 on resubscribe, so a reconnect is lossless — this
-is confirmed in HAR2, not assumed.
-
-### 3.4 Reload recovery, as code
-
-```
-1. useChat(chatId)        → render persisted messages (incl. streaming/failed partials)
-2. useActiveRun(chatId)   → null? done, static view.
-                            otherwise subscribe (§3.3)
-3. metadata.phase         → status pill · approval card · tool cards
-4. terminal               → invalidate qk.chat → overlay unmounts when the persisted row lands
-                            (id-based dedupe on assistantMessageId — no flicker)
-```
-
-Step 4's dedupe is why there's no flash of duplicate content: the overlay only unmounts once the row
-it was previewing actually exists in the cache.
+**Renderers are registries with fallbacks.** An unknown block type renders nothing rather than
+throwing; an unknown tool falls back to a generic card driven only by the registry's own label and
+icon; an unknown icon name falls back to a default. The backend can therefore ship a tool this
+client has never compiled against, and the screen degrades instead of breaking.
 
 ---
 
-## 4. The phases
+## 6. Realtime and recovery
 
-### Phase 0 — Scaffold · ~2h
+`components/chat/LiveRun.tsx` is the only file that talks to the realtime SDK. It subscribes to two
+things: the run's metadata snapshot and the append-only text stream.
 
-Next.js App Router + TS strict, Tailwind, shadcn init, Clerk provider + middleware, `sign-in`
-catch-all, `api-client`, `query-client`, `env`, `pnpm sync-contracts`.
+**Teardown before resubscribe, made structural.** The subscription is keyed on run id *and* access
+token, so a token change unmounts the subtree — whose cleanup aborts both subscriptions — before the
+replacement mounts. The subscription effect does not depend on its client, so changing the token in
+place would leak the old connection against a per-plan connection cap. Making it a key change means
+no one has to remember.
 
-**Theme tokens first, before any component.** Pull the palette from the light and dark captures
-(`01-shell/empty-state__{light,dark}.png`) into CSS variables. Retro-fitting dark mode after building
-20 components is a day you don't have.
+**The live run is a list item**, not an overlay outside the scroller, so there is one scrolling
+context and no second scrollbar.
 
-**DoD** — sign in with Google, land on a protected page, `GET /api/v1/health` proxied through
-`api-client` with a parsed response, dark/light toggle flips every token.
+**Degradation is a ladder.** The token is refreshed proactively well before expiry. Subscription
+errors are counted; past a small bound the client flips to polling REST on an interval. A pill
+renders the state, and nothing at all while healthy.
 
-**Corrected in Phase 1:** the blanket auth boundary this phase put on `(app)/layout.tsx` was an
-assumption, not an observation. The reference serves `/chat` to anonymous visitors and asks for an
-account on the first action, so the boundary moved to the surfaces that read a user's own data.
-UI-SPEC UI-18.
+**Recovery is entirely REST**, which is what makes it one code path rather than a special case:
+history comes from the conversation query, the active-run query returns any in-flight run *with a
+fresh token and any pending interaction*, and the live component resubscribes. A run that has been
+accepted but not yet dispatched is returned too and polled briefly, with a pending row on screen —
+so the turn appears the instant the message lands rather than seconds later.
 
----
+**The active-run route answering `null` is itself the terminal signal.** There is no cancelled
+status to watch for, which is exactly what the mid-stop latch in the store exists to bridge: hold
+from the click until the run leaves the route *and* the conversation refetch has settled, or the
+control flips back and forth.
 
-### Phase 1 — The chat screen · ~8h · matches backend Phase 1
-
-**Goal:** send a prompt, watch it stream with correctly interleaved thinking/tool/text rows, see the
-asset, **reload mid-run and it keeps going**.
-
-**Build order inside the phase** (each step visibly works before the next):
-
-1. `chat/[chatId]/page.tsx` + `MessageList` + `MessageRow` — render persisted messages from REST.
-   Static, no realtime. Reference: `06-messages/chat__user-bubbles+assistant-footer__light.jpg`.
-2. `Composer` — textarea, auto-grow, Enter sends / Shift+Enter newlines, draft to Zustand,
-   disabled while a run is active. Reference: `02-composer/*`.
-3. `useSendMessage` — optimistic user bubble, then reconcile. On `RUN_ALREADY_ACTIVE`, swallow.
-4. Block renderers: `TextBlock`, `ThinkingRow` (collapsible, `Thinking ⌄` → `Reasoned ⌄` at
-   completion), `ToolCard` generic, `AiGenerationCard`.
-   Reference: `03-streaming/*`, `04-tool-cards/*`.
-5. `StreamingOverlay` + `useRunStream` — live blocks from metadata, prose from the text stream.
-6. `StepGroup` — group by `segment`.
-7. Reload recovery + the single-authority filter.
-8. `react-virtuoso` for the list — do this **last**; virtualization on top of working rows is easy,
-   debugging both at once is not.
-
-**Two details that look small and aren't:**
-
-- **The thinking row streams.** `metadata.reasoningText` fills the expanded row token by token. The
-  capture `03-streaming/working-1step__thinking-expanded-token__light.jpg` shows a partial word
-  mid-render. An empty box until terminal is a visible fidelity miss.
-- **Attachments render above the user bubble text**, larger than you'd guess. See
-  `06-messages/chat__user-bubbles+assistant-footer__light.jpg`.
-
-**DoD**
-- Send → tokens appear → tool card goes running → completed with duration + credit chip → asset shows
-- Rows are in the right order, interleaved, grouped by segment
-- **Hard-reload mid-run → messages from REST, stream resubscribes, run finishes in front of you**
-- No duplicate bubble at the moment the overlay hands over
-- Timeline is visually diffable against `03-streaming/` and `04-tool-cards/`
-
-**Tests** — RTL: `blockRenderers` renders each type; unknown type renders the fallback and does not
-throw; the single-authority filter hides a streaming row while an overlay owns the run.
+**Interactions render from the active run**, the source that survives a reload — realtime metadata's
+only job is to invalidate that query.
 
 ---
 
-**`/chat` ships in Phase 1 — the new-chat route.** Not `/chat/new`: that URL does not exist in the
-reference. `app.magica.com/chat` **is** the new-chat page and `/` redirects to it, which the
-empty-state captures show in the address bar. `new` is the id the send route accepts in its path, and
-an API detail has no business appearing in a URL.
+## 7. Uploads
 
-There is no `POST /chats`, the sidebar is Phase 3 and the full empty state is Phase 3 — so without
-this route there is no way to start a conversation in Phase 1.
+One assembly per file, because each is signed with an expected file count of one.
 
-```
-/           → redirect to /chat
-/chat       → chatId sentinel 'new' → SKIP the chat query (GET /chats/new would 404)
-            → composer, centred, no transcript area
-send        → POST /chats/new/messages → server creates the chat
-            → prefetch the real history → router.replace(`/chat/${chatId}`)
-```
+The flow: ask the API to sign, upload directly to the transform provider, then report completion
+back to the API. Two details are load-bearing:
 
-Keep it minimal: composer only, no greeting, no gallery, no sidebar. Phase 3 adds the ghost logo,
-the live clock, "Your AI worker" and the template gallery above it. **This is also the demo's first
-five seconds**, so it is not throwaway scaffolding.
+- **The signed parameters are passed through verbatim.** Re-serialising the JSON invalidates the
+  signature.
+- **The finished file is read from the assembly's uploads**, not from its results. An upload-only
+  assembly performs no transformation step, so the results collection is empty.
 
-### Phase 2 — States and failures · ~4h · matches backend Phase 2
-
-Stop button (send arrow → red square; `stoppingRuns` set locally and held until terminal), failed
-turn (`errorMessage` + partial output + tool outcomes + **Retry**), cancelled turn (gray
-`Response was interrupted` pill — derived from status, *not* from a `"(Response stopped)"` text
-suffix), reconnecting pill, `ScrollToBottom`, error toasts carrying `traceId`.
-
-`AssistantFooter` **already shipped in Phase 1** — it is in step 1's own reference capture, so
-splitting it out would have meant a visibly unfinished message row. It renders credits · copy ·
-like/dislike **disabled with a tooltip** (`PATCH /messages/:id/feedback` is a Phase-6 route;
-disabled-with-a-reason is honest, wired-to-nothing is a bug someone will click) · time.
-
-Two mechanisms this phase depends on and does not build: `stoppingRuns` in `stores/ui.ts`, and the
-`connection` state `LiveRun` already computes across the token refresh, the bounded retries and the
-REST fallback. Both existed unrendered; the stop button and the reconnecting pill surface them.
-
-Retry reuses the send path rather than a parallel one — `POST /messages/:id/retry` answers with the
-same `SendMessageResult` a send does, so both call one `applyRunStart`.
-
-**What MSW cannot prove here.** That cancel stops a real run, that retry resets the assistant row,
-and the degraded-transport states: all three cross Trigger.dev, which MSW does not intercept. They
-are browser checks against a running backend, not unit tests, and saying so is part of the phase.
-
-Reference: `06-messages/interrupted__response-was-interrupted-pill__dark.jpg`,
-`04-tool-cards/ai-gen__FAILED-safety+reasoned-retry+tracker-1of3__dark.png`.
-
-**DoD** — every failed turn is explainable from the screen alone, with a way forward.
+Progress, retry and cancellation are per file, and the composer renders each as a chip.
 
 ---
 
-### Phase 3 — The shell · ~5h
+## 8. Testing
 
-`Sidebar` (nav, Recent tasks, live reorder by `updatedAt`, active row, collapsed icon rail ~930px,
-footer with credits + Add Credits + Settings + theme trio + Clerk `<UserButton/>`), `TopBar` (model
-pill, files icon, credits chip), empty state (ghost logo, live clock, "Your AI worker", template
-gallery), Tasks page (`/chat/recent`: h1, filter, search field, relative dates, skeletons).
+Two layers. Vitest with jsdom and Testing Library for components and logic — **33 files, 367
+tests** — and Playwright for the paths that only exist in a real browser against a real server.
 
-Reference: all of `01-shell/`, plus `08-credits/`.
+**Mocked HTTP is the backend.** Handlers cover every route and fixtures are typed as the contracts,
+so a backend schema change fails `pnpm typecheck` rather than producing a wrong-looking screen.
+Unhandled requests are configured to **error**: a component that reaches a URL nobody mocked is a
+bug in the component.
 
-**Skeletons are not optional polish** — five distinct loading states are captured
-(`09-recovery/*`, `07-modals/files__loading-spinner`), and anyone comparing screens will see a
-blank flash where the reference shows a skeleton.
+Named override handlers exist for the states that are hard to reach: no active run, waiting on a
+plan, waiting on questions, an expired interaction, rate limited, upload quota exceeded, and failing
+cancel and retry.
 
----
+**The test harness fakes as little as possible.** Only the auth hooks are mocked — the API client
+still runs end to end against mocked HTTP. The virtualizer is replaced with a plain list because
+jsdom reports zero heights and the real one would render nothing. Layout APIs jsdom lacks are
+stubbed. The store is reset from a snapshot captured before any test runs.
 
-### Phase 4 — Plan approval · BUILT · matches backend Phase 4
+The render helper mounts the toast host and disables retries, so a failure-path test cannot pass
+against a screen that showed nothing.
 
-`PlanCard` with every captured microstate — `Plan submitted ⟳` → actionable (`Request Changes` ·
-`Step by Step` · `Run All`, with the `Enter run all` hint) → `Changes requested` (orange ⟲ +
-duration + Result row) → `Plan approved ⟳ → ✓ 9.3s` → collapsed to header + `(N steps)` subtitle.
-Request Changes opens an in-card textarea with `⌘+Enter to submit changes`.
+**Out of the unit layer's reach by construction:** the realtime transport, which mocked HTTP cannot
+intercept — the overlay is driven from fixtures instead; virtualization itself; and anything
+requiring the CSS cascade, since jsdom has none. A test can assert a class, never the colour it
+resolves to.
 
-Reference: all 13 files in `05-plan-cards/`.
+### End-to-end
 
-**Per-step credit chips come from the server** (`submit_plan` steps are priced through the registry).
-The frontend never computes or estimates a cost — it renders the number it is given.
+Two Playwright projects, split by what they cost.
 
----
+**`pnpm e2e` — the public project.** Drives the anonymous surface with no authentication and no
+backend state: that the new-chat screen is served directly rather than behind a redirect, that the
+first send asks for an account instead of calling the API, that the draft survives that prompt, the
+command palette chord, and theme persistence across a reload. Cheap enough to run on every change.
 
-### Phase 5 — Tool detail + assets · ~3h
+**`pnpm e2e:live` — the live project.** Signs in through a stored session and exercises a real turn
+against a running API and worker: a message is sent, the answer streams back and renders, and a
+reload mid-conversation rebuilds the transcript from the database. This is the only automated proof
+that the realtime path works, and it spends real credits — so it is opt-in rather than continuous.
 
-`ToolDetailPanel` as a right-side **overlay, not a layout squeeze** (the captures show content
-staying put), maximize → fullscreen with a `Restore` tooltip, detail rows
-(Tool / Model / Prompt / Size / Quality / Aspect Ratio / Resolution), asset strip,
-image hover → expand + download.
+The split matters: the state most likely to break silently is the one that costs money to observe,
+so it gets a test rather than a manual checklist, but not one that runs unattended.
 
-**`View more` on a tool card is this panel's entry point** — confirmed by clicking it in the live
-product, where the card's fields do not change and the panel opens carrying the same detail plus
-`Output Format` and `Credits used`. Phase 1 ships that link disabled with the reason, so wiring it up
-is this phase's first move. UI-SPEC §3.5.
-
-Reference: `04-tool-cards/detail-side-panel__light.jpg`,
-`04-tool-cards/detail-fullscreen__input-images__light.jpg`.
-
----
-
-### Built after Phase 5, ahead of Phase 6
-
-Two surfaces whose data was already live, taken in this order because each replaced a control that
-was on screen doing nothing.
-
-| Item | Files | Why it came first |
-|---|---|---|
-| **Model picker** | `lib/models.ts`, `shell/TopBar.tsx`, `ui/dropdown-menu.tsx`, `stores/ui.ts`, `queries/use-send-message.ts` | the backend began persisting `SendMessage.modelId` on **every** send, which both unblocked the picker and made omitting the field destructive — see UI-4 |
-| **Search palette** | `shell/SearchPalette.tsx`, `ui/dialog.tsx`, `lib/use-debounced.ts` | `GET /chats?search=` was already live, and the sidebar's magnifier was disabled with a reason that had turned out to be wrong |
+**Still not covered:** the degradation ladder. Nothing yet severs a subscription on demand, so
+reconnect-then-poll and the pill that reports it remain verified by hand.
 
 ---
 
-### Phase 6 — Deferred-by-design · ~10h · ordered, stop anywhere
-
-| Order | Item | Notes |
-|---|---|---|
-| 1 | `QuestionsCard` + `QuestionPanel` | docked panel **replaces the composer**. Three input types, `n of m` pager, ✕ leaves the waitpoint pending and shows a "resume answering" affordance, answers accumulate client-side and submit **once**. Keyboard: `Enter` submit · `Esc` skip · `↑↓` navigate. Reference: all 7 files in `10-questions/` |
-| 2 | Uppy + Transloadit uploads | attachment chip with progress, cancel, retry, stable order; `Select from Assets` |
-| 3 | Plan progress card | from `metadata.activePlan` live and `chat.activePlan` on reload — same component |
-| 4 | Media library, Files modal, Image preview | `07-modals/*` |
-| 5 | Credits popover, Add Credits | `08-credits/*` |
-| 6 | Mobile ≤768px | sidebar becomes an overlay drawer; captures at 430×932 |
-
----
-
-### Phase 7 — Polish · last, and timeboxed
-
-Hover states, focus rings, transitions, accessibility pass (keyboard nav, ARIA live region for
-streaming text, focus trap in modals — the doc has an accessibility row), template gallery art.
-
-**Timebox this hard.** Fidelity is earned by *structure matching the captures*, not by pixel-peeping
-one component. When time runs out, stop; do not trade Phase 1–4 correctness for a hover state.
-
----
-
-## 5. Fidelity method — how to actually match the reference
-
-1. **Open the capture. Put it beside the browser.** Never build a component from memory or from this
-   document's prose.
-2. **Steal the structure before the styling.** Get the DOM hierarchy and spacing rhythm right; colour
-   and radius are quick fixes afterwards, layout is not.
-3. **Both themes as you go.** Every capture folder has light and dark. Retro-fitting dark mode is the
-   classic day-three disaster.
-4. **The captures are the spec for states too** — `05-plan-cards/` alone has 13 microstates. If a
-   state has a capture, it is in scope; if it doesn't, check `ui-flows.md` before inventing one.
-5. **One deliberate exception:** the insufficient-credits state has no capture (reaching it would burn
-   the whole credit balance). Design it in the captured language — same card, pill and colour
-   vocabulary as the failed-tool card — and note it in the README as a known, deliberate gap.
-
----
-
-## 6. Traps specific to this repo
+## 9. Traps in this repository
 
 | Trap | Symptom | Guard |
 |---|---|---|
-| `refetchOnWindowFocus` on | alt-tab mid-stream refetches and fights the overlay | off in query defaults |
-| Zustand holding messages | stale content that never refetches | server state → TanStack, always |
-| No single-authority filter | two identical bubbles during handover | filter `status==='streaming'` while an overlay owns the run |
-| `if (isLive)` inside a renderer | live and persisted views drift apart | same component, one shape |
-| Virtualizing too early | can't tell if the bug is rows or the virtualizer | virtuoso last |
-| Realtime subscription not closed | free tier caps at **10 concurrent connections** | close on unmount AND explicitly before every token-refresh resubscribe; one tab for the demo |
-| Persisting the whole Zustand store | transient panel state restored on reload | `partialize` to drafts + sidebar only |
-| `as T` instead of `schema.parse` | backend drift surfaces as `undefined` deep in a component | parse at the api-client boundary |
-| Hand-written query keys | invalidation silently stops working | the `qk` factory |
+| Caching the auth token | intermittent 401s that never reproduce locally | fetch it immediately before each request |
+| Changing a realtime token in place | the old subscription leaks and the connection cap is hit | key the component on run id *and* token so teardown runs first |
+| Refetching the active run on a timer | a new realtime token per fetch, rebuilding the subscription | infinite stale time; seed it from the send response |
+| A renderer branching on live-versus-persisted | reload recovery drifts from the live view, silently | both go through one timeline builder |
+| Counting reasoning toward stream offsets | every later text block is shifted by the thinking transcript | only text blocks consume the stream |
+| Unmounting the overlay on terminal | the turn blanks between the stream ending and the row landing | unmount when the persisted row arrives non-streaming |
+| Expanded-state held in a virtualized row | rows unmount when scrolled past and silently re-collapse | keep it in the store |
+| A panel rendered by the row that opens it | the panel vanishes when its row scrolls out of view | the screen renders it; the store holds only an id |
+| `res.json()` unguarded | an HTML 404 from an unrouted path throws and discards the status | guard the parse |
+| Retrying a schema failure | three attempts at something no retry can fix, delaying the message | retry only internal and rate-limit errors |
+| Writing a hand-built object into the message cache | a fabricated row sits beside parsed ones and is trusted equally | optimistic UI stays in component state |
+| A restored local model override | outranks what the server recorded on the chat | do not persist it |
+| `Number()` on a credit value | silent precision loss on large balances | BigInt arithmetic, strings on the wire |
+| Asserting a resolved colour in jsdom | there is no cascade; the assertion is meaningless | assert the class |
+| A fixture whose run status disagrees with the route it came from | tests pass against a state the backend cannot produce | build fixtures from the contracts |
 
 ---
 
-## 7. Sequencing against the backend
+## 10. Accessibility
 
-The two repos interlock. Frontend never waits, because MSW gives it the contract before the server has it.
+Not incidental, and not a final pass:
 
-| BE phase | FE phase | Unblocks |
-|---|---|---|
-| 0 foundation | 0 scaffold | contracts synced — **FE can now mock every route from the Zod schemas** |
-| 1 slice | 1 chat screen | the demo path |
-| 2 reliability | 2 states | stop / retry / failure rendering |
-| 5 chat mgmt | 3 shell | sidebar list, search, pin |
-| 4 plan approval | 4 plan card | waitpoints |
-| 6 deferred | 6 deferred | questions, uploads, library |
-
-**The synced `contracts/` directory is COMMITTED to this repo.** These are two
-independent repos, so Vercel's frontend build has no sibling checkout to sync from — an uncommitted
-`contracts/` means the deploy fails at import time. Consequences:
-- `contracts/` is committed, and never hand-edited. The backend is the source of truth.
-- The build script runs `pnpm sync-contracts --check`, which exits non-zero if the committed copy
-  differs from the backend's. Drift then fails the build instead of shipping two disagreeing schemas.
-- Re-sync is a deliberate commit ("sync contracts"), which leaves a clean audit trail of when the
-  contract changed.
-
-**Contracts are the handshake.** `pnpm sync-contracts` copies `contracts/` from backend to frontend;
-the frontend builds against MSW handlers generated from those same schemas. So a frontend phase can
-start the moment the contract exists — not when the endpoint works.
+- The streaming region is a polite live region, non-atomic, so tokens are announced as they arrive
+  rather than re-reading the whole answer.
+- The search palette is a combobox over a listbox with an active-descendant reference, so focus
+  never leaves the input while arrow keys move the selection.
+- Step groups expose expanded state; usage tables expose sort state; tab strips use proper tab
+  semantics; send failures announce as alerts.
+- **Unavailable controls use `aria-disabled`, not `disabled`**, precisely so the tooltip explaining
+  *why* stays reachable by keyboard and screen reader. A control that is off with no reason given is
+  worse than one that is absent.
+- Reduced-motion preferences disable the spinner animation and the backdrop blur.
