@@ -46,12 +46,15 @@ export const chat: ChatDTO = {
 export const attachment: AttachmentDTO = {
   id: "01999f00-0000-7000-8000-000000000400",
   type: "image",
+  source: "uploaded",
   url: "https://cdn.magica.com/fixtures/screenshot.png",
   name: "Screenshot-2026-08-21-at-2.png",
   contentType: "image/png",
   size: 1_363_148,
   status: "ready",
   metadata: null,
+  expiresAt: "2026-08-23T09:59:00.000Z",
+  createdAt: "2026-08-22T09:59:00.000Z",
 };
 
 export const userMessage: MessageDTO = {
