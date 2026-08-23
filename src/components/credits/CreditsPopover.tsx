@@ -34,8 +34,8 @@ export function CreditsPopover() {
           <p className="text-xs font-semibold tracking-wide text-fg-subtle">FREE TIER</p>
 
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-sm text-fg-muted">Available Credits</span>
-            <span className="text-sm text-fg">
+            <span className="text-sm text-fg">Available Credits</span>
+            <span className="text-sm text-fg-muted">
               {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
             </span>
           </div>
@@ -43,13 +43,16 @@ export function CreditsPopover() {
           <button
             type="button"
             onClick={() => setAddCreditsOpen(true)}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-fg py-2.5 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-solid py-2.5 text-sm font-semibold text-solid-fg transition-opacity hover:opacity-90"
           >
             <CreditCard className="size-4" aria-hidden />
             Add Credits
           </button>
 
-          <p className="mt-3 text-xs text-success">Free tier — credits do not renew</p>
+          {/* Same filled green pill as the sidebar footer's — one statement, one treatment. */}
+          <p className="mt-3 rounded-card border border-success/40 bg-success/10 px-3 py-1.5 text-xs text-success">
+            Free tier — credits do not renew
+          </p>
         </div>
 
         <div className="flex px-1 pt-2.5 pb-0.5">

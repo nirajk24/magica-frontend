@@ -4,6 +4,9 @@ import { dirname } from "node:path";
 
 const STATE_PATH = "e2e/.auth/user.json";
 
+/** Clerk's fixed verification code for test-mode addresses. Not a secret, and not a real account. */
+const TEST_MODE_CODE = "424242";
+
 /**
  * Signs in once and saves the browser session, so the specs that need an account do not each pay a
  * sign-in — and so a credential appears in exactly one place.
@@ -24,19 +27,40 @@ setup("sign in", async ({ page }) => {
 
   await page.goto("/sign-in");
 
-  await page.getByLabel(/email/i).fill(email!);
-  await page.getByRole("button", { name: /continue/i }).click();
+  /**
+   * Submitting with Enter rather than by button name: Clerk's social buttons carry a "Continue"
+   * label of their own, so a name-matched click is ambiguous between them and the form's submit.
+   */
+  const identifier = page.getByLabel(/email/i).first();
+  await identifier.fill(email!);
+  await identifier.press("Enter");
 
-  const passwordField = page.getByLabel(/password/i);
+  const passwordField = page.getByLabel(/password/i).first();
   await passwordField.waitFor({ state: "visible" });
   await passwordField.fill(password!);
-  await page.getByRole("button", { name: /continue/i }).click();
+  await passwordField.press("Enter");
 
-  // Signed in is observable in the product, not in Clerk's own UI: the chat screen shows an account
-  // row and a credits chip only to a session that has one.
-  await page.waitForURL((url) => !url.pathname.startsWith("/sign-in"), { timeout: 30_000 });
+  /**
+   * Clerk may interpose a device-verification step (`/sign-in/client-trust`). A test-mode address
+   * verifies with a fixed code rather than a real email, which is the whole reason test mode is what
+   * makes this automatable.
+   */
+  const otp = page.locator('input[autocomplete="one-time-code"]').first();
+  if (await otp.isVisible({ timeout: 8_000 }).catch(() => false)) {
+    // `fill`, not per-key typing: the segmented field re-renders on each digit and drops keystrokes.
+    await otp.fill(TEST_MODE_CODE);
+  }
+
+  /**
+   * Signed in is asserted against the product, not against Clerk's routing: Clerk may interpose
+   * steps of its own (`/sign-in/client-trust` on a new device), and the credits chip is the app's
+   * own statement that a session exists.
+   */
+  await page.waitForTimeout(6_000);
   await page.goto("/chat");
-  await expect(page.getByRole("button", { name: "Available credits" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Available credits" })).toBeVisible({
+    timeout: 30_000,
+  });
 
   mkdirSync(dirname(STATE_PATH), { recursive: true });
   await page.context().storageState({ path: STATE_PATH });

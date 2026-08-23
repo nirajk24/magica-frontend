@@ -1,25 +1,37 @@
 import { ALLOWED_MODELS, type ModelId } from "@/contracts";
 
 /**
- * Ids whose last path segment does not describe them. `openrouter/free` is the Free Models Router,
- * which picks an available free model per request — so it is a mode rather than a model, and "free"
- * would read as a tier rather than as a choice. The reference calls it `Magica Auto`, and so do we —
- * this clone carries the same brand, so the same name is the exact one.
+ * The router entry, which is a mode rather than a model: it resolves to a different model per
+ * request. Callers group the menu around it rather than assuming it is first in `ALLOWED_MODELS`.
+ */
+export const ROUTER_MODEL_ID = "openrouter/free";
+
+/**
+ * Ids whose last path segment does not describe them.
+ *
+ * `openrouter/free` is **OpenRouter's** Free Models Router — it, not this product, picks the model
+ * per request. So it is named for what does the routing: calling it `Magica Auto` would claim a
+ * routing layer this build does not have.
+ *
+ * Hints state only what the id itself asserts — provider, and parameter count where the id carries
+ * one. This build has no benchmark of its own, so a hint ranking the models by capability would be
+ * invented. Rate-limit state is deliberately absent too: it is live, and the picker already shows it
+ * per row from `LlmStatus.limitedModel`.
  */
 const NAMED_MODELS: Record<string, { label: string; hint: string }> = {
-  "openrouter/free": {
-    label: "Magica Auto",
-    hint: "Automatically picks an available free model for your task",
+  [ROUTER_MODEL_ID]: {
+    label: "OpenRouter Auto",
+    hint: "Picks an available free model for each request",
   },
   "nvidia/nemotron-3-super-120b-a12b:free": {
     label: "nemotron-3-super-120b-a12b",
-    hint: "Largest free model — best for complex tasks",
+    hint: "Nvidia · 120B parameters",
   },
   "google/gemma-4-31b-it:free": {
     label: "gemma-4-31b-it",
-    hint: "Fast reasoning for everyday tasks",
+    hint: "Google · 31B parameters",
   },
-  "z-ai/glm-5.2:free": { label: "glm-5.2", hint: "Balanced model for general work" },
+  "z-ai/glm-5.2:free": { label: "glm-5.2", hint: "Z.ai" },
 };
 
 /** The family name, since `nvidia/nemotron-3-super-120b-a12b:free` is not one. */

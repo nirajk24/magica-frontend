@@ -45,6 +45,18 @@
  * That is why the dark `--border` sits at #242424 rather than the sampled #1b1b1b — a border-only
  * box on the dark canvas vanishes behind a 1b hairline (the invisible-panels bug, relived).
  *
+ * `--surface-selected` exists because `--surface` cannot mark a selected row *in the sidebar*: the
+ * sidebar's ground is `--bg-subtle`, and in light those two are #f9f9f9 and #f7f7f7 — two levels
+ * apart, which reads as no highlight at all. The reference puts nine levels between them (#fafafa
+ * ground, #f1f1f1 selected row, measured off a same-viewport capture), so this token carries that
+ * contrast. On `--panel` (white) `--surface` still reads fine, which is why the model picker keeps it.
+ *
+ * `--solid` is a filled button, and it does NOT invert. In light the reference draws `Add Credits`
+ * near-black with white text, which `--fg`/`--bg` happens to give; in dark it stays a mid-grey
+ * #323232 with light text rather than flipping to near-white. Using `--fg`/`--bg` produced a white
+ * button on a dark sidebar — the one place inverting the scale is wrong. Measured off a
+ * same-viewport dark capture of their expanded footer.
+ *
  * `--tab-strip` is the template tab row's band, and it exists in ONE theme: the dark capture shows a
  * #191919 band behind the tabs, the light capture shows bare text on the canvas. It is transparent
  * in light on purpose — giving it a light value re-introduces the strip the reference does not draw.
@@ -69,6 +81,9 @@
   --color-bg: var(--bg);
   --color-bg-subtle: var(--bg-subtle);
   --color-surface: var(--surface);
+  --color-surface-selected: var(--surface-selected);
+  --color-solid: var(--solid);
+  --color-solid-fg: var(--solid-fg);
   --color-border: var(--border);
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
@@ -106,6 +121,9 @@
   --bg: #ffffff;
   --bg-subtle: #f9f9f9;
   --surface: #f7f7f7;
+  --surface-selected: #f0f0f0;
+  --solid: #111111;
+  --solid-fg: #ffffff;
   --border: #e9e9e9;
   --fg: #111111;
   --fg-muted: #444444;
@@ -134,6 +152,9 @@
   --bg: #111111;
   --bg-subtle: #111111;
   --surface: #191919;
+  --surface-selected: #1b1b1b;
+  --solid: #323232;
+  --solid-fg: #f5f5f5;
   --border: #242424;
   --fg: #f5f5f5;
   --fg-muted: #9d9d9d;
@@ -170,19 +191,21 @@
 /*
  * Every dialog blurs the page behind it, the way the reference does, and the blur ramps in with the
  * panel — a backdrop-filter cannot be faded via the element's own opacity, so it is keyframed
- * directly. The 6px radius is a judgement call: a blur leaves no edge to measure off a capture.
+ * directly. The radius is 2px because the reference's own search overlay computes to `blur(1px)`:
+ * read off the live product, not estimated. An earlier 6px was a guess and read as frosted glass
+ * next to it — the reference barely softens the page, it does not obscure it.
  */
 @keyframes page-blur-in {
   from {
     backdrop-filter: blur(0);
   }
   to {
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(2px);
   }
 }
 
 .page-blur-overlay {
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(2px);
   animation: page-blur-in 200ms ease-out both;
 }
 

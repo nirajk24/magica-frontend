@@ -13,6 +13,13 @@ import { useCredits } from "@/queries/use-credits";
 import { useUI } from "@/stores/ui";
 
 /**
+ * The paired `Settings` / `Updates` tiles: 32px tall with 14px glyphs, a step smaller than the nav
+ * rows above them. Shared so the two are provably the same size.
+ */
+const FOOTER_TILE =
+  "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-bg px-3 text-[13px] [&_svg]:size-3.5 [&_svg]:shrink-0";
+
+/**
  * The sidebar's bottom block, which is where the signed-in and anonymous shells actually differ.
  *
  * Signed out the reference shows the `Magica 101` card, `Claim Offer`, the theme trio and a single
@@ -54,16 +61,16 @@ export function SidebarFooter() {
                 <button
                   type="button"
                   onClick={openSettings}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm text-fg transition-colors hover:bg-surface"
+                  className={cn(FOOTER_TILE, "text-fg transition-colors hover:bg-surface")}
                 >
-                  <Settings className="size-4" strokeWidth={2} />
+                  <Settings strokeWidth={2} aria-hidden />
                   Settings
                 </button>
                 <DisabledAction
                   icon={Sparkles}
                   label="Updates"
                   reason="Release notes aren't part of this build."
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm"
+                  className={FOOTER_TILE}
                   showLabel
                 />
               </div>
@@ -142,13 +149,16 @@ function CreditBlock() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between px-1 text-xs">
-        <span className="text-fg-muted">Available Credits</span>
-        <span className="text-fg">
+        <span className="text-fg">Available Credits</span>
+        <span className="text-fg-muted">
           {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
         </span>
       </div>
 
-      <p className="rounded-card border border-success/50 px-3 py-1.5 text-xs text-success">
+      {/* Tinted fill, not a bare outline: the renewal line is a filled green pill in the reference.
+          The tint derives from `--success` rather than carrying its own token, because unlike
+          `--danger-surface` this one does sit where an alpha blend can reach in both themes. */}
+      <p className="rounded-card border border-success/40 bg-success/10 px-3 py-1.5 text-xs text-success">
         Free tier — credits do not renew
       </p>
 

@@ -113,7 +113,7 @@ describe("the sidebar", () => {
     const user = userEvent.setup();
     renderWithProviders(<Sidebar />);
 
-    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    await user.click(screen.getByRole("button", { name: "Close sidebar" }));
 
     await waitFor(() => expect(useUI.getState().sidebarCollapsed).toBe(true));
     expect(screen.getByRole("link", { name: "New task" })).toBeInTheDocument();
@@ -152,7 +152,7 @@ describe("the top bar", () => {
   it("names the model the turn runs on", () => {
     renderWithProviders(<TopBar />);
 
-    expect(screen.getByText("Magica Auto")).toBeInTheDocument();
+    expect(screen.getByText("OpenRouter Auto")).toBeInTheDocument();
   });
 
   it("offers sign in and sign up instead of credits when signed out", () => {

@@ -60,6 +60,20 @@ function DropdownMenuRadioGroup({
   return <DropdownMenuPrimitive.RadioGroup data-slot="dropdown-menu-radio-group" {...props} />;
 }
 
+/** A non-interactive heading over a run of rows. Radix skips it in keyboard navigation. */
+function DropdownMenuLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Label>) {
+  return (
+    <DropdownMenuPrimitive.Label
+      data-slot="dropdown-menu-label"
+      className={cn("px-2 pt-2 pb-1 text-[11px] font-normal text-fg-subtle", className)}
+      {...props}
+    />
+  );
+}
+
 /**
  * A single-choice row. With the default check, the gutter is occupied whether or not the check is
  * drawn, so selecting a different row does not shift the labels sideways. `indicator={false}` drops
@@ -98,6 +112,7 @@ export {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 };

@@ -10,11 +10,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { modelHint, modelLabel, selectedModel } from "@/lib/models";
+import { modelHint, modelLabel, ROUTER_MODEL_ID, selectedModel } from "@/lib/models";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
 import { useLlmStatus } from "@/queries/use-llm-status";
 import { useUI } from "@/stores/ui";
@@ -26,6 +27,14 @@ import { useUI } from "@/stores/ui";
  */
 const RATE_LIMIT_NOTE =
   "The free model path is rate limited right now — it is shared across everyone on the free tier. Try again shortly, or pick another model.";
+
+/**
+ * The router heads the menu under its own heading, because choosing it is choosing a behaviour
+ * rather than a model. Partitioned by id, not by position: `ALLOWED_MODELS` is generated from the
+ * backend contract, so its ordering is not this screen's to depend on.
+ */
+const ROUTER_MODEL = ALLOWED_MODELS.find((id) => id === ROUTER_MODEL_ID);
+const PINNED_MODELS = ALLOWED_MODELS.filter((id) => id !== ROUTER_MODEL_ID);
 
 /**
  * The bar above the content column: the chat's model on the left, and either the account's credits
@@ -158,37 +167,46 @@ function ModelPicker({ chatId }: { chatId: string }) {
         </TooltipContent>
       </Tooltip>
 
-      <DropdownMenuContent align="start" className="min-w-[340px] rounded-2xl p-2">
+      <DropdownMenuContent align="start" className="min-w-[288px] rounded-xl p-1.5">
         <DropdownMenuRadioGroup
           value={selected}
           onValueChange={(value) => setModel(chatId, value as ModelId)}
         >
-          {ALLOWED_MODELS.map((id) => (
-            <DropdownMenuRadioItem
-              key={id}
-              value={id}
-              indicator={false}
-              className="items-center gap-3 rounded-xl p-2.5 data-[state=checked]:bg-surface"
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-fg text-bg">
-                <MagicaLogo className="size-5" />
-              </span>
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="flex items-center gap-1.5 text-[15px] font-semibold">
-                  {modelLabel(id)}
-                  {id === limitedModel && (
-                    <span className="rounded-full bg-amber/15 px-1.5 text-[11px] font-normal text-amber">
-                      rate limited
-                    </span>
-                  )}
-                </span>
-                <span className="truncate text-sm font-normal text-fg-muted">{modelHint(id)}</span>
-              </span>
-            </DropdownMenuRadioItem>
+          {ROUTER_MODEL && <ModelRow id={ROUTER_MODEL} limitedModel={limitedModel} />}
+
+          {PINNED_MODELS.length > 0 && <DropdownMenuLabel>OpenRouter models</DropdownMenuLabel>}
+          {PINNED_MODELS.map((id) => (
+            <ModelRow key={id} id={id} limitedModel={limitedModel} />
           ))}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** One selectable row: the mark, the model's name, and the single line under it. */
+function ModelRow({ id, limitedModel }: { id: ModelId; limitedModel?: string | null }) {
+  return (
+    <DropdownMenuRadioItem
+      value={id}
+      indicator={false}
+      className="items-center gap-2.5 rounded-lg p-2 data-[state=checked]:bg-surface"
+    >
+      <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-fg text-bg">
+        <MagicaLogo className="size-4" />
+      </span>
+      <span className="flex min-w-0 flex-col">
+        <span className="flex items-center gap-1.5 text-[13px] font-semibold">
+          {modelLabel(id)}
+          {id === limitedModel && (
+            <span className="rounded-full bg-amber/15 px-1.5 text-[10px] font-normal text-amber">
+              rate limited
+            </span>
+          )}
+        </span>
+        <span className="truncate text-[11px] font-normal text-fg-muted">{modelHint(id)}</span>
+      </span>
+    </DropdownMenuRadioItem>
   );
 }
 

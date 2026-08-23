@@ -47,7 +47,7 @@ export function AccountMenu() {
           <Avatar url={user.imageUrl} name={name} />
           <div className="min-w-0">
             <p className="truncate text-sm text-fg">{name}</p>
-            {email && <p className="truncate text-xs text-fg-subtle">{email}</p>}
+            {email && <p className="truncate text-[11px] leading-4 text-fg-subtle">{email}</p>}
           </div>
         </div>
 

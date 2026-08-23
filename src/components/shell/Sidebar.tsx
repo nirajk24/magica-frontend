@@ -80,9 +80,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
               <TooltipTrigger
                 type="button"
                 onClick={toggleSidebar}
-                aria-label="Collapse sidebar"
+                aria-label="Close sidebar"
                 aria-expanded
-                className="rounded-md p-1.5 text-fg-subtle transition-colors hover:text-fg"
+                className="rounded-md p-1.5 text-fg-muted transition-colors hover:text-fg"
               >
                 <PanelLeft className="size-4" aria-hidden />
               </TooltipTrigger>
@@ -136,7 +136,7 @@ function LogoToggle({ onToggle }: { onToggle: () => void }) {
         className="group grid size-9 place-items-center rounded-md text-fg transition-colors hover:bg-surface"
       >
         <MagicaLogo className="size-5 group-hover:hidden" />
-        <PanelLeft className="hidden size-4 text-fg-subtle group-hover:block" aria-hidden />
+        <PanelLeft className="hidden size-4 text-fg-muted group-hover:block" aria-hidden />
       </TooltipTrigger>
       <TooltipContent side="right">Toggle sidebar ⌘B</TooltipContent>
     </Tooltip>
@@ -159,7 +159,7 @@ function RailButton({
         type="button"
         aria-label={label}
         onClick={onClick}
-        className="grid size-9 place-items-center rounded-md text-fg-subtle transition-colors hover:bg-surface hover:text-fg"
+        className="grid size-9 place-items-center rounded-md text-fg-muted transition-colors hover:bg-surface hover:text-fg"
       >
         {children}
       </TooltipTrigger>
@@ -190,10 +190,18 @@ function NavRow({
 
   const className = cn(
     "flex items-center rounded-md text-sm transition-colors",
-    collapsed ? "size-9 justify-center" : "h-9 gap-2.5 px-2",
-    active ? "bg-surface text-fg" : "text-fg-muted hover:bg-surface hover:text-fg",
+    collapsed ? "size-9 justify-center" : "h-[34px] gap-2.5 px-2",
+    active
+      ? "bg-surface-selected text-fg"
+      : "text-fg-muted hover:bg-surface-selected hover:text-fg",
   );
 
+  /**
+   * A placeholder row is not dimmed. The reference draws every nav row at full strength, and the
+   * sidebar is one of the most-looked-at surfaces in the product — fading five of seven rows is a
+   * visible fidelity miss. `aria-disabled` and the tooltip still say the page is not here, which is
+   * where that honesty belongs (UI-7).
+   */
   if (item.placeholder) {
     return (
       <Tooltip>
@@ -202,7 +210,7 @@ function NavRow({
           aria-disabled
           aria-label={item.label}
           onClick={(event) => event.preventDefault()}
-          className={cn(className, "cursor-not-allowed opacity-60")}
+          className={cn(className, "cursor-not-allowed")}
         >
           {content}
         </TooltipTrigger>
@@ -244,7 +252,7 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="mt-4 flex min-h-0 flex-1 flex-col">
-      <p className="px-3 pb-1 text-xs text-fg-subtle">Recent tasks</p>
+      <p className="px-3 pb-1 text-xs font-normal text-fg-muted">Recent tasks</p>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2">
         {query.isPending ? (
@@ -258,10 +266,10 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
               href={`/chat/${chat.id}`}
               onClick={onNavigate}
               className={cn(
-                "block truncate rounded-md px-2 py-1.5 text-sm transition-colors",
+                "flex h-[34px] items-center truncate rounded-md px-2 text-sm transition-colors",
                 pathname === `/chat/${chat.id}`
-                  ? "bg-surface text-fg"
-                  : "text-fg-muted hover:bg-surface hover:text-fg",
+                  ? "bg-surface-selected text-fg"
+                  : "text-fg-muted hover:bg-surface-selected hover:text-fg",
               )}
             >
               {chat.title}

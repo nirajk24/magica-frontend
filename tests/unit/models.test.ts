@@ -3,8 +3,8 @@ import { ALLOWED_MODELS } from "@/contracts";
 import { modelHint, modelLabel, selectedModel } from "@/lib/models";
 
 describe("modelLabel", () => {
-  it("names the router as a mode, because its last segment reads as a tier", () => {
-    expect(modelLabel("openrouter/free")).toBe("Magica Auto");
+  it("names the router for who does the routing, not for this product", () => {
+    expect(modelLabel("openrouter/free")).toBe("OpenRouter Auto");
   });
 
   it("keeps the family name for a real model", () => {

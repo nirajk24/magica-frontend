@@ -20,7 +20,7 @@ describe("the model pill", () => {
   it("falls back to the default only where there is no chat to read", () => {
     renderWithProviders(<TopBar />);
 
-    expect(screen.getByText("Magica Auto")).toBeInTheDocument();
+    expect(screen.getByText("OpenRouter Auto")).toBeInTheDocument();
   });
 
   it("names the free-model router as a mode, not as a model called free", () => {
@@ -143,7 +143,7 @@ describe("choosing a model", () => {
 
     await user.click(await screen.findByRole("button", { name: "gemma-4-31b-it" }));
 
-    expect(await screen.findByRole("menuitemradio", { name: /Magica Auto/ })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitemradio", { name: /OpenRouter Auto/ })).toBeInTheDocument();
     expect(
       screen.getByRole("menuitemradio", { name: /gemma-4-31b-it/ }),
     ).toHaveAttribute("aria-checked", "true");
@@ -156,6 +156,18 @@ describe("choosing a model", () => {
     await user.click(await screen.findByRole("button", { name: "gemma-4-31b-it" }));
 
     expect(screen.queryByRole("menuitemradio", { name: /^free$/ })).not.toBeInTheDocument();
+  });
+
+  it("heads the pinned models with a label that is not itself selectable", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TopBar chatId={fixtures.CHAT_ID} />);
+
+    await user.click(await screen.findByRole("button", { name: "gemma-4-31b-it" }));
+
+    expect(await screen.findByText("OpenRouter models")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitemradio", { name: /^OpenRouter models$/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("carries the choice into the next send", async () => {
@@ -177,9 +189,9 @@ describe("choosing a model", () => {
     );
 
     await user.click(await screen.findByRole("button", { name: "gemma-4-31b-it" }));
-    await user.click(await screen.findByRole("menuitemradio", { name: /Magica Auto/ }));
+    await user.click(await screen.findByRole("menuitemradio", { name: /OpenRouter Auto/ }));
 
-    expect(await screen.findByRole("button", { name: "Magica Auto" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "OpenRouter Auto" })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Message"), "make a poster{Enter}");
 
