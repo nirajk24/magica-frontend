@@ -10,6 +10,8 @@ import type {
   CreditsPage,
   LlmStatus,
   MessageDTO,
+  PlanApprovalPayload,
+  QuestionsPayload,
   RunMetadata,
   SendMessageResult,
   ToolInvocationDTO,
@@ -223,6 +225,76 @@ export const activeRun: ActiveRun = {
   assistantMessageId: ASSISTANT_MESSAGE_ID,
   publicAccessToken: "pat_fixture_token",
   pendingWaitpoint: null,
+};
+
+export const WAITPOINT_ID = "wp_fixture_1";
+
+/**
+ * A plan the agent proposed. Credit figures are the registry's own estimates, microcredits as
+ * strings, exactly as the route serves them.
+ */
+export const planApprovalPayload: PlanApprovalPayload = {
+  title: "Poster in three steps",
+  overview: "Generate the artwork, crop it to a 4:5 poster, then refine the palette.",
+  steps: [
+    {
+      key: "generate",
+      title: "Generate the base image",
+      description: "A mountain at sunrise, painterly, high detail.",
+      tool: "gpt_image_2",
+      subModelId: "gpt-image-2-text",
+      estimatedCredits: "420000",
+    },
+    {
+      key: "crop",
+      title: "Crop to poster ratio",
+      description: "Trim to a 4:5 vertical frame.",
+      tool: "crop_image",
+      subModelId: null,
+      estimatedCredits: "11000",
+    },
+  ],
+  estimatedTotal: "431000",
+};
+
+/** One question of each type, so a test can exercise the whole panel from one fixture. */
+export const questionsPayload: QuestionsPayload = {
+  message: "A few details before I spend credits:",
+  questions: [
+    { id: "style", type: "text", prompt: "Any style preferences?", required: true },
+    {
+      id: "refs",
+      type: "image",
+      prompt: "Reference images, if you have them",
+      required: false,
+      maxImages: 3,
+    },
+    {
+      id: "ratio",
+      type: "select",
+      prompt: "Which aspect ratio?",
+      required: true,
+      allowOther: true,
+      options: [
+        { value: "4:5", label: "4:5 portrait", recommended: true },
+        { value: "16:9", label: "16:9 landscape", recommended: false },
+      ],
+    },
+  ],
+};
+
+/** A run parked on a plan-approval waitpoint, which reports `status: "waiting"`. */
+export const waitingOnPlan: ActiveRun = {
+  ...activeRun,
+  status: "waiting",
+  pendingWaitpoint: { id: WAITPOINT_ID, kind: "plan_approval", payload: planApprovalPayload },
+};
+
+/** A run parked on a questions waitpoint. */
+export const waitingOnQuestions: ActiveRun = {
+  ...activeRun,
+  status: "waiting",
+  pendingWaitpoint: { id: WAITPOINT_ID, kind: "questions", payload: questionsPayload },
 };
 
 /** A healthy path. `limitedModel` is null until a limit is recorded; it never names a serving model. */

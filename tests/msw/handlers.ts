@@ -44,7 +44,29 @@ export const handlers = [
   http.post(`${API}/runs/:runId/cancel`, () => ok({ ok: true })),
 
   http.post(`${API}/messages/:messageId/retry`, () => ok(fixtures.retryResult)),
+
+  http.post(`${API}/waitpoints/:waitpointId/resolve`, () => ok({ ok: true })),
+
+  http.patch(`${API}/chats/:chatId`, () => ok({ chat: fixtures.chat })),
+
+  http.delete(`${API}/chats/:chatId`, () => ok({ ok: true })),
+
+  http.patch(`${API}/messages/:messageId/feedback`, () => ok({ ok: true })),
 ];
+
+/** A run parked on a waitpoint, one handler per kind. */
+export const waitingOnPlan = http.get(`${API}/chats/:chatId/active-run`, () =>
+  ok(fixtures.waitingOnPlan),
+);
+
+export const waitingOnQuestions = http.get(`${API}/chats/:chatId/active-run`, () =>
+  ok(fixtures.waitingOnQuestions),
+);
+
+/** The waitpoint timed out server-side; the overlay must clear and say how to continue. */
+export const waitpointExpired = http.post(`${API}/waitpoints/:waitpointId/resolve`, () =>
+  fail(410, "WAITPOINT_EXPIRED", "This request has expired. Send a message to continue."),
+);
 
 /** An idle chat: no run to recover, which is what a reload after completion looks like. */
 export const noActiveRun = http.get(`${API}/chats/:chatId/active-run`, () => ok(null));
