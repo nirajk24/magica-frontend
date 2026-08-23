@@ -1,8 +1,8 @@
 "use client";
 
 import { BarChart3, CreditCard } from "lucide-react";
-import { DisabledAction } from "@/components/DisabledAction";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import Link from "next/link";
+import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CREDIT_DIGITS, formatCredits } from "@/lib/format";
 import { useCredits } from "@/queries/use-credits";
 import { useUI } from "@/stores/ui";
@@ -11,9 +11,9 @@ import { useUI } from "@/stores/ui";
  * The credits popover, anchored under the top bar's chip. Same anatomy as the reference's —
  * plan label, balance row, the solid Add Credits button, the green renewal line — minus payment
  * (D-3): no upgrade plan, no billing details, and the plan label reads what our account actually is.
- * `View usage` stays visible and disabled: the usage dashboard needs a per-tool aggregation the
- * backend does not serve yet. The plan block sits on an inset rounded panel inside the popover —
- * the reference's two-level card, same trick as the palette and the preview column.
+ * `View usage` opens the usage dashboard at `/usage`. The plan block sits on an inset rounded panel
+ * inside the popover — the reference's two-level card, same trick as the palette and the preview
+ * column.
  */
 export function CreditsPopover() {
   const { data } = useCredits();
@@ -53,13 +53,15 @@ export function CreditsPopover() {
         </div>
 
         <div className="flex px-1 pt-2.5 pb-0.5">
-          <DisabledAction
-            icon={BarChart3}
-            label="View usage"
-            reason="The usage dashboard isn't part of this build yet."
-            className="flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-sm"
-            showLabel
-          />
+          <PopoverClose asChild>
+            <Link
+              href="/usage"
+              className="flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+            >
+              <BarChart3 className="size-4" aria-hidden />
+              View usage
+            </Link>
+          </PopoverClose>
         </div>
       </PopoverContent>
     </Popover>

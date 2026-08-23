@@ -26,14 +26,16 @@ describe("the credits popover", () => {
     expect(screen.getByRole("button", { name: /Add Credits/ })).toBeInTheDocument();
   });
 
-  it("keeps the usage entry visible but honest about why it is disabled", async () => {
+  it("links View usage to the usage dashboard", async () => {
     const user = userEvent.setup();
     renderWithProviders(<TopBar />);
 
     await user.click(await screen.findByRole("button", { name: "Available credits" }));
-    await user.hover(await screen.findByRole("button", { name: "View usage" }));
 
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/isn't part of this build/i);
+    expect(await screen.findByRole("link", { name: "View usage" })).toHaveAttribute(
+      "href",
+      "/usage",
+    );
   });
 });
 

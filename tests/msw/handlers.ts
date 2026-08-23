@@ -41,7 +41,21 @@ export const handlers = [
 
   http.post(`${API}/credits/top-up`, () => ok({ balance: fixtures.toppedUpBalance })),
 
-  http.get(`${API}/credits/usage`, () => ok(fixtures.usagePage)),
+  http.get(`${API}/credits/usage`, ({ request }) => {
+    const url = new URL(request.url);
+    const page = url.searchParams.get("from") ? fixtures.usagePreviousPage : fixtures.usagePage;
+    const category = url.searchParams.get("category");
+    if (!category) return ok(page);
+
+    return ok({
+      ...page,
+      categories: page.categories.map((entry) =>
+        entry.key === category
+          ? { ...entry, records: fixtures.usageRecords[category] ?? [], truncated: false }
+          : entry,
+      ),
+    });
+  }),
 
   http.get(`${API}/llm/status`, () => ok(fixtures.llmStatus)),
 

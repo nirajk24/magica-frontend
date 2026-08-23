@@ -60,6 +60,7 @@ Two of these overturn assumptions worth calling out explicitly:
 | `/chat` | New chat. Composer only in Phase 1; full empty state in Phase 3 | **public** | **1** | `app.magica.com/chat` |
 | `/chat/[chatId]` | **The chat screen** | required | **1** | `app.magica.com/chat/{id}` |
 | `/chat/recent` | Tasks page (chat list) | required | 3 | `app.magica.com/chat/recent` |
+| `/usage` | AI Credits Overview (§7.2). `?show=credited` selects the credited side, as the reference's own URL does | required | built | `magica.com/usage` |
 | `/sign-in/[[...rest]]` | Clerk catch-all | public | 0 | Clerk-hosted equivalent |
 | `/projects` `/library` `/tools` `/api-mcp` `/unfair-advantage` | Placeholder pages | required | 7 | same paths |
 
@@ -837,6 +838,58 @@ leaving the input.
 
 ---
 
+## 7.2 Screen — AI Credits Overview · `/usage` · BUILT
+
+**Not in the 77 captures.** Source is the six `screenshots/usage-*.png` full-window captures
+(2560px, both themes, both tabs, the period menu) plus the `magica.com2.har` log of the live page's
+own requests. Reached from the credits popover's `View usage` — the sidebar has no row for it.
+
+```
+  AI Credits Overview
+  Track your AI usage and optimize credit spend
+
+  [($) TOTAL DEBITED ] [ (▤) RECORDS ] [ (⊟) CATEGORIES ] [ (▦) PERIOD           ]
+  [ 24.97M credits   ] [  44         ] [  4             ] [ Aug 21 - Sep 20, 2026]
+
+  [ Show  (Debited Credits ⌄)   Period  (Current Period ⌄)      Aug 21 - Sep 20 ]
+
+  (        Overview        |        Detailed View        )   ← 50/50 segmented pill
+
+  ┌ Tool Name ⇅        ⇅ Total Debited   ⇅ Records   Latest Usage ⌄      Action ┐
+  │ AI Agent Chat               4.94M          36    8/23/2026, 3:49:21 AM  (👁 View details) │
+  └────────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Four stat cards**: icon in a bordered square tile (~48px), uppercase 12px muted label, bold
+  ~20px value. Card and container radii `rounded-2xl` — **estimated**; the capture scale is
+  ambiguous, nothing on this screen is zoom-measured the way §2's geometry is.
+- **The filter bar and every table sit in border-only containers** — no fill in either theme, per
+  the standing rule for boxes on the canvas.
+- **The tabs are the two-level pattern lying flat** (UI-22): a full-width `rounded-full`
+  `--panel-inset` track with the active half raised back to `--panel`. In dark the track equals the
+  canvas, so only the raised half shows — which matches the dark capture.
+- **Overview table**: one row per category. Sort glyphs sit after `Tool Name` and `Latest Usage`,
+  before the two numeric headers — replicated as captured. Default order is latest activity first.
+  Amounts and counts are `font-semibold`, right-aligned.
+- **The amount column shows a category's total movement** (debited + credited): the capture puts
+  the 30.00M *credit* adjustment in the "Total Debited" view, so the column is the category's
+  total, not one side's. See the D-13 note for what `Show` actually switches.
+- **Detailed View**: a `Detailed records` header band with the category picker
+  (`AI Agent Chat - 4.94M ⌄`), then a records card — ~24px semibold title
+  `{label} usage records`, muted `{n} records in the selected period`, a `Debited`/`Credited`
+  chip on the category's own side, and a `Credits Used | Timestamp | Details` table.
+- **Credit amounts here are fixed-decimal, not significant-digit**: two decimals, widening to four
+  below 0.01 credits (`4.94M`, `0.0059M`, `0.0000M`). This is `formatUsageCredits`, deliberately
+  separate from `formatCredits` — the captured strings disagree with the sig-digit rule
+  (`0.08M`, never `0.080M`). Timestamps are numeric with seconds: `8/23/2026, 3:49:21 AM`.
+- **The server owns the window.** The default query names no bounds; `Previous Period` is the
+  fetched window shifted back by its own length, derived from the response — the HAR shows the
+  reference computing windows client-side in local time, which is a per-client clock we
+  deliberately do not copy.
+- **`Show` lives in the URL** (`?show=credited`), observed in the HAR's RSC requests.
+
+---
+
 ## 8. Overlays
 
 | Overlay | Kind | Anchor / geometry | Phase | Capture |
@@ -847,7 +900,7 @@ leaving the input.
 | Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
 | Image preview | **BUILT** — centred wide modal 920px, two columns. A view over the transcript: files are the cached messages' assets + ready attachments (`lib/task-files.ts`), no route involved. Dimensions are measured off the loaded image; a generated file's prompt/model are joined from the invocation its `toolCallId` names. Favorite/rename/delete render disabled — they need asset routes that do not exist (UI-7). Copy Link and Download work | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
 | Image preview of a **generated** asset | **BUILT** — same modal, two extra rows | a scrollable `Prompt` block with its own `Copy` button at the top, and a `Model` row (`gpt-image-2-text`). `Source` reads `Generated in chat` rather than `Uploaded`. So the panel is source-aware: the captured file was an upload, which is why it shows neither | 6 | observed live, no capture in the library |
-| Credits popover | **BUILT** — anchored under the credits chip, right-aligned | reference: `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details`. Ours (D-3): `FREE TIER` label, no upgrade/billing; `View usage` visible but disabled — the usage dashboard needs a per-tool aggregation the backend does not serve | built | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` + live shots both themes |
+| Credits popover | **BUILT** — anchored under the credits chip, right-aligned | reference: `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details`. Ours (D-3): `FREE TIER` label, no upgrade/billing; `View usage` opens `/usage` (§7.2) | built | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` + live shots both themes |
 | Add credits | **BUILT** — centred modal 440px | reference: title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits`. Ours (D-3): same layout with the dollars removed — presets `20M/50M/100M/200M`, no auto-recharge, "credits are free in this build" note, `Add Credits` submit. Amount travels as microcredits (`M × 1_000_000`); the response's balance is written into the cache so the chip updates the moment the modal closes | built | `07-modals/add-credits__amounts-autorecharge__light.jpg` + live shots both themes |
 | Attach popover | above the paperclip | `Select Asset` / `+ Upload` | 6 | `02-composer/attach-popover__select-asset-upload__light.jpg` |
 | Settings / Upgrade / Clerk | reference-only | — | — | `07-modals/{settings__account__dark,upgrade__*,clerk__*}` |
@@ -908,6 +961,7 @@ Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-
 | `ToolDetailPanel` | `components/panels/ToolDetailPanel.tsx` | `04-tool-cards/detail-*` | 5 |
 | `SearchPalette` | `components/shell/SearchPalette.tsx` | none — observed live, §7.1 | built |
 | `FilesModal` `MediaLibrary` `ImagePreview` `AddCredits` | `components/modals/` | `07-modals/*` | 6 |
+| `UsagePage` `UsageOverviewTable` `UsageDetailedView` | `components/usage/` | `screenshots/usage-*` — §7.2 | built |
 
 ---
 
@@ -1126,6 +1180,8 @@ off or could be better, just flag it."
 | D-10 | **No `Use as reference` button on a generated asset** — only `Download` | Feeding an output back as the next turn's input needs the attachment pipeline, which is Phase 6 at the earliest. One button that works beats two where one lies |
 | D-11 | **Generated assets render at 340px, not the measured ≈425px** | A fifth narrower keeps a turn's answer and its image on screen together. Preferred on review against the running product |
 | D-12 | **The dark canvas is `#0f0f0f`, not the sampled `#121212`** | Every lossless dark capture puts the reference at `#121212`; the darker ground was preferred on review. `--bg` and `--bg-subtle` move together, because the reference's dark sidebar is identical to its canvas and darkening one alone would introduce a seam the reference never shows. `--surface` is unchanged, so raised elements read slightly more raised |
+| D-13 | **The usage page ships Current and Previous period only; `Custom Period` renders disabled** (UI-7). The `Show` menu's credited state is our own reading: it flips the first stat card, the amount column's header and the sort side — no capture shows it | A custom range needs a date-range picker no capture shows opened; guessing a whole control invents UI. The credited view exists (`?show=credited` is in the HAR) but was never captured, so the smallest defensible rendering ships |
+| D-14 | **A usage record's own `View details` renders disabled with the reason** | In the live product it opens per-step costs (`steps[]` in the HAR); our `UsagePage` contract carries no step breakdown, and a disabled control with the reason beats one wired to nothing (UI-7) |
 
 ---
 
@@ -1144,6 +1200,7 @@ comparing screens sees a blank flash where the reference shows a skeleton.
 | Template gallery | grey card blocks in the masonry grid | `01-shell/empty-state__light.png` (populated) + `ui-flows.md` |
 | Media library | `Loading file count...` subtitle + skeleton tile grid | `07-modals/media-library__loading-skeletons__light.jpg` |
 | Files modal | centred spinner | `07-modals/files__loading-spinner__light.jpg` |
+| Usage page | pulse bars in the stat cards and table rows; the error state is inline with `Try again` | no capture — same vocabulary as the Tasks page skeletons |
 
 ---
 
@@ -1163,6 +1220,7 @@ recovery".
 | Sidebar toggle | `⌘B`, advertised in the toggle's tooltip | works from anywhere; the rail's logo slot is the toggle on hover |
 | Search palette | `⌘K` opens · `↑↓` navigate · `Enter` open · `Esc` close · `⌘⇧O` new task | §7.1. `combobox` + `aria-activedescendant` over a `listbox`; focus stays in the field |
 | Modals | focus trap, `Esc` closes, focus returns to the opener | Radix `dialog` (UI-1) |
+| Usage page | real `table` semantics; sortable headers are buttons carrying `aria-sort`; the view switch is `tablist`/`tab`/`tabpanel` | §7.2 |
 | Streaming text | `aria-live="polite"` region so a screen reader follows the answer | |
 | Tool cards / step groups | native `button` toggles with `aria-expanded` | |
 | Status glyphs | never colour alone — glyph + text label | ✓/⟳/⊗ carry `aria-label` |

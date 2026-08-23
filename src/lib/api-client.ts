@@ -12,6 +12,7 @@ import {
   SendMessage,
   SendMessageResult,
   TopUpResult,
+  UsagePage,
   type Feedback,
   type TopUp,
   type ResolveWaitpoint,
@@ -91,6 +92,13 @@ export type ChatsQueryInput = {
   filter?: "all" | "pinned";
 };
 
+/** The usage aggregation's window and drill-down. Omitted bounds mean the server's current period. */
+export type UsageQueryInput = {
+  from?: string;
+  to?: string;
+  category?: string;
+};
+
 function queryString(params: Record<string, string | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -110,6 +118,9 @@ export function createApi(getToken: TokenSource) {
       request(`/chats${queryString({ cursor, search, filter })}`, {}, ChatsPage, getToken),
 
     getCredits: () => request("/credits", {}, CreditsPage, getToken),
+
+    getUsage: ({ from, to, category }: UsageQueryInput = {}) =>
+      request(`/credits/usage${queryString({ from, to, category })}`, {}, UsagePage, getToken),
 
     topUp: (body: TopUp) =>
       request("/credits/top-up", { method: "POST", body: JSON.stringify(body) }, TopUpResult, getToken),

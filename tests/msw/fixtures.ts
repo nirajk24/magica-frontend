@@ -17,6 +17,7 @@ import type {
   RunMetadata,
   SendMessageResult,
   ToolInvocationDTO,
+  UsageCategory,
 } from "@/contracts";
 
 /**
@@ -369,6 +370,80 @@ export const usagePage: UsagePage = {
       latestAt: "2026-08-21T14:12:35.000Z",
     },
   ],
+};
+
+/** The drill-down's bounded record lists, keyed the way `?category` names them. */
+export const usageRecords: Record<string, NonNullable<UsageCategory["records"]>> = {
+  agent_chat: [
+    {
+      id: "01999f00-0000-7000-8000-000000000500",
+      chatId: CHAT_ID,
+      runId: RUN_ID,
+      amount: "420000",
+      estimated: null,
+      adjustment: null,
+      at: "2026-08-23T03:49:21.000Z",
+    },
+    {
+      id: "01999f00-0000-7000-8000-000000000501",
+      chatId: CHAT_ID,
+      runId: null,
+      amount: "80000",
+      estimated: "100000",
+      adjustment: "-20000",
+      at: "2026-08-23T03:37:20.000Z",
+    },
+    {
+      id: "01999f00-0000-7000-8000-000000000502",
+      chatId: null,
+      runId: null,
+      amount: "40000",
+      estimated: null,
+      adjustment: null,
+      at: "2026-08-22T22:48:57.000Z",
+    },
+  ],
+  gpt_image_2: [
+    {
+      id: "01999f00-0000-7000-8000-000000000510",
+      chatId: CHAT_ID,
+      runId: RUN_ID,
+      amount: "10000",
+      estimated: null,
+      adjustment: null,
+      at: "2026-08-23T03:44:25.000Z",
+    },
+    {
+      id: "01999f00-0000-7000-8000-000000000511",
+      chatId: CHAT_ID,
+      runId: null,
+      amount: "5900",
+      estimated: null,
+      adjustment: null,
+      at: "2026-08-23T01:08:20.000Z",
+    },
+  ],
+  credit_adjustment: [
+    {
+      id: "01999f00-0000-7000-8000-000000000520",
+      chatId: null,
+      runId: null,
+      amount: "30000000",
+      estimated: null,
+      adjustment: null,
+      at: "2026-08-21T14:12:35.000Z",
+    },
+  ],
+};
+
+/** The window before the current one: nothing happened, which is what a fresh account's shows. */
+export const usagePreviousPage: UsagePage = {
+  from: "2026-07-22T00:00:00.000Z",
+  to: "2026-08-21T00:00:00.000Z",
+  totalDebited: "0",
+  totalCredited: "0",
+  records: 0,
+  categories: [],
 };
 
 export const creditsPage: CreditsPage = {

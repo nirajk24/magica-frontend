@@ -53,6 +53,48 @@ export function formatCredits(
   return `${negative ? "-" : ""}${whole}${fractionPart}M`;
 }
 
+const USAGE_DETAIL_THRESHOLD = 10_000n;
+
+/**
+ * Renders a microcredit amount the way the usage dashboard does: two fixed decimals, widening to
+ * four below 0.01 credits so a cheap tool call still reads as a cost — `4.94M`, `0.08M`, `0.0059M`.
+ *
+ * This is deliberately not `formatCredits`: the rest of the product rounds to significant digits,
+ * the usage tables to fixed decimals, and the two disagree on values like `0.08M` vs `0.080M`.
+ */
+export function formatUsageCredits(microcredits: string): string {
+  const raw = BigInt(microcredits);
+  const negative = raw < 0n;
+  const magnitude = negative ? -raw : raw;
+
+  const decimals = magnitude < USAGE_DETAIL_THRESHOLD ? 4 : 2;
+  const scale = 10n ** BigInt(decimals);
+  const scaled = (magnitude * scale + MICRO_PER_CREDIT / 2n) / MICRO_PER_CREDIT;
+  const fraction = (scaled % scale).toString().padStart(decimals, "0");
+
+  return `${negative ? "-" : ""}${scaled / scale}.${fraction}M`;
+}
+
+/** A usage record's timestamp: `8/23/2026, 3:49:21 AM`, seconds included. */
+export function formatUsageTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+/** The usage window as the dashboard writes it: `Aug 21, 2026 - Sep 20, 2026`. */
+export function formatUsagePeriod(fromIso: string, toIso: string): string {
+  const day = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  return `${day(fromIso)} - ${day(toIso)}`;
+}
+
 /** Milliseconds under a second, one decimal second under a minute, `Nm Ns` above. */
 export function formatDuration(ms: number): string {
   if (ms < 1_000) return `${Math.round(ms)}ms`;

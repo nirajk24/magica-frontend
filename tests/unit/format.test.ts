@@ -5,6 +5,9 @@ import {
   formatDuration,
   formatMessageTime,
   formatRelativeTime,
+  formatUsageCredits,
+  formatUsagePeriod,
+  formatUsageTimestamp,
 } from "@/lib/format";
 
 describe("formatCredits", () => {
@@ -49,6 +52,41 @@ describe("formatCredits", () => {
 
   it("renders a refund with its sign", () => {
     expect(formatCredits("-5880")).toBe("-0.0059M");
+  });
+});
+
+describe("formatUsageCredits", () => {
+  it.each([
+    ["4940000", "4.94M"],
+    ["80000", "0.08M"],
+    ["30000000", "30.00M"],
+    ["420000", "0.42M"],
+    ["40000", "0.04M"],
+    ["10000", "0.01M"],
+  ])("renders %s microcredits as %s, matching the captured table strings", (input, expected) => {
+    expect(formatUsageCredits(input)).toBe(expected);
+  });
+
+  it("widens to four decimals below 0.01 credits, so a cheap call still reads as a cost", () => {
+    expect(formatUsageCredits("5000")).toBe("0.0050M");
+    expect(formatUsageCredits("5900")).toBe("0.0059M");
+    expect(formatUsageCredits("0")).toBe("0.0000M");
+  });
+});
+
+describe("formatUsagePeriod", () => {
+  it("writes the window the way the dashboard's cards do", () => {
+    expect(formatUsagePeriod("2026-08-21T12:00:00.000Z", "2026-09-20T12:00:00.000Z")).toBe(
+      "Aug 21, 2026 - Sep 20, 2026",
+    );
+  });
+});
+
+describe("formatUsageTimestamp", () => {
+  it("renders a numeric date with seconds", () => {
+    expect(formatUsageTimestamp("2026-08-23T03:49:21.000Z")).toMatch(
+      /^\d{1,2}\/\d{1,2}\/2026, \d{1,2}:\d{2}:\d{2} (AM|PM)$/,
+    );
   });
 });
 

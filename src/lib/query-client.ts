@@ -12,6 +12,8 @@ export const qk = {
   chat: (id: string) => ["chat", id] as const,
   activeRun: (chatId: string) => ["active-run", chatId] as const,
   credits: () => ["credits"] as const,
+  usage: (params: { from?: string; to?: string; category?: string } = {}) =>
+    ["usage", params.from ?? null, params.to ?? null, params.category ?? null] as const,
   llmStatus: () => ["llm-status"] as const,
 };
 
