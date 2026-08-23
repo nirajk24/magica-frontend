@@ -13,6 +13,9 @@ const TOKEN_REFRESH_MS = 12 * 60 * 1000;
 const POLL_INTERVAL_MS = 5_000;
 const MAX_RETRIES = 3;
 
+/** Tick on which a non-terminal run is asked whether it advanced; two quiet ones mean silence. */
+const LIVENESS_TICK_MS = 10_000;
+
 export type RunConnection = "live" | "reconnecting" | "polling";
 
 /**
@@ -31,6 +34,10 @@ export type RunConnection = "live" | "reconnecting" | "polling";
  * A waitpoint arriving in the metadata invalidates the active-run query: the plan card and the
  * question panel render from `pendingWaitpoint` — the source that also survives a reload — so the
  * realtime signal's only job is to make that source refetch now instead of on the next visit.
+ *
+ * A fourth path covers the one the other three miss: a transport that goes quiet without erroring
+ * (§4.6 step 6). Retries and the REST fallback both key off an error, so silence would otherwise
+ * freeze the turn on screen for good.
  */
 export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
   const queryClient = useQueryClient();
@@ -119,6 +126,61 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
 
     void queryClient.invalidateQueries({ queryKey: qk.activeRun(chatId) });
   }, [waitpointId, chatId, queryClient]);
+
+  /**
+   * Everything that changes when the turn actually advances, and nothing that changes on a bare
+   * re-render. Realtime hands back fresh objects each update, so object identity cannot be the
+   * signal — invocation *states* are included because a tool finishing moves no length.
+   */
+  const progress = metadata
+    ? [
+        metadata.phase,
+        metadata.blocks.length,
+        metadata.stepsCompleted,
+        metadata.reasoningText?.length ?? 0,
+        metadata.invocations.map((invocation) => invocation.state).join(","),
+        parts.length,
+      ].join("|")
+    : `pending|${parts.length}`;
+
+  const advancedSinceTick = useRef(true);
+  const silentTicks = useRef(0);
+
+  useEffect(() => {
+    advancedSinceTick.current = true;
+  }, [progress]);
+
+  /**
+   * A tick that finds nothing advanced since the previous one treats the transport as dead: the
+   * transcript is re-read from Postgres, which is the authority, and `active-run` is re-read once to
+   * mint a fresh token. This component is keyed on that token, so the refetch tears the dead
+   * subscription down and resubscribes — replayed from chunk 0, so nothing is lost — and answers
+   * `null` if the run is already over, which unmounts the overlay and clears the composer's Stop.
+   *
+   * INVARIANT: one `active-run` refetch per silent episode, reset by any progress. Each refetch mints
+   * a token and resubscribes, so a tool that legitimately runs quiet for a minute must not churn the
+   * ten-connection cap once per tick.
+   */
+  useEffect(() => {
+    if (finished) return;
+
+    const timer = setInterval(() => {
+      if (advancedSinceTick.current) {
+        advancedSinceTick.current = false;
+        silentTicks.current = 0;
+        return;
+      }
+
+      silentTicks.current += 1;
+      void queryClient.invalidateQueries({ queryKey: qk.chat(chatId) });
+
+      if (silentTicks.current === 1) {
+        void queryClient.invalidateQueries({ queryKey: qk.activeRun(chatId) });
+      }
+    }, LIVENESS_TICK_MS);
+
+    return () => clearInterval(timer);
+  }, [finished, chatId, queryClient]);
 
   return (
     <div className="flex flex-col">
