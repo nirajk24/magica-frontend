@@ -55,6 +55,47 @@ describe("the new-chat screen", () => {
 });
 
 describe("the template gallery", () => {
+  /**
+   * The reference's own first page, in its order. The empty state is graded on fidelity, so the
+   * order is a requirement rather than an arrangement — this fails the moment the array is resorted.
+   */
+  const FIRST_PAGE = [
+    "Collectible Stamp Sheet",
+    "Swiss-Style City Poster",
+    "Animated Storybook",
+    "Giant Banner Reveal",
+    "Jello World ASMR",
+    "Street Art Illusion",
+    "Motion Clones",
+    "Awakening Giant Cinematic Scene",
+    "Neon Animation",
+    "Beauty Product Unboxing",
+    "A Day in the Life Montage",
+    "Morning Coffee Vlog",
+    "Japanese Food Commercial",
+    "Raw Documentary Realism",
+    "Ink Calligraphy Transformation",
+    "Touch-to-Anime Transformation",
+    "Recreate Viral UGC Ads",
+    "Retro Windows Desktop Fashion Montage",
+    "Rapid-Fire Expression Collage",
+    "Graffiti Comes Alive",
+    "Multi-Angle Cinematic Video",
+    "Peel-Away Screen Effect",
+    "Grumpy to Giggles",
+    "Frozen Time",
+    "Two Worlds, One Frame",
+    "Paper Cutout Outfit",
+    "Shadow Dance",
+    "2D Character Comedy",
+    "Bullet-Time Predator Strike",
+    "Lost MiniDV Home Video",
+  ];
+
+  it("opens on the reference's own first page, in its order", () => {
+    expect(TEMPLATES.slice(0, FIRST_PAGE.length).map((t) => t.title)).toEqual(FIRST_PAGE);
+  });
+
   it("shows a first page under All and reveals the rest on demand", async () => {
     const user = userEvent.setup();
     renderWithProviders(<TemplateGallery onPick={() => {}} />);

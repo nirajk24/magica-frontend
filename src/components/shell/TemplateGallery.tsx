@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/templates/gallery";
 import { cn } from "@/lib/cn";
 
 const ALL = "All";
-const INITIAL = 12;
+/** The reference serves 30 cards a tab and keeps the rest behind `See more ideas`. */
+const INITIAL = 30;
+const WIDE = "(min-width: 768px)";
 
 /**
  * The empty state's explore grid: category tabs over a masonry of prompt cards.
@@ -26,6 +28,7 @@ const INITIAL = 12;
 export function TemplateGallery({ onPick }: { onPick: (template: Template) => void }) {
   const [category, setCategory] = useState<string>(ALL);
   const [expanded, setExpanded] = useState(false);
+  const columns = useColumnCount();
 
   const shown = TEMPLATES.filter(
     (template) =>
@@ -64,9 +67,16 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
         ))}
       </div>
 
-      <div className="mt-8 columns-2 gap-4 md:columns-3 [&>*]:mb-4">
-        {visible.map((template) => (
-          <TemplateCard key={template.id} template={template} onPick={onPick} />
+      <div
+        className="mt-8 grid items-start gap-4"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
+        {deal(visible, columns).map((column, index) => (
+          <div key={index} className="flex flex-col gap-4">
+            {column.map((template) => (
+              <TemplateCard key={template.id} template={template} onPick={onPick} />
+            ))}
+          </div>
         ))}
       </div>
 
@@ -83,6 +93,47 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
       )}
     </div>
   );
+}
+
+/**
+ * Three columns wide, two narrow. The server has no viewport, so it renders the wide layout and the
+ * effect corrects it after hydration — reading the media query during render would make the server
+ * and client markup disagree.
+ */
+function useColumnCount(): number {
+  const [columns, setColumns] = useState(3);
+
+  useEffect(() => {
+    const query = window.matchMedia(WIDE);
+    const sync = () => setColumns(query.matches ? 3 : 2);
+
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
+  return columns;
+}
+
+/**
+ * Deals the cards across columns in order, each one going to whichever column is currently shortest.
+ *
+ * The reference reads left-to-right — card 1 heads the first column, card 2 the second — which a CSS
+ * multi-column layout cannot do, because it fills each column to the bottom before starting the
+ * next. Height is estimated from the tile's aspect ratio, the same information the browser uses to
+ * reserve the space, so the deal does not wait on a measurement.
+ */
+function deal(templates: readonly Template[], columns: number): Template[][] {
+  const dealt: Template[][] = Array.from({ length: columns }, () => []);
+  const heights = new Array<number>(columns).fill(0);
+
+  for (const template of templates) {
+    const shortest = heights.indexOf(Math.min(...heights));
+    dealt[shortest]!.push(template);
+    heights[shortest] = heights[shortest]! + template.height / template.width;
+  }
+
+  return dealt;
 }
 
 function TemplateCard({
@@ -117,7 +168,7 @@ function TemplateCard({
       onMouseLeave={stop}
       onFocus={play}
       onBlur={stop}
-      className="block w-full break-inside-avoid overflow-hidden rounded-card bg-surface text-left transition-opacity hover:opacity-90"
+      className="block w-full overflow-hidden rounded-card bg-surface text-left transition-opacity hover:opacity-90"
     >
       <div
         className="w-full bg-panel"

@@ -48,6 +48,8 @@ const frame = (file: string, host: string = PROD) =>
   `${host}/original-assets/image/${EXAMPLES}/thumbnails/${file}`;
 const clip = (host: string, id: string) =>
   `${host}/original-assets/video/${EXAMPLES}/previews/${id}.mp4`;
+/** A handful of cards point at a tool's own output rather than a curated capture. */
+const generated = (file: string) => `${AI}/gen/image/${EXAMPLES}/${file}`;
 
 export const TEMPLATES: readonly Template[] = [
   {
@@ -131,6 +133,18 @@ export const TEMPLATES: readonly Template[] = [
     height: 1080,
     poster: frame("video_1786626075078__Motion_Clones__thumbnail.jpg"),
     clip: clip(AI, "3bb72edc-64f3-8099-8afb-f45ed35b26db"),
+  },
+  {
+    id: "awakening-giant",
+    title: "Awakening Giant Cinematic Scene",
+    description: "Build your own multi-shot sci-fi epic",
+    prompt:
+      "Generate a 5-shot cinematic sci-fi epic using Kling 3 — a lone frozen figure standing in the palm of an ancient sleeping giant, eyes opening to reveal a single burst of colour in an otherwise monochrome world, before an entire frozen city lifts into the air. Slow deliberate camera moves, heavy fog, falling snow, hard cuts only. Ask me if I want a different story line.",
+    categories: ["Video Special Effects"],
+    width: 3840,
+    height: 2160,
+    poster: frame("video_1786521675167__Awakening_Giant_Cinematic_Scene_thumbnail.jpg"),
+    clip: clip(AI, "3ba72edc-64f3-8034-8670-f8b883e9d2c8"),
   },
   {
     id: "neon-animation",
@@ -253,6 +267,18 @@ export const TEMPLATES: readonly Template[] = [
     clip: clip(AI, "3b272edc-64f3-8030-a1fe-f2b9e7669b3e"),
   },
   {
+    id: "rapid-fire-expression-collage",
+    title: "Rapid-Fire Expression Collage",
+    description: "Turn your face into a beat-synced pop-art flipbook of expressions",
+    prompt:
+      "Create a punchy motion-graphics reel using Seedance 2.0 — floating head cutouts with clean white sticker outlines, popping against bold retro-pattern backgrounds, snapping through rapid-fire facial expressions on hard, beat-synced jump cuts every quarter-second. No morphing, no fades — just crisp, rhythmic, editorial-collage energy with a premium graphic-design finish.",
+    categories: ["Video Special Effects"],
+    width: 1080,
+    height: 1920,
+    poster: frame("video_1785830558385__Rapid-Fire_Expression_Collage__thumbnail.jpg"),
+    clip: clip(AI, "3b272edc-64f3-8012-8f9a-ce0c83daaaf3"),
+  },
+  {
     id: "graffiti-comes-alive",
     title: "Graffiti Comes Alive",
     description: "One-shot mixed-media video",
@@ -323,6 +349,17 @@ export const TEMPLATES: readonly Template[] = [
     height: 1280,
     poster: frame("video_1785222085418_Two_Worlds_One_Frame_thumbnail.jpg"),
     clip: clip(AI, "3ab72edc-64f3-80c7-9815-d8c36b4185cc"),
+  },
+  {
+    id: "paper-cutout-outfit",
+    title: "Paper Cutout Outfit",
+    description: "Transform any outfit into paper cutout art.",
+    prompt:
+      "Generate an image edit that transforms the outfit into a paper cutout art style — layered paper textures, crisp cut edges, and a handcrafted collage look — while keeping the face, pose, background, and everything else exactly identical. A reference image of the outfit is attached for the transformation.",
+    categories: ["Image & Editing"],
+    width: 1080,
+    height: 1080,
+    poster: generated("image_1786391534060__Paper_Cutout_Outfit.png"),
   },
   {
     id: "shadow-dance",
