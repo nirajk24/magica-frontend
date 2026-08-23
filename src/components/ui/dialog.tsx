@@ -33,7 +33,7 @@ function DialogContent({
       <DialogPrimitive.Overlay
         data-slot="dialog-overlay"
         className={cn(
-          "fixed inset-0 z-50 bg-fg/20 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:duration-200",
+          "page-blur-overlay fixed inset-0 z-50 bg-fg/10 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:duration-200",
           overlayClassName,
         )}
       />

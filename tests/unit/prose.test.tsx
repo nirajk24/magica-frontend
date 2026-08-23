@@ -52,7 +52,7 @@ describe("prose that repeats an asset url", () => {
       ],
     };
 
-    renderWithProviders(<MessageRow message={message} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={message} />);
 
     expect(screen.getAllByRole("img")).toHaveLength(1);
     expect(screen.getAllByRole("link")).toHaveLength(1);

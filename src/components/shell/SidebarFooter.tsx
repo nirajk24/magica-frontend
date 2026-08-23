@@ -6,8 +6,10 @@ import { useState } from "react";
 import { AccountMenu } from "@/components/shell/AccountMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DisabledAction } from "@/components/DisabledAction";
+import { cn } from "@/lib/cn";
 import { formatCredits, CREDIT_DIGITS } from "@/lib/format";
 import { useCredits } from "@/queries/use-credits";
+import { useUI } from "@/stores/ui";
 
 /**
  * The sidebar's bottom block, which is where the signed-in and anonymous shells actually differ.
@@ -32,8 +34,13 @@ export function SidebarFooter() {
         {expanded ? "Less" : "More"}
       </button>
 
-      {expanded && (
-        <>
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out",
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div inert={!expanded} className="flex flex-col gap-2 overflow-hidden">
           {isSignedIn && <CreditBlock />}
 
           {isSignedIn && (
@@ -60,8 +67,8 @@ export function SidebarFooter() {
           )}
 
           <ThemeToggle />
-        </>
-      )}
+        </div>
+      </div>
 
       {isSignedIn ? (
         <AccountMenu />
@@ -94,6 +101,21 @@ function InviteRow() {
 }
 
 /** Balances render to four significant digits, which is what the reference shows beside `29.96M`. */
+function AddCreditsButton() {
+  const setAddCreditsOpen = useUI((state) => state.setAddCreditsOpen);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setAddCreditsOpen(true)}
+      className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+    >
+      <CreditCard className="size-4" aria-hidden />
+      Add Credits
+    </button>
+  );
+}
+
 function CreditBlock() {
   const { data } = useCredits();
 
@@ -110,13 +132,7 @@ function CreditBlock() {
         Free tier — credits do not renew
       </p>
 
-      <DisabledAction
-        icon={CreditCard}
-        label="Add Credits"
-        reason="Topping up isn't wired into this build yet."
-        className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm font-medium !text-bg"
-        showLabel
-      />
+      <AddCreditsButton />
     </div>
   );
 }

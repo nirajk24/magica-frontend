@@ -1,10 +1,10 @@
 "use client";
 
 import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
-import { ChevronDown, FolderOpen, Rocket, TriangleAlert } from "lucide-react";
+import { ChevronDown, FolderOpen, TriangleAlert } from "lucide-react";
 import { ALLOWED_MODELS, type ModelId } from "@/contracts";
 import { MagicaLogo } from "@/components/MagicaMark";
-import { DisabledAction } from "@/components/DisabledAction";
+import { CreditsPopover } from "@/components/credits/CreditsPopover";
 import { cn } from "@/lib/cn";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -14,10 +14,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CREDIT_DIGITS, formatCredits } from "@/lib/format";
 import { modelHint, modelLabel, selectedModel } from "@/lib/models";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
-import { useCredits } from "@/queries/use-credits";
 import { useLlmStatus } from "@/queries/use-llm-status";
 import { useUI } from "@/stores/ui";
 
@@ -46,6 +44,7 @@ export function TopBar({
   showFiles?: boolean;
 }) {
   const { isSignedIn } = useAuth();
+  const setFilesOpen = useUI((state) => state.setFilesOpen);
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 px-4">
@@ -55,14 +54,19 @@ export function TopBar({
         {isSignedIn ? (
           <>
             {showFiles && (
-              <DisabledAction
-                icon={FolderOpen}
-                label="Files in this task"
-                reason="The files modal isn't part of this build yet."
-                className="rounded-md p-1.5"
-              />
+              <Tooltip>
+                <TooltipTrigger
+                  type="button"
+                  aria-label="Files in this task"
+                  onClick={() => setFilesOpen(true)}
+                  className="grid size-9 place-items-center rounded-full border border-border bg-panel text-fg-muted transition-colors hover:bg-surface hover:text-fg"
+                >
+                  <FolderOpen className="size-4" aria-hidden />
+                </TooltipTrigger>
+                <TooltipContent>Files in this task</TooltipContent>
+              </Tooltip>
             )}
-            <CreditsChip />
+            <CreditsPopover />
           </>
         ) : (
           <>
@@ -192,25 +196,4 @@ function servedNote(servedId: string | null, selected: string): string {
   if (servedId === selected) return `${modelLabel(selected)} answered the last turn.`;
 
   return `${modelLabel(selected)} — the last turn was answered by ${modelLabel(servedId)}.`;
-}
-
-/** Balances render to four significant digits — `29.96M`, not `30M`. */
-function CreditsChip() {
-  const { data } = useCredits();
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        type="button"
-        aria-disabled
-        aria-label="Available credits"
-        onClick={(event) => event.preventDefault()}
-        className="flex h-9 cursor-not-allowed items-center gap-1.5 rounded-full bg-surface px-3 text-sm font-medium text-fg"
-      >
-        <Rocket className="size-3.5" aria-hidden />
-        {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
-      </TooltipTrigger>
-      <TooltipContent>The credits breakdown isn&apos;t part of this build yet.</TooltipContent>
-    </Tooltip>
-  );
 }

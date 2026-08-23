@@ -105,17 +105,80 @@ describe("the tasks page", () => {
     expect(await screen.findByText("No tasks yet")).toBeInTheDocument();
   });
 
-  it("offers select mode disabled with a reason rather than wired to nothing", async () => {
+  it("selects rows and deletes them through the real route", async () => {
+    const user = userEvent.setup();
+    const deleted: string[] = [];
+    server.use(
+      http.delete(`${API}/chats/:chatId`, ({ params }) => {
+        deleted.push(String(params.chatId));
+        return HttpResponse.json({ data: { ok: true } });
+      }),
+    );
+
+    renderWithProviders(<TasksPage />);
+    await screen.findByText(fixtures.chat.title);
+
+    await user.click(screen.getByRole("button", { name: "Select tasks" }));
+    await user.click(screen.getByRole("checkbox", { name: fixtures.chat.title }));
+
+    expect(screen.getByText("1 Selected")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Delete selected tasks" }));
+
+    await waitFor(() => expect(deleted).toEqual([fixtures.chat.id]));
+  });
+
+  it("leaves select mode without touching anything on Done", async () => {
     const user = userEvent.setup();
     renderWithProviders(<TasksPage />);
+    await screen.findByText(fixtures.chat.title);
 
-    const select = screen.getByRole("button", { name: "Select tasks" });
+    await user.click(screen.getByRole("button", { name: "Select tasks" }));
+    await user.click(screen.getByRole("button", { name: "Done" }));
 
-    expect(select).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByText(/Selected/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: new RegExp(fixtures.chat.title) })).toBeInTheDocument();
+  });
 
-    await user.hover(select);
+  it("renames a task in place through the context menu", async () => {
+    const user = userEvent.setup();
+    let sent: { title?: string } | null = null;
+    server.use(
+      http.patch(`${API}/chats/:chatId`, async ({ request }) => {
+        sent = (await request.json()) as { title?: string };
+        return HttpResponse.json({ data: { chat: { ...fixtures.chat, title: "Poster brief" } } });
+      }),
+    );
 
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/isn't wired into this build/i);
+    renderWithProviders(<TasksPage />);
+    const row = await screen.findByRole("link", { name: new RegExp(fixtures.chat.title) });
+
+    await user.pointer({ keys: "[MouseRight]", target: row });
+    await user.click(await screen.findByRole("menuitem", { name: "Rename" }));
+    const input = await screen.findByRole("textbox", { name: "Task name" });
+    await user.clear(input);
+    await user.type(input, "Poster brief{Enter}");
+
+    await waitFor(() => expect(sent).toEqual({ title: "Poster brief" }));
+  });
+
+  it("pins a task through the context menu", async () => {
+    const user = userEvent.setup();
+    let sent: { isFavorite?: boolean } | null = null;
+    server.use(
+      http.patch(`${API}/chats/:chatId`, async ({ request }) => {
+        sent = (await request.json()) as { isFavorite?: boolean };
+        return HttpResponse.json({ data: { chat: { ...fixtures.chat, isFavorite: true } } });
+      }),
+    );
+
+    renderWithProviders(<TasksPage />);
+    const row = await screen.findByRole("link", { name: new RegExp(fixtures.chat.title) });
+
+    await user.pointer({ keys: "[MouseRight]", target: row });
+    await user.click(await screen.findByRole("menuitem", { name: "Pin" }));
+
+    await waitFor(() => expect(sent).toEqual({ isFavorite: true }));
   });
 
   it("starts a new task from the toolbar", () => {

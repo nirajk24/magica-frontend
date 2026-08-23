@@ -32,10 +32,13 @@ export type TranscriptItem =
  */
 export function MessageList({
   items,
+  chatId,
   runActive = false,
   onStartReached,
 }: {
   items: readonly TranscriptItem[];
+  /** The conversation on screen; rows need it to write back into the right cache. */
+  chatId: string;
   runActive?: boolean;
   onStartReached?: () => void;
 }) {
@@ -56,7 +59,7 @@ export function MessageList({
         itemContent={(_index, item) => (
           <div className={`${COLUMN} py-4`}>
             {item.kind === "message" ? (
-              <MessageRow message={item.message} runActive={runActive} />
+              <MessageRow message={item.message} chatId={chatId} runActive={runActive} />
             ) : item.kind === "pending" ? (
               <PendingTurn />
             ) : (

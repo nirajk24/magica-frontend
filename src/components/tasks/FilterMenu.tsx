@@ -36,7 +36,7 @@ export function FilterMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-sm text-fg transition-colors hover:bg-border">
+      <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-xl border border-border bg-panel px-4 text-sm text-fg transition-colors hover:bg-surface">
         <span className="text-fg-muted">Filter by</span>
         {active.label}
         <ChevronDown className="size-3.5 text-fg-subtle" aria-hidden />

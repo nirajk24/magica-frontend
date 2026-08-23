@@ -8,7 +8,7 @@ import * as fixtures from "../msw/fixtures";
 
 describe("a failed turn", () => {
   it("keeps the partial output, the tool outcome and the error together", () => {
-    renderWithProviders(<MessageRow message={fixtures.failedAssistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.failedAssistantMessage} />);
 
     expect(screen.getByText("I'll generate that for you.")).toBeInTheDocument();
     expect(
@@ -20,13 +20,13 @@ describe("a failed turn", () => {
   });
 
   it("charges nothing for the tool that failed, so no credit chip is rendered", () => {
-    renderWithProviders(<MessageRow message={fixtures.failedAssistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.failedAssistantMessage} />);
 
     expect(screen.queryByText(/^0\./)).not.toBeInTheDocument();
   });
 
   it("offers a way forward", () => {
-    renderWithProviders(<MessageRow message={fixtures.failedAssistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.failedAssistantMessage} />);
 
     expect(screen.getByRole("button", { name: /retry/i })).toHaveAttribute(
       "aria-disabled",
@@ -49,21 +49,21 @@ describe("a failed turn", () => {
 
 describe("a cancelled turn", () => {
   it("says it was interrupted, derived from status rather than from the content", () => {
-    renderWithProviders(<MessageRow message={fixtures.cancelledAssistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.cancelledAssistantMessage} />);
 
     expect(screen.getByText("Response was interrupted")).toBeInTheDocument();
     expect(screen.queryByText(/Response stopped/)).not.toBeInTheDocument();
   });
 
   it("keeps the partial answer and the turn's cost on screen", () => {
-    renderWithProviders(<MessageRow message={fixtures.cancelledAssistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.cancelledAssistantMessage} />);
 
     expect(screen.getByText("I'll generate that for you.")).toBeInTheDocument();
     expect(screen.getByText(/0\.10M credits/)).toBeInTheDocument();
   });
 
   it("is retryable, which the reference is not — the brief requires it", () => {
-    renderWithProviders(<MessageRow message={fixtures.cancelledAssistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.cancelledAssistantMessage} />);
 
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
   });
@@ -71,7 +71,7 @@ describe("a cancelled turn", () => {
 
 describe("a turn that succeeded", () => {
   it("says nothing about outcomes and offers no retry", () => {
-    renderWithProviders(<MessageRow message={fixtures.assistantMessage} />);
+    renderWithProviders(<MessageRow chatId={fixtures.CHAT_ID} message={fixtures.assistantMessage} />);
 
     expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
     expect(screen.queryByText("Response was interrupted")).not.toBeInTheDocument();

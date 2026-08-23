@@ -29,6 +29,10 @@
  * to its canvas in dark, so darkening only one would introduce a seam the reference never shows.
  * `--surface` is unchanged, so raised elements read slightly more raised than the reference.
  *
+ * The three text tones sit ~7% past their sampled values in both directions — darker in light,
+ * brighter in dark — an on-review preference (like D-12): the sampled greys read washed next to the
+ * reference on a real screen.
+ *
  * `--panel` / `--panel-inset` are a floating overlay's two levels, and they SWAP between themes.
  * An overlay that leaves the page visible cannot borrow `--bg`: in dark that is the canvas, so the
  * panel would be the same colour as what it floats over. The panel is the raised level (white in
@@ -86,8 +90,10 @@
   --color-tab-strip: var(--tab-strip);
 
   --radius-bubble: 1.25rem;
-  --radius-composer: 1rem;
-  --radius-card: 0.5rem;
+  --radius-composer: 1.25rem;
+  /* 12px, an on-review preference over the sampled 8px: the reference reads rounder on a real
+     screen, and every card shares this token so the whole product moves together. */
+  --radius-card: 0.75rem;
 }
 
 :root {
@@ -96,9 +102,9 @@
   --bg-subtle: #f9f9f9;
   --surface: #f7f7f7;
   --border: #f2f2f2;
-  --fg: #1a1a1a;
-  --fg-muted: #4e4e4e;
-  --fg-subtle: #6c6c6c;
+  --fg: #111111;
+  --fg-muted: #444444;
+  --fg-subtle: #606060;
   --accent: #4a3dd8;
   --accent-fg: #ffffff;
 
@@ -124,9 +130,9 @@
   --bg-subtle: #0f0f0f;
   --surface: #191919;
   --border: #1b1b1b;
-  --fg: #efefef;
-  --fg-muted: #8f8f8f;
-  --fg-subtle: #575757;
+  --fg: #f5f5f5;
+  --fg-muted: #9d9d9d;
+  --fg-subtle: #646464;
   --accent: #4a3dd8;
   --accent-fg: #ffffff;
 
@@ -151,15 +157,15 @@
     animation: none;
   }
 
-  .search-palette-overlay {
+  .page-blur-overlay {
     animation: none;
   }
 }
 
 /*
- * The search palette blurs the page instead of tinting it, and the blur ramps in with the panel —
- * a backdrop-filter cannot be faded via the element's own opacity, so it is keyframed directly.
- * The 6px radius is a judgement call: a blur leaves no edge to measure off a capture.
+ * Every dialog blurs the page behind it, the way the reference does, and the blur ramps in with the
+ * panel — a backdrop-filter cannot be faded via the element's own opacity, so it is keyframed
+ * directly. The 6px radius is a judgement call: a blur leaves no edge to measure off a capture.
  */
 @keyframes page-blur-in {
   from {
@@ -170,18 +176,20 @@
   }
 }
 
-.search-palette-overlay {
+.page-blur-overlay {
   backdrop-filter: blur(6px);
   animation: page-blur-in 200ms ease-out both;
 }
 
-.search-palette-overlay[data-state="closed"] {
+.page-blur-overlay[data-state="closed"] {
   animation: page-blur-in 150ms ease-in reverse both;
 }
 
 body {
   background-color: var(--bg);
   color: var(--fg);
+  /* The reference's type sits a step heavier than the system default; 450 on a variable font. */
+  font-weight: 450;
 }
 
 /*

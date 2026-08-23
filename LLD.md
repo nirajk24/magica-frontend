@@ -421,7 +421,7 @@ blank flash where the reference shows a skeleton.
 
 ---
 
-### Phase 4 — Plan approval · ~4h · matches backend Phase 4
+### Phase 4 — Plan approval · BUILT · matches backend Phase 4
 
 `PlanCard` with every captured microstate — `Plan submitted ⟳` → actionable (`Request Changes` ·
 `Step by Step` · `Run All`, with the `Enter run all` hint) → `Changes requested` (orange ⟲ +

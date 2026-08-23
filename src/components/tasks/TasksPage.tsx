@@ -1,14 +1,15 @@
 "use client";
 
-import { CirclePlus, ListChecks, Search } from "lucide-react";
+import { CirclePlus, FolderInput, ListChecks, Search, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DisabledAction } from "@/components/DisabledAction";
+import { Spinner } from "@/components/Spinner";
 import { FilterMenu } from "@/components/tasks/FilterMenu";
+import { TaskRow } from "@/components/tasks/TaskRow";
 import { cn } from "@/lib/cn";
-import { formatRelativeTime } from "@/lib/format";
-import { useHydrated } from "@/lib/use-hydrated";
 import { useChatList, type ChatsFilter } from "@/queries/use-chats";
+import { useDeleteChats } from "@/queries/use-chat-mutations";
 
 const SKELETON_ROWS = 8;
 
@@ -22,7 +23,28 @@ const SKELETON_ROWS = 8;
 export function TasksPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ChatsFilter>("all");
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const { query, chats } = useChatList({ search, filter });
+  const remove = useDeleteChats();
+
+  const toggleSelect = (chatId: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(chatId)) next.delete(chatId);
+      else next.add(chatId);
+      return next;
+    });
+
+  const exitSelectMode = () => {
+    setSelecting(false);
+    setSelected(new Set());
+  };
+
+  const deleteSelected = () => {
+    if (selected.size === 0) return;
+    remove.mutate([...selected], { onSuccess: exitSelectMode });
+  };
 
   return (
     <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-8 py-6">
@@ -32,13 +54,14 @@ export function TasksPage() {
         <div className="flex items-center gap-2">
           <FilterMenu value={filter} onChange={setFilter} />
 
-          <DisabledAction
-            icon={ListChecks}
-            label="Select tasks"
-            reason="Deleting and moving tasks isn't wired into this build yet."
-            className="flex h-10 items-center gap-2 rounded-full bg-surface px-4 text-sm"
-            showLabel
-          />
+          <button
+            type="button"
+            onClick={() => (selecting ? exitSelectMode() : setSelecting(true))}
+            className="flex h-10 items-center gap-2 rounded-xl border border-border bg-panel px-4 text-sm text-fg transition-colors hover:bg-surface"
+          >
+            {!selecting && <ListChecks className="size-4" aria-hidden />}
+            {selecting ? "Done" : "Select tasks"}
+          </button>
 
           <Link
             href="/chat"
@@ -50,7 +73,7 @@ export function TasksPage() {
         </div>
       </div>
 
-      <label className="flex h-11 items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5">
+      <label className="flex h-11 items-center gap-2.5 rounded-2xl border border-border-strong/60 bg-bg px-3.5">
         <Search className="size-4 shrink-0 text-fg-subtle" aria-hidden />
         <input
           type="search"
@@ -62,6 +85,66 @@ export function TasksPage() {
         />
       </label>
 
+      {selecting && (
+        <div className="flex items-center justify-between gap-4 px-3">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={selected.size > 0 && selected.size === chats.length}
+            aria-label="Select all"
+            onClick={() =>
+              setSelected(
+                selected.size === chats.length ? new Set() : new Set(chats.map((chat) => chat.id)),
+              )
+            }
+            className="flex items-center gap-4 text-sm text-fg-muted transition-colors hover:text-fg"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "grid size-4 place-items-center rounded border text-[10px]",
+                selected.size > 0 && selected.size === chats.length
+                  ? "border-accent bg-accent text-accent-fg"
+                  : "border-border-strong",
+              )}
+            >
+              {selected.size > 0 && selected.size === chats.length && "✓"}
+            </span>
+            {selected.size} Selected
+          </button>
+
+          <div className="flex items-center gap-1 text-fg-muted">
+            <DisabledAction
+              icon={FolderInput}
+              label="Add to project"
+              reason="Projects aren't part of this build."
+              className="rounded-md p-2"
+            />
+            <button
+              type="button"
+              aria-label="Delete selected tasks"
+              disabled={selected.size === 0 || remove.isPending}
+              onClick={deleteSelected}
+              className="rounded-md p-2 transition-colors hover:text-danger disabled:opacity-50"
+            >
+              {remove.isPending ? (
+                <Spinner className="size-4" />
+              ) : (
+                <Trash2 className="size-4" aria-hidden />
+              )}
+            </button>
+            <button
+              type="button"
+              aria-label="Exit select mode"
+              onClick={exitSelectMode}
+              className="rounded-md p-2 transition-colors hover:text-fg"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {query.isPending ? (
           <SkeletonRows />
@@ -71,13 +154,12 @@ export function TasksPage() {
           <ul>
             {chats.map((chat) => (
               <li key={chat.id}>
-                <Link
-                  href={`/chat/${chat.id}`}
-                  className="flex items-center justify-between gap-4 rounded-md px-3 py-3 transition-colors hover:bg-surface"
-                >
-                  <span className="min-w-0 truncate text-[15px] text-fg">{chat.title}</span>
-                  <RelativeDate iso={chat.updatedAt} />
-                </Link>
+                <TaskRow
+                  chat={chat}
+                  selecting={selecting}
+                  selected={selected.has(chat.id)}
+                  onToggleSelect={toggleSelect}
+                />
               </li>
             ))}
           </ul>
@@ -95,17 +177,6 @@ export function TasksPage() {
         )}
       </div>
     </div>
-  );
-}
-
-/** Relative dates depend on the viewer's clock, so they paint after hydration (same rule as UI-12). */
-function RelativeDate({ iso }: { iso: string }) {
-  const hydrated = useHydrated();
-
-  return (
-    <span className="shrink-0 text-sm text-fg-subtle">
-      {hydrated ? formatRelativeTime(iso) : null}
-    </span>
   );
 }
 

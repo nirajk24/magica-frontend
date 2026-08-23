@@ -27,6 +27,10 @@ export type RunConnection = "live" | "reconnecting" | "polling";
  * Three failure paths the brief requires, all here: the token is refreshed before its fifteen minutes
  * are up, realtime errors are retried a bounded number of times, and after that the screen falls back
  * to REST polling so a broken transport degrades instead of freezing.
+ *
+ * A waitpoint arriving in the metadata invalidates the active-run query: the plan card and the
+ * question panel render from `pendingWaitpoint` — the source that also survives a reload — so the
+ * realtime signal's only job is to make that source refetch now instead of on the next visit.
  */
 export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
   const queryClient = useQueryClient();
@@ -99,6 +103,13 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
   }, [finished, chatId, queryClient]);
 
   const metadata = parseMetadata(realtimeRun?.metadata);
+  const waitpointId = metadata?.waitpoint?.id ?? null;
+
+  useEffect(() => {
+    if (!waitpointId) return;
+
+    void queryClient.invalidateQueries({ queryKey: qk.activeRun(chatId) });
+  }, [waitpointId, chatId, queryClient]);
 
   return (
     <div className="flex flex-col">

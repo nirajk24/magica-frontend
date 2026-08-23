@@ -3,8 +3,13 @@
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useMemo, useState } from "react";
 import type { ActiveRun, MessageDTO } from "@/contracts";
+import { PlanCard } from "@/components/blocks/PlanCard";
+import { PlanProgressCard } from "@/components/blocks/PlanProgressCard";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
+import { QuestionPanel } from "@/components/questions/QuestionPanel";
 import { MessageList, type TranscriptItem } from "@/components/chat/MessageList";
+import { FilesModal } from "@/components/files/FilesModal";
+import { ImagePreviewModal } from "@/components/files/ImagePreviewModal";
 import { ToolDetailPanel } from "@/components/panels/ToolDetailPanel";
 import { EmptyStateHeader } from "@/components/shell/EmptyStateHeader";
 import { TemplateGallery } from "@/components/shell/TemplateGallery";
@@ -13,7 +18,10 @@ import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
 import { useStopRun } from "@/queries/use-cancel-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
+import { findTaskFile } from "@/lib/task-files";
 import { findToolView } from "@/lib/timeline";
+import { parseActivePlan, parseWaitpoint } from "@/lib/waitpoints";
+import { useResolveWaitpoint } from "@/queries/use-resolve-waitpoint";
 import { useLlmStatus } from "@/queries/use-llm-status";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 import { useUI } from "@/stores/ui";
@@ -47,13 +55,17 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
   const activeRun = useActiveRun(chatId).data ?? null;
-  const { query, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
+  const { query, chat, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
   const setDraft = useUI((state) => state.setDraft);
   const openPanel = useUI((state) => state.openPanel);
   const setOpenPanel = useUI((state) => state.setOpenPanel);
   const stop = useStopRun(chatId, activeRun?.runId ?? null, activeRun === null && !query.isFetching);
+  const waitpoint = parseWaitpoint(activeRun?.pendingWaitpoint ?? null);
+  const progressPlan = parseActivePlan(chat?.activePlan ?? null);
+  const resolve = useResolveWaitpoint(chatId);
+  const [dismissedWaitpointId, setDismissedWaitpointId] = useState<string | null>(null);
   const [optimistic, setOptimistic] = useState<{ chatId: string; message: MessageDTO } | null>(
     null,
   );
@@ -80,6 +92,9 @@ export function ChatScreen({ chatId }: { chatId: string }) {
 
   const rateLimited = Boolean(useLlmStatus().data?.rateLimitedUntil);
   const panelTool = openPanel ? findToolView(messages, openPanel.invocationId) : null;
+  const previewFileKey = useUI((state) => state.previewFileKey);
+  const setPreviewFile = useUI((state) => state.setPreviewFile);
+  const previewFile = previewFileKey ? findTaskFile(messages, previewFileKey) : null;
 
   const items = useMemo<TranscriptItem[]>(() => {
     const rows: TranscriptItem[] = [...messages, ...(pending ? [pending] : [])].map((message) => ({
@@ -106,6 +121,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
           ) : (
             <MessageList
               items={items}
+              chatId={chatId}
               runActive={activeRun !== null}
               onStartReached={() => {
                 if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
@@ -119,15 +135,64 @@ export function ChatScreen({ chatId }: { chatId: string }) {
         <div className={showEmptyState ? EMPTY_STATE_COLUMN : COLUMN}>
           {showEmptyState && <EmptyStateHeader />}
 
-          <Composer
-            chatId={chatId}
-            runActive={activeRun !== null}
-            stopping={stop.stopping}
-            placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
-            pending={send.isPending}
-            onSubmit={submit}
-            onStop={stop.stop}
-          />
+          {progressPlan && (
+            <div className="mb-3">
+              <PlanProgressCard plan={progressPlan} />
+            </div>
+          )}
+
+          {waitpoint?.kind === "plan_approval" && (
+            <div className="mb-3">
+              <PlanCard
+                plan={waitpoint.plan}
+                resolving={resolve.isPending}
+                onApprove={(executionMode) =>
+                  resolve.mutate({
+                    waitpointId: waitpoint.id,
+                    body: { kind: "plan_approval", approved: true, executionMode },
+                  })
+                }
+                onRequestChanges={(feedback) =>
+                  resolve.mutate({
+                    waitpointId: waitpoint.id,
+                    body: { kind: "plan_approval", approved: false, feedback },
+                  })
+                }
+              />
+            </div>
+          )}
+
+          {waitpoint?.kind === "questions" && dismissedWaitpointId !== waitpoint.id ? (
+            <QuestionPanel
+              payload={waitpoint.questions}
+              resolving={resolve.isPending}
+              onResolve={(resolution) =>
+                resolve.mutate({ waitpointId: waitpoint.id, body: resolution })
+              }
+              onDismiss={() => setDismissedWaitpointId(waitpoint.id)}
+            />
+          ) : (
+            <>
+              {waitpoint?.kind === "questions" && (
+                <button
+                  type="button"
+                  onClick={() => setDismissedWaitpointId(null)}
+                  className="mb-2 flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+                >
+                  The agent is waiting on your answers — resume answering
+                </button>
+              )}
+              <Composer
+                chatId={chatId}
+                runActive={activeRun !== null}
+                stopping={stop.stopping}
+                placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
+                pending={send.isPending}
+                onSubmit={submit}
+                onStop={stop.stop}
+              />
+            </>
+          )}
 
           {rateLimited && !failure && (
             <p role="status" className="mt-2 px-1 text-sm text-amber">
@@ -152,6 +217,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       </div>
 
       {panelTool && <ToolDetailPanel tool={panelTool} onClose={() => setOpenPanel(null)} />}
+      {!isNew && <FilesModal messages={messages} pending={query.isPending} />}
+      {previewFile && <ImagePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />}
     </div>
   );
 }

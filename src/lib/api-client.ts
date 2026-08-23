@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   ActiveRun,
   ApiErrorEnvelope,
+  ChatResponse,
   ChatWithMessages,
   ChatsPage,
   CreditsPage,
@@ -10,6 +11,11 @@ import {
   Ok,
   SendMessage,
   SendMessageResult,
+  TopUpResult,
+  type Feedback,
+  type TopUp,
+  type ResolveWaitpoint,
+  type UpdateChat,
   type ErrorCode,
 } from "@/contracts";
 import { env } from "@/lib/env";
@@ -105,6 +111,9 @@ export function createApi(getToken: TokenSource) {
 
     getCredits: () => request("/credits", {}, CreditsPage, getToken),
 
+    topUp: (body: TopUp) =>
+      request("/credits/top-up", { method: "POST", body: JSON.stringify(body) }, TopUpResult, getToken),
+
     getLlmStatus: () => request("/llm/status", {}, LlmStatus, getToken),
 
     getChat: (chatId: string, messagesCursor?: string) =>
@@ -141,6 +150,33 @@ export function createApi(getToken: TokenSource) {
         `/messages/${encodeURIComponent(messageId)}/retry`,
         { method: "POST" },
         SendMessageResult,
+        getToken,
+      ),
+
+    resolveWaitpoint: (waitpointId: string, body: ResolveWaitpoint) =>
+      request(
+        `/waitpoints/${encodeURIComponent(waitpointId)}/resolve`,
+        { method: "POST", body: JSON.stringify(body) },
+        Ok,
+        getToken,
+      ),
+
+    updateChat: (chatId: string, body: UpdateChat) =>
+      request(
+        `/chats/${encodeURIComponent(chatId)}`,
+        { method: "PATCH", body: JSON.stringify(body) },
+        ChatResponse,
+        getToken,
+      ),
+
+    deleteChat: (chatId: string) =>
+      request(`/chats/${encodeURIComponent(chatId)}`, { method: "DELETE" }, Ok, getToken),
+
+    setFeedback: (messageId: string, body: Feedback) =>
+      request(
+        `/messages/${encodeURIComponent(messageId)}/feedback`,
+        { method: "PATCH", body: JSON.stringify(body) },
+        Ok,
         getToken,
       ),
   };

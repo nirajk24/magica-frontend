@@ -114,3 +114,11 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
 
   return "just now";
 }
+
+/** `1.3 MB` / `963 KB` — one decimal above a megabyte, none below, which is what the capture shows. */
+export function formatBytes(size: number): string {
+  if (size >= 1_048_576) return `${(size / 1_048_576).toFixed(1)} MB`;
+  if (size >= 1_024) return `${Math.round(size / 1_024)} KB`;
+
+  return `${size} B`;
+}

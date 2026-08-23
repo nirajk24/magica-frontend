@@ -1,6 +1,7 @@
 "use client";
 
 import type { AttachmentDTO } from "@/contracts";
+import { useUI } from "@/stores/ui";
 
 /**
  * Sent attachments, which the reference renders above the bubble text and considerably larger than
@@ -8,19 +9,27 @@ import type { AttachmentDTO } from "@/contracts";
  * images arrive after a reload.
  */
 export function AttachmentGallery({ attachments }: { attachments: readonly AttachmentDTO[] }) {
+  const setPreviewFile = useUI((state) => state.setPreviewFile);
+
   if (attachments.length === 0) return null;
 
   return (
     <div className="mb-2 flex flex-col gap-2">
       {attachments.map((attachment) =>
         attachment.url && attachment.type === "image" ? (
-          <img
+          <button
             key={attachment.id}
-            src={attachment.url}
-            alt={attachment.name}
-            className="w-full rounded-card bg-surface"
-            loading="lazy"
-          />
+            type="button"
+            aria-label={`Preview ${attachment.name}`}
+            onClick={() => setPreviewFile(attachment.id)}
+          >
+            <img
+              src={attachment.url}
+              alt={attachment.name}
+              className="w-full rounded-card bg-surface"
+              loading="lazy"
+            />
+          </button>
         ) : (
           <div
             key={attachment.id}

@@ -431,10 +431,11 @@ Two lines, both small and muted:
 Nothing else. No token counts — the reference reports them nowhere, and the footer is the one part of
 a turn that is always on screen.
 
-Icons in order: copy · fork/branch · like · dislike, then the time. **Like and dislike render
-disabled with a tooltip until Phase 6** — `PATCH /messages/:id/feedback` is a Phase-6 route, and a
-button wired to nothing is a bug someone will click. Fork is not in scope at all and is disabled on
-the same grounds (UI-7).
+Icons in order: copy · fork/branch · like · dislike, then the time. **Like and dislike are live**
+(`PATCH /messages/:id/feedback`): the active thumb fills, pressing it again clears the verdict
+(`type: null`), and the cache is patched optimistically with rollback — the one mutation where a
+refetch round-trip would make the control feel broken. Fork is not in scope and stays disabled
+(UI-7).
 
 ### 3.8 Composer
 
@@ -574,7 +575,15 @@ and the chat must not wait for the list.
 
 ---
 
-## 4. Screen — plan approval (inline, in the chat screen) · Phase 4
+## 4. Screen — plan approval (inline, in the chat screen) · BUILT
+
+**As built.** Only the *actionable* card lives on the client — `Plan submitted ⟳`, the orange
+`Changes requested` row and `Plan approved ✓` are rows the run itself emits, so they arrive through
+the block renderer like every other step. The card renders from `ActiveRun.pendingWaitpoint` (the
+source that survives a reload); the realtime `metadata.waitpoint` only makes that source refetch
+immediately. Resolving twice is a server-side no-op, so the buttons carry no client latch beyond a
+busy state; a 410 `WAITPOINT_EXPIRED` clears the card through the same invalidation and toasts
+"send a message to continue". Every credit figure is the server's estimate, rendered verbatim.
 
 Captures: all 14 files in `05-plan-cards/`. The plan card is a timeline row, **not an overlay** — the
 PDF calls it an "approval overlay" but the reference renders it inline, and the reference wins on
@@ -607,7 +616,7 @@ Microstates, in lifecycle order:
 `Step 1 is done — here's the image:` + a remaining-steps list + a check-in question, and **the turn
 ends**. The user sends `Next step.` and a new turn continues.
 
-**Plan progress card** (`progress-tracker__{0of3-checklist,1of3-progressbar-cost}__dark.png`):
+**Plan progress card — BUILT** (`progress-tracker__{0of3-checklist,1of3-progressbar-cost}__dark.png`):
 bold title left, `1/3` right, a thin accent progress bar beneath, then step rows — green ✓ with a
 completion note / accent spinner / empty checkbox — each with the **actual** cost right-aligned
 (`0.16M`). It persists across turns and reloads, from `metadata.activePlan` live and
@@ -618,7 +627,15 @@ The frontend renders the number it is given and never computes or estimates one.
 
 ---
 
-## 5. Screen — the Options waitpoint ("Asking questions") · Phase 6
+## 5. Screen — the Options waitpoint ("Asking questions") · BUILT
+
+**As built.** The docked panel replaces the composer: one question at a time, `n of m` pager, `✕`
+dismisses without resolving (the waitpoint stays pending and a "resume answering" pill takes the
+composer's top edge). Answers and skips accumulate client-side and submit **once** after the last
+question — one waitpoint, one resolution. Skip is never blocked, required questions included. The
+**image type is skip-only in this build**: the drop zone renders so the panel keeps the reference's
+shape, and it says uploads aren't part of this build instead of pretending. Keyboard: `Enter`
+submits, `Esc` skips, `↑↓` move a select's focus.
 
 Captures: all 7 files in `10-questions/`. This is the PDF's "Options" waitpoint (p109) and it is
 called out under "easy to add … waitpoint types" (p538).
@@ -733,6 +750,12 @@ Projects, which is out of scope — they render disabled with a tooltip (UI-7).
 check on the active row — Projects and No project render disabled here, since projects do not exist
 in this build. The title is ~30px bold.
 
+**Select mode, pin, rename and delete are live** (`PATCH`/`DELETE /chats/:id`): `Select tasks`
+becomes `Done`, a `N Selected` bar appears with master checkbox, add-to-project (disabled — no
+projects), delete and ✕; rows become checkbox targets with a filled selection. Right-click any row
+for Pin/Unpin · Rename · Delete — rename happens in place, `Enter` saves, `Esc` abandons, nothing
+optimistic. Delete is soft server-side and cancels a turn still running in that chat.
+
 **The theme trio's active option is a raised pill** — `--panel` fill with a small shadow inside a
 `--surface` track — not a tinted segment.
 
@@ -820,12 +843,12 @@ leaving the input.
 |---|---|---|---|---|
 | Tool detail | right-side panel, **538px** measured, full height, shadowed | **the content column narrows to make room for it.** Nothing is clipped — the transcript and the composer reflow into the remaining width, and both the panel's entrance and the reflow animate | 5 | `04-tool-cards/detail-side-panel__light.jpg`, plus the live product |
 | Tool detail, maximized | full-window, `Restore` tooltip on the toggle | same content, only the width changes | 5 | `04-tool-cards/detail-fullscreen__input-images__light.jpg` |
-| Files in this task | centred modal ≈470px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
+| Files in this task | **BUILT** — centred modal 480px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
 | Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
-| Image preview | centred wide modal, two columns | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
-| Image preview of a **generated** asset | same modal, two extra rows | a scrollable `Prompt` block with its own `Copy` button at the top, and a `Model` row (`gpt-image-2-text`). `Source` reads `Generated in chat` rather than `Uploaded`. So the panel is source-aware: the captured file was an upload, which is why it shows neither | 6 | observed live, no capture in the library |
-| Credits popover | anchored under the credits chip, right-aligned | `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details` | 6 | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` |
-| Add credits | centred modal ≈390px | title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits` | 6 | `07-modals/add-credits__amounts-autorecharge__light.jpg` |
+| Image preview | **BUILT** — centred wide modal 920px, two columns. A view over the transcript: files are the cached messages' assets + ready attachments (`lib/task-files.ts`), no route involved. Dimensions are measured off the loaded image; a generated file's prompt/model are joined from the invocation its `toolCallId` names. Favorite/rename/delete render disabled — they need asset routes that do not exist (UI-7). Copy Link and Download work | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
+| Image preview of a **generated** asset | **BUILT** — same modal, two extra rows | a scrollable `Prompt` block with its own `Copy` button at the top, and a `Model` row (`gpt-image-2-text`). `Source` reads `Generated in chat` rather than `Uploaded`. So the panel is source-aware: the captured file was an upload, which is why it shows neither | 6 | observed live, no capture in the library |
+| Credits popover | **BUILT** — anchored under the credits chip, right-aligned | reference: `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details`. Ours (D-3): `FREE TIER` label, no upgrade/billing; `View usage` visible but disabled — the usage dashboard needs a per-tool aggregation the backend does not serve | built | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` + live shots both themes |
+| Add credits | **BUILT** — centred modal 440px | reference: title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits`. Ours (D-3): same layout with the dollars removed — presets `20M/50M/100M/200M`, no auto-recharge, "credits are free in this build" note, `Add Credits` submit. Amount travels as microcredits (`M × 1_000_000`); the response's balance is written into the cache so the chip updates the moment the modal closes | built | `07-modals/add-credits__amounts-autorecharge__light.jpg` + live shots both themes |
 | Attach popover | above the paperclip | `Select Asset` / `+ Upload` | 6 | `02-composer/attach-popover__select-asset-upload__light.jpg` |
 | Settings / Upgrade / Clerk | reference-only | — | — | `07-modals/{settings__account__dark,upgrade__*,clerk__*}` |
 
@@ -903,6 +926,16 @@ defaults anyway. Phase 1 pulls in `cn` + `tooltip` only; later phases add a prim
 that needs it lands. Three are in: `tooltip`, `dropdown-menu` (filter-by, the model picker) and
 `dialog` (the search palette, §7.1) — which is where the focus trap and `Esc`-to-close the PDF grades
 now actually run.
+
+**UI-22 — the two-level inset panel is the reference's house pattern, not a palette one-off.** Any
+detail surface — the search palette's result band, the image preview's detail column, the credits
+popover's plan block — sits on a **rounded `--panel-inset` block floating inside its parent with
+visible margin**, and whatever must read raised on it (a focused row, a value box, an action button)
+goes back to `--panel`. Three surfaces shipped flat before the pattern was named, each corrected on
+review; when a new overlay has a "details" region, start from this pattern, not from a flat column.
+Related: `--radius-card` is **12px** and `--radius-composer` 20px — an on-review preference over the
+sampled 8/16px, because the reference reads rounder on a real screen (the Apple feel), and the token
+moves every card at once.
 
 **UI-2 — `/chat` runs on the `new` sentinel and skips the chat query.** `GET /chats/new` would 404.
 On send, the created chat's real history is prefetched *before* `router.replace`, so the screen never

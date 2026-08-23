@@ -18,6 +18,9 @@ type UIState = {
   modelByChat: Record<string, ModelId>;
   sidebarCollapsed: boolean;
   searchOpen: boolean;
+  addCreditsOpen: boolean;
+  filesOpen: boolean;
+  previewFileKey: string | null;
   openPanel: { type: "tool"; invocationId: string } | null;
   stoppingRuns: string[];
   planModeChats: string[];
@@ -28,6 +31,9 @@ type UIState = {
   togglePlanMode: (chatId: string) => void;
   toggleSidebar: () => void;
   setSearchOpen: (open: boolean) => void;
+  setAddCreditsOpen: (open: boolean) => void;
+  setFilesOpen: (open: boolean) => void;
+  setPreviewFile: (key: string | null) => void;
   setOpenPanel: (panel: UIState["openPanel"]) => void;
   markStopping: (runId: string) => void;
   clearStopping: (runId: string) => void;
@@ -54,6 +60,9 @@ export const useUI = create<UIState>()(
       modelByChat: {},
       sidebarCollapsed: false,
       searchOpen: false,
+      addCreditsOpen: false,
+      filesOpen: false,
+      previewFileKey: null,
       openPanel: null,
       stoppingRuns: [],
       planModeChats: [],
@@ -81,6 +90,9 @@ export const useUI = create<UIState>()(
 
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSearchOpen: (searchOpen) => set({ searchOpen }),
+      setAddCreditsOpen: (addCreditsOpen) => set({ addCreditsOpen }),
+      setFilesOpen: (filesOpen) => set({ filesOpen }),
+      setPreviewFile: (previewFileKey) => set({ previewFileKey }),
       setOpenPanel: (openPanel) => set({ openPanel }),
 
       markStopping: (runId) =>

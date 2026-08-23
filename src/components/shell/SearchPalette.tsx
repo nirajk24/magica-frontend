@@ -46,8 +46,8 @@ export function SearchPalette() {
       <DialogContent
         title="Search"
         style={{ width: PALETTE_WIDTH }}
-        overlayClassName="search-palette-overlay bg-transparent"
-        className="rounded-2xl border-border bg-panel p-0 shadow-2xl"
+        overlayClassName="bg-transparent"
+        className="rounded-[20px] border-border bg-panel p-0 shadow-2xl"
       >
         <PaletteBody onClose={() => setSearchOpen(false)} />
       </DialogContent>

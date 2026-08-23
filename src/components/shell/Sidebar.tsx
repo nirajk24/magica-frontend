@@ -202,12 +202,12 @@ function NavRow({
           aria-disabled
           aria-label={item.label}
           onClick={(event) => event.preventDefault()}
-          className={cn(className, "cursor-not-allowed", !collapsed && "opacity-60")}
+          className={cn(className, "cursor-not-allowed opacity-60")}
         >
           {content}
         </TooltipTrigger>
         <TooltipContent side={collapsed ? "right" : "bottom"}>
-          {collapsed ? item.label : `${item.label} isn't part of this build.`}
+          {item.label} isn&apos;t part of this build.
         </TooltipContent>
       </Tooltip>
     );

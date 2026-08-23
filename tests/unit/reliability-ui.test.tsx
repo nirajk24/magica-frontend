@@ -32,7 +32,7 @@ const items = [{ kind: "message", message: fixtures.userMessage }] as const;
 
 describe("the jump-to-latest button", () => {
   it("stays hidden while the transcript is already at the bottom", () => {
-    renderWithProviders(<MessageList items={items} />);
+    renderWithProviders(<MessageList chatId={fixtures.CHAT_ID} items={items} />);
 
     act(() => emitAtBottom(true));
 
@@ -40,7 +40,7 @@ describe("the jump-to-latest button", () => {
   });
 
   it("appears once the transcript is scrolled up", () => {
-    renderWithProviders(<MessageList items={items} />);
+    renderWithProviders(<MessageList chatId={fixtures.CHAT_ID} items={items} />);
 
     act(() => emitAtBottom(false));
 
@@ -51,7 +51,7 @@ describe("the jump-to-latest button", () => {
     const user = userEvent.setup();
     scrollToIndex.mockClear();
 
-    renderWithProviders(<MessageList items={items} />);
+    renderWithProviders(<MessageList chatId={fixtures.CHAT_ID} items={items} />);
 
     act(() => emitAtBottom(false));
     await user.click(screen.getByRole("button", { name: "Scroll to latest" }));

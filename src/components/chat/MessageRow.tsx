@@ -15,16 +15,19 @@ import { useRetryMessage } from "@/queries/use-retry-message";
 
 export function MessageRow({
   message,
+  chatId,
   runActive = false,
 }: {
   message: MessageDTO;
+  /** The conversation the row belongs to — feedback patches this chat's cache optimistically. */
+  chatId: string;
   /** Retry is refused while another run holds the chat, so the control says so instead of failing. */
   runActive?: boolean;
 }) {
   return message.role === "user" ? (
     <UserMessage message={message} />
   ) : (
-    <AssistantMessage message={message} runActive={runActive} />
+    <AssistantMessage message={message} chatId={chatId} runActive={runActive} />
   );
 }
 
@@ -46,7 +49,15 @@ function UserMessage({ message }: { message: MessageDTO }) {
   );
 }
 
-function AssistantMessage({ message, runActive }: { message: MessageDTO; runActive: boolean }) {
+function AssistantMessage({
+  message,
+  chatId,
+  runActive,
+}: {
+  message: MessageDTO;
+  chatId: string;
+  runActive: boolean;
+}) {
   const timeline = useMemo(() => timelineFromMessage(message), [message]);
   const hasBlocks = timeline.segments.length > 0;
   const retry = useRetryMessage();
@@ -68,7 +79,7 @@ function AssistantMessage({ message, runActive }: { message: MessageDTO; runActi
         onRetry={retry.mutate}
       />
 
-      <AssistantFooter message={message} />
+      <AssistantFooter message={message} chatId={chatId} />
     </div>
   );
 }
