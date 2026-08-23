@@ -62,9 +62,11 @@ export function TopBar({
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 px-4">
-      <ModelPicker chatId={chatId ?? NEW_CHAT_ID} />
+      <div className="flex min-w-0">
+        <ModelPicker chatId={chatId ?? NEW_CHAT_ID} />
+      </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {isSignedIn ? (
           <>
             {showFiles && (
@@ -84,10 +86,12 @@ export function TopBar({
           </>
         ) : (
           <>
+            {/* Both fixed at the row's height and never wrapped: the pair sits beside a model pill
+                that is as wide as its label, and on a phone that is what runs out of room first. */}
             <SignInButton mode="modal">
               <button
                 type="button"
-                className="rounded-full px-3 py-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+                className="h-8 shrink-0 rounded-full px-3 text-sm whitespace-nowrap text-fg-muted transition-colors hover:text-fg"
               >
                 Sign in
               </button>
@@ -95,7 +99,7 @@ export function TopBar({
             <SignUpButton mode="modal">
               <button
                 type="button"
-                className="h-8 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+                className="h-8 shrink-0 rounded-full bg-fg px-4 text-sm font-semibold whitespace-nowrap text-bg transition-opacity hover:opacity-90"
               >
                 Sign up
               </button>
@@ -155,7 +159,7 @@ function ModelPicker({ chatId }: { chatId: string }) {
                 <MagicaLogo className="size-2.5" />
               </span>
             )}
-            <span className="max-w-[220px] truncate">{modelLabel(selected)}</span>
+            <span className="max-w-[120px] truncate sm:max-w-[220px]">{modelLabel(selected)}</span>
             <ChevronDown
               className="size-3 opacity-60 transition-transform duration-150 group-data-[state=open]:rotate-180"
               aria-hidden

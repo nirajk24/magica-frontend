@@ -52,11 +52,13 @@ export function TasksPage() {
   };
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-8 py-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-fg">Tasks</h1>
+    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-4 py-6 sm:px-8">
+      {/* Wraps rather than overflows: three controls beside a heading do not fit a phone, and the
+          row has no scroller of its own — what does not fit is simply off the screen. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">Tasks</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <FilterMenu value={filter} onChange={setFilter} />
 
           <button

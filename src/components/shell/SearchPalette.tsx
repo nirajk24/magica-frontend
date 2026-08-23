@@ -149,7 +149,9 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
           onKeyDown={onKeyDown}
           className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-subtle"
         />
-        <kbd className="shrink-0 rounded-md border border-border px-2 py-1 text-[11px] text-fg-subtle">
+        {/* Shortcut hints are for a device that has the keys. A phone has neither, and the palette
+            is reached by tapping the magnifier. */}
+        <kbd className="hidden shrink-0 rounded-md border border-border px-2 py-1 text-[11px] text-fg-subtle sm:block">
           esc
         </kbd>
       </div>
@@ -195,7 +197,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
           className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-fg-muted transition-colors hover:text-fg"
         >
           New task
-          <span className="flex gap-1 text-[11px] text-fg-muted">
+          <span className="hidden gap-1 text-[11px] text-fg-muted sm:flex">
             <Key>⌘</Key>
             <Key>⇧</Key>
             <Key>O</Key>

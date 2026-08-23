@@ -39,7 +39,9 @@ describe("addressing the settings modal", () => {
     locationMock.search = "settings=api-keys&show=credited";
     renderWithProviders(<SettingsModal />);
 
-    await user.click(screen.getByRole("button", { name: /close settings/i }));
+    // Two, one per breakpoint — the section rail is dropped below `md`, and only one is ever
+    // painted. No stylesheet runs here, so both are in the tree.
+    await user.click(screen.getAllByRole("button", { name: /close settings/i })[0]!);
 
     expect(routerMock.replace).toHaveBeenCalledWith(
       expect.stringContaining("show=credited"),

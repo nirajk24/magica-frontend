@@ -83,9 +83,12 @@ export function SettingsModal() {
       <DialogContent
         title="Settings"
         showTitle={false}
-        className="flex h-[560px] w-[980px] max-w-[calc(100vw-32px)] gap-0 overflow-hidden rounded-2xl p-0"
+        className="flex h-[calc(100dvh-32px)] w-[980px] max-h-[560px] max-w-[calc(100vw-32px)] gap-0 overflow-hidden rounded-2xl p-0"
       >
-        <nav aria-label="Settings sections" className="flex w-[260px] flex-col gap-1 border-r border-border bg-panel-inset p-3">
+        {/* The rail is a fixed 260px beside a flexible pane, which on a phone leaves the pane about
+            a hundred pixels wide. It is dropped below `md` rather than squeezed, and the close
+            button it carries is repeated in the pane's own header. */}
+        <nav aria-label="Settings sections" className="hidden w-[260px] flex-col gap-1 border-r border-border bg-panel-inset p-3 md:flex">
           <button
             type="button"
             onClick={close}
@@ -105,8 +108,21 @@ export function SettingsModal() {
           ))}
         </nav>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {section === "api-keys" ? <ApiKeysSection /> : <UnknownSection />}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 items-center justify-end p-3 md:hidden">
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Close settings"
+              className="flex size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface hover:text-fg"
+            >
+              <X className="size-4" strokeWidth={2.2} />
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+            {section === "api-keys" ? <ApiKeysSection /> : <UnknownSection />}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

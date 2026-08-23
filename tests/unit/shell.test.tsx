@@ -6,6 +6,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { clerkMock } from "../clerk-mock";
+import { locationMock, routerMock } from "../router-mock";
 import { server } from "../msw/setup";
 import { renderWithProviders } from "../render";
 import { useUI } from "@/stores/ui";
@@ -16,15 +17,31 @@ import { env } from "@/lib/env";
 const API = `${env.NEXT_PUBLIC_API_URL}/api/v1`;
 
 describe("the collapsed rail", () => {
-  it("keeps search reachable and pins settings at the bottom", async () => {
+  it("keeps search reachable and opens settings from the bottom", async () => {
+    const user = userEvent.setup();
     useUI.setState({ sidebarCollapsed: true });
     renderWithProviders(<Sidebar />);
 
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute(
-      "aria-disabled",
-      "true",
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+
+    expect(routerMock.replace).toHaveBeenCalledWith(
+      expect.stringContaining("settings=api-keys"),
+      expect.anything(),
     );
+  });
+
+  /**
+   * The drawer is an overlay, so collapsing it would leave a rail floating in a box sized for a
+   * panel — and `sidebarCollapsed` is persisted, so a desktop preference would follow it there.
+   */
+  it("ignores the persisted collapse when it is the mobile drawer", () => {
+    useUI.setState({ sidebarCollapsed: true });
+    renderWithProviders(<Sidebar onClose={() => {}} />);
+
+    expect(screen.getByRole("button", { name: "Close navigation" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Tasks" })).toBeInTheDocument();
   });
 
   it("expands from the logo slot, which is the toggle in disguise", async () => {
@@ -200,6 +217,28 @@ describe("before Clerk has resolved", () => {
     renderWithProviders(<AppShell>content</AppShell>);
 
     expect(await screen.findByRole("link", { name: "New task" })).toBeInTheDocument();
+  });
+});
+
+/**
+ * `/chat/recent` is the Tasks list. Its second segment is a route name, so reading it as a chat id
+ * puts a model pill and a files button on a screen that has no conversation behind either.
+ */
+describe("the Tasks route", () => {
+  it("wears a bare header, with no model pill and no files button", async () => {
+    locationMock.segments = ["chat", "recent"];
+    renderWithProviders(<AppShell>content</AppShell>);
+
+    expect(await screen.findByRole("link", { name: "New task" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /openrouter/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Files in this task" })).not.toBeInTheDocument();
+  });
+
+  it("still gives a conversation its model pill", async () => {
+    locationMock.segments = ["chat", fixtures.CHAT_ID];
+    renderWithProviders(<AppShell>content</AppShell>);
+
+    expect(await screen.findByRole("button", { name: /openrouter/i })).toBeInTheDocument();
   });
 });
 

@@ -50,7 +50,7 @@ vi.mock("next/navigation", async () => {
     usePathname: () => locationMock.pathname,
     useSearchParams: () => new URLSearchParams(locationMock.search),
     useParams: () => ({}),
-    useSelectedLayoutSegments: () => [],
+    useSelectedLayoutSegments: () => locationMock.segments,
     redirect: vi.fn(),
     notFound: vi.fn(),
   };
@@ -72,6 +72,7 @@ afterEach(async () => {
   for (const spy of Object.values(routerMock)) spy.mockClear();
   locationMock.pathname = "/";
   locationMock.search = "";
+  locationMock.segments = [];
 
   const { resetClerkMock } = await import("./clerk-mock");
   resetClerkMock();

@@ -41,7 +41,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const panelOpen = useUI((state) => state.openPanel !== null);
   const { isLoaded } = useAuth();
 
-  const chatId = segments[0] === "chat" && segments.length > 1 ? segments[1] : undefined;
+  /**
+   * `/chat/recent` is the Tasks list, not a conversation — its second segment is a route name, and
+   * reading it as an id asks the API for a chat called "recent" and hangs a files button off the
+   * answer.
+   */
+  const chatId =
+    segments[0] === "chat" && segments.length > 1 && segments[1] !== "recent"
+      ? segments[1]
+      : undefined;
+
+  /** Screens that own their whole header: the model pill and credits belong to a conversation. */
+  const bareHeader = segments[0] === "usage" || segments[1] === "recent";
 
   if (!isLoaded) return <FullPageSpinner />;
 
@@ -65,8 +76,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setDrawerOpen(false)}
             className="absolute inset-0 bg-fg/40"
           />
-          <div className="absolute inset-y-2 left-2 flex w-2/3 max-w-[280px]">
-            <Sidebar onNavigate={() => setDrawerOpen(false)} />
+          {/* Sized to the sidebar it holds. A wider box leaves a transparent strip beside the panel
+              that covers the backdrop, so a tap there closes nothing. */}
+          <div className="absolute inset-y-2 left-2 flex w-[min(75vw,280px)]">
+            <Sidebar
+              onNavigate={() => setDrawerOpen(false)}
+              onClose={() => setDrawerOpen(false)}
+            />
           </div>
         </div>
       )}
@@ -90,7 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <TopBar
               chatId={chatId}
               showFiles={chatId !== undefined}
-              showActions={segments[0] !== "usage"}
+              showActions={!bareHeader}
             />
           </div>
         </div>

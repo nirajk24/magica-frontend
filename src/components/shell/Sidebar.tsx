@@ -1,11 +1,10 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { PanelLeft, Search, Settings } from "lucide-react";
+import { PanelLeft, Search, Settings, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { DisabledAction } from "@/components/DisabledAction";
 import { MagicaLogo } from "@/components/MagicaMark";
 import { NAV_ITEMS } from "@/components/shell/nav";
 import { SidebarFooter } from "@/components/shell/SidebarFooter";
@@ -26,11 +25,25 @@ const SKELETON_ROWS = 6;
  * between the two themes.
  *
  * An anonymous visitor gets this same sidebar. Only the footer differs — see `SidebarFooter`.
+ *
+ * INVARIANT: `onClose` means this is the mobile drawer, and a drawer is never the rail. `collapsed`
+ * is persisted, so without this a sidebar collapsed on the desktop reopens as a 64px rail floating
+ * inside a 280px drawer — with the difference left as a transparent strip that eats outside taps.
+ * The header's toggle becomes that drawer's close button for the same reason: collapsing a panel
+ * that is already an overlay does nothing a reader would recognise.
  */
-export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
-  const collapsed = useUI((state) => state.sidebarCollapsed);
+export function Sidebar({
+  onNavigate,
+  onClose,
+}: { onNavigate?: () => void; onClose?: () => void } = {}) {
+  const persistedCollapse = useUI((state) => state.sidebarCollapsed);
   const toggleSidebar = useUI((state) => state.toggleSidebar);
   const setSearchOpen = useUI((state) => state.setSearchOpen);
+  const collapsed = persistedCollapse && !onClose;
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const openSettings = () => router.replace(`${pathname}?settings=api-keys`, { scroll: false });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -79,14 +92,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
             <Tooltip>
               <TooltipTrigger
                 type="button"
-                onClick={toggleSidebar}
-                aria-label="Close sidebar"
+                onClick={onClose ?? toggleSidebar}
+                aria-label={onClose ? "Close navigation" : "Close sidebar"}
                 aria-expanded
                 className="rounded-md p-1.5 text-fg-muted transition-colors hover:text-fg"
               >
-                <PanelLeft className="size-4" aria-hidden />
+                {onClose ? (
+                  <X className="size-4" aria-hidden />
+                ) : (
+                  <PanelLeft className="size-4" aria-hidden />
+                )}
               </TooltipTrigger>
-              <TooltipContent>Toggle sidebar ⌘B</TooltipContent>
+              <TooltipContent>{onClose ? "Close" : "Toggle sidebar ⌘B"}</TooltipContent>
             </Tooltip>
           </div>
         </div>
@@ -103,14 +120,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
 
       {!collapsed && <RecentTasks onNavigate={onNavigate} />}
 
-      <div className={cn("mt-auto", collapsed ? "pb-3" : "w-full")}>
+      <div className={cn("mt-auto shrink-0", collapsed ? "pb-3" : "w-full")}>
         {collapsed ? (
-          <DisabledAction
-            icon={Settings}
-            label="Settings"
-            reason="Settings aren't part of this build."
-            className="rounded-md p-2"
-          />
+          <RailButton label="Settings" onClick={openSettings}>
+            <Settings className="size-4" aria-hidden />
+          </RailButton>
         ) : (
           <SidebarFooter />
         )}

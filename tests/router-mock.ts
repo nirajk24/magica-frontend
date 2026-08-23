@@ -17,4 +17,6 @@ export const routerMock = {
 export const locationMock = {
   pathname: "/",
   search: "",
+  /** What `useSelectedLayoutSegments` answers — the shell reads the route from this, not `pathname`. */
+  segments: [] as string[],
 };
