@@ -18,19 +18,25 @@ export function flattenMessagePages(pages: readonly ChatWithMessages[]): Message
 /**
  * The rows the transcript shows.
  *
- * INVARIANT: while a streaming overlay owns `overlayRunId`, the persisted row for that run is
- * filtered out here and nowhere else. Two places holding this rule is how the duplicate bubble at
- * handover comes back.
+ * INVARIANT: while an overlay is live, a `streaming` row is not one of them — it is being written
+ * on screen already. This is the only place that rule lives; two places holding it is how the
+ * duplicate bubble at handover comes back.
+ *
+ * INVARIANT: `liveOverlay` defaults to true and goes false only once `active-run` has actually
+ * answered "nothing is running". Treating an unanswered request as "no overlay" paints the
+ * half-written row for the several seconds that request takes — it mints a realtime token, so it
+ * lands long after the transcript beside it — and then pulls the row back out, which reads as the
+ * reasoning appearing and vanishing as a chat opens.
  */
 export function selectTranscript(
   messages: readonly MessageDTO[],
-  options: { overlayRunId?: string | null } = {},
+  options: { liveOverlay?: boolean } = {},
 ): MessageDTO[] {
-  const overlayRunId = options.overlayRunId ?? null;
+  const liveOverlay = options.liveOverlay ?? true;
 
   return messages.filter((message) => {
     if (!TRANSCRIPT_ROLES.has(message.role)) return false;
 
-    return !(overlayRunId !== null && message.status === "streaming" && message.runId === overlayRunId);
+    return !(liveOverlay && message.status === "streaming");
   });
 }

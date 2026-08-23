@@ -38,14 +38,13 @@ export function useChatModel(chatId: string): string | undefined {
 }
 
 /**
- * The chat plus the rows the transcript should show.
- *
- * `overlayRunId` is the run a streaming overlay currently owns; its persisted row is filtered out so
- * the same content is never on screen twice.
+ * The chat plus the rows the transcript should show. A row still being written belongs to the
+ * streaming overlay, so it is filtered out here — see `selectTranscript` for what `liveOverlay`
+ * must be passed, and why its default is the safe one.
  */
 export function useChatTranscript(
   chatId: string,
-  overlayRunId: string | null = null,
+  liveOverlay = true,
 ): {
   query: ReturnType<typeof useChat>;
   chat: ChatDTO | null;
@@ -55,8 +54,8 @@ export function useChatTranscript(
   const pages = query.data?.pages;
 
   const messages = useMemo(
-    () => selectTranscript(flattenMessagePages(pages ?? []), { overlayRunId }),
-    [pages, overlayRunId],
+    () => selectTranscript(flattenMessagePages(pages ?? []), { liveOverlay }),
+    [pages, liveOverlay],
   );
 
   return { query, chat: pages?.[0]?.chat ?? null, messages };

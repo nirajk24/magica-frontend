@@ -135,6 +135,46 @@ describe("LiveRun", () => {
     expect(next.queryByTestId("streaming-overlay")).not.toBeInTheDocument();
   });
 
+  /**
+   * Metadata reports reasoning for the current block only, so every earlier one is remembered as it
+   * goes past. Keeping that history in the overlay's own state loses it on the remount a resubscribe
+   * costs — which empties every thinking row the turn has already written.
+   */
+  it("keeps earlier reasoning readable across a resubscribe", () => {
+    const thinking = {
+      ...snapshot("working"),
+      waitpoint: undefined,
+      blocks: [{ segment: 0, type: "thinking" as const }],
+      reasoningText: "weighing the options",
+    };
+
+    const first = renderWithProviders(<LiveRun chatId={fixtures.CHAT_ID} run={parkedRun} />);
+    realtime.metadata = thinking;
+    first.rerender(
+      <QueryClientProvider client={first.queryClient}>
+        <LiveRun chatId={fixtures.CHAT_ID} run={parkedRun} />
+      </QueryClientProvider>,
+    );
+    expect(first.getByText("weighing the options")).toBeInTheDocument();
+    first.unmount();
+
+    // A tool call lands, so the thinking block is no longer the one metadata reports on.
+    realtime.metadata = {
+      ...thinking,
+      blocks: [
+        { segment: 0, type: "thinking" as const },
+        { segment: 0, type: "tool_use" as const, toolUseId: "call_1", name: "ask_questions" },
+      ],
+      reasoningText: undefined,
+    };
+
+    const resubscribed = renderWithProviders(
+      <LiveRun chatId={fixtures.CHAT_ID} run={parkedRun} />,
+    );
+
+    expect(resubscribed.getByText("weighing the options")).toBeInTheDocument();
+  });
+
   it("still re-reads a run that goes quiet while it is meant to be working", () => {
     vi.useFakeTimers();
     realtime.metadata = { ...snapshot("working"), waitpoint: undefined };

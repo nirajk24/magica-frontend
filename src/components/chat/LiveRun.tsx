@@ -19,15 +19,25 @@ const LIVENESS_TICK_MS = 10_000;
 export type RunConnection = "live" | "reconnecting" | "polling";
 
 /**
- * The last snapshot seen for a run, held outside the component because the component is the thing
- * being replaced.
+ * What is known about the run on screen, held outside the component because the component is the
+ * thing being replaced.
  *
  * Resubscribing is a remount by design, and a fresh mount has no metadata until the subscription
  * delivers. Rendering the pending row in that gap blanks a turn that is mid-flight, which is what a
- * reader sees as the transcript flickering between its steps and a bare "Thinking" row. One slot:
- * only the run currently on screen can ever be read back.
+ * reader sees as the transcript flickering between its steps and a bare "Thinking" row.
+ *
+ * `reasoningByIndex` is here for the same reason. Metadata reports reasoning for the *current*
+ * block only, so every earlier one has to be remembered as it goes past — and a remount that forgets
+ * them empties every thinking row the turn has already written. One slot: only the run currently on
+ * screen can ever be read back.
  */
-let lastSnapshot: { runId: string; metadata: RunMetadata } | null = null;
+let lastSnapshot: {
+  runId: string;
+  metadata: RunMetadata;
+  reasoningByIndex: ReadonlyMap<number, string>;
+} | null = null;
+
+const NO_REASONING: ReadonlyMap<number, string> = new Map();
 
 /**
  * Subscribes to one run with one token, and renders the turn while it runs.
@@ -132,11 +142,25 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
   }, [finished, chatId, queryClient]);
 
   const delivered = parseMetadata(realtimeRun?.metadata);
-  const metadata =
-    delivered ?? (lastSnapshot?.runId === run.runId ? lastSnapshot.metadata : null);
+  const known = lastSnapshot?.runId === run.runId ? lastSnapshot : null;
+  const metadata = delivered ?? known?.metadata ?? null;
+  const reasoningByIndex = known?.reasoningByIndex ?? NO_REASONING;
 
   useEffect(() => {
-    if (delivered) lastSnapshot = { runId: run.runId, metadata: delivered };
+    if (!delivered) return;
+
+    const lastThinking = delivered.blocks.reduce(
+      (found, block, index) => (block.type === "thinking" ? index : found),
+      -1,
+    );
+
+    const carried = lastSnapshot?.runId === run.runId ? lastSnapshot.reasoningByIndex : NO_REASONING;
+    const byIndex = new Map(carried);
+    if (lastThinking >= 0 && delivered.reasoningText) {
+      byIndex.set(lastThinking, delivered.reasoningText);
+    }
+
+    lastSnapshot = { runId: run.runId, metadata: delivered, reasoningByIndex: byIndex };
   }, [delivered, run.runId]);
 
   const waitpointId = metadata?.waitpoint?.id ?? null;
@@ -229,6 +253,7 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
         <StreamingOverlay
           metadata={metadata}
           streamedText={parts.join("")}
+          rememberedReasoning={reasoningByIndex}
           timelineId={`live:${run.runId}`}
         />
       ) : (

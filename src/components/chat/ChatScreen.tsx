@@ -59,7 +59,10 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const { openSignIn } = useClerk();
   const activeRunQuery = useActiveRun(chatId);
   const activeRun = activeRunQuery.data ?? null;
-  const { query, chat, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
+  const { query, chat, messages } = useChatTranscript(
+    chatId,
+    activeRunQuery.data != null || activeRunQuery.isPending,
+  );
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
   const setDraft = useUI((state) => state.setDraft);

@@ -35,35 +35,32 @@ describe("selectTranscript", () => {
     expect(visible.map((message) => message.role)).toEqual(["user", "assistant"]);
   });
 
-  it("hides the persisted streaming row while an overlay owns that run", () => {
-    const streaming: MessageDTO = {
-      ...fixtures.assistantMessage,
-      status: "streaming",
-      runId: fixtures.RUN_ID,
-    };
+  const streamingRow: MessageDTO = {
+    ...fixtures.assistantMessage,
+    status: "streaming",
+    runId: fixtures.RUN_ID,
+  };
 
-    const visible = selectTranscript([fixtures.userMessage, streaming], {
-      overlayRunId: fixtures.RUN_ID,
-    });
+  it("hides the persisted streaming row while an overlay is live", () => {
+    const visible = selectTranscript([fixtures.userMessage, streamingRow], { liveOverlay: true });
 
     expect(visible.map((message) => message.id)).toEqual([fixtures.USER_MESSAGE_ID]);
   });
 
-  it("keeps a streaming row that belongs to a different run", () => {
-    const streaming: MessageDTO = {
-      ...fixtures.assistantMessage,
-      status: "streaming",
-      runId: "another-run",
-    };
+  /**
+   * The default is what runs before `active-run` has answered. Assuming no overlay there paints the
+   * half-written row for the seconds that request takes and then removes it, which is the reasoning
+   * appearing and vanishing as a chat opens.
+   */
+  it("hides it by default, so an unanswered active-run cannot flash the row", () => {
+    expect(selectTranscript([fixtures.userMessage, streamingRow])).toHaveLength(1);
+  });
 
-    expect(selectTranscript([streaming], { overlayRunId: fixtures.RUN_ID })).toHaveLength(1);
+  it("shows it once active-run has confirmed nothing is running", () => {
+    expect(selectTranscript([streamingRow], { liveOverlay: false })).toHaveLength(1);
   });
 
   it("keeps a finished row for the run the overlay owns, so handover has something to land on", () => {
-    const visible = selectTranscript([fixtures.assistantMessage], {
-      overlayRunId: fixtures.RUN_ID,
-    });
-
-    expect(visible).toHaveLength(1);
+    expect(selectTranscript([fixtures.assistantMessage], { liveOverlay: true })).toHaveLength(1);
   });
 });

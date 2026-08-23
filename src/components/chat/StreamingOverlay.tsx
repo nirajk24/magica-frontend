@@ -1,52 +1,40 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { RunMetadata } from "@/contracts";
 import { MessageTimeline } from "@/components/chat/MessageTimeline";
 import { timelineFromRun } from "@/lib/timeline";
 
+const EMPTY_REASONING: ReadonlyMap<number, string> = new Map();
+
 /**
  * The turn as it happens.
  *
- * Presentational on purpose: it takes metadata and the joined stream, so a test can drive it from
- * fixtures.
+ * Presentational: it takes metadata, the joined stream, and the reasoning already seen, so a test
+ * can drive it from fixtures. Trigger.dev's transport is not something MSW can intercept, so the
+ * subscription lives in `LiveRun` and nothing about it leaks in here.
  *
- * It does keep one piece of history: `RunMetadata` reports only the *current* block's reasoning, so
- * each block's transcript is remembered as it goes by. Without that, an earlier block's reasoning
- * disappears off the screen the moment the next one opens. Trigger.dev's transport is not something MSW can intercept, so the subscription lives in
- * `LiveRun` and nothing about it leaks in here.
+ * `rememberedReasoning` is passed in rather than accumulated here because metadata reports only the
+ * *current* block's reasoning, and this component is remounted every time the run resubscribes —
+ * history kept in its own state is lost at exactly the moment the earlier rows need it.
  */
-type Remembered = { reasoning: string | null; byIndex: ReadonlyMap<number, string> };
-
-const EMPTY_REMEMBERED: Remembered = { reasoning: null, byIndex: new Map() };
 
 export function StreamingOverlay({
   metadata,
   streamedText,
+  rememberedReasoning = EMPTY_REASONING,
   timelineId = "live",
 }: {
   metadata: RunMetadata;
   streamedText: string;
+  /** Reasoning for blocks the metadata no longer reports; accumulated by whoever owns the run. */
+  rememberedReasoning?: ReadonlyMap<number, string>;
   /** Keys the step groups' expand state; the mounting run passes its own id. */
   timelineId?: string;
 }) {
-  const lastThinkingIndex = metadata.blocks.reduce(
-    (found, block, index) => (block.type === "thinking" ? index : found),
-    -1,
-  );
-  const reasoning = metadata.reasoningText ?? null;
-
-  const [remembered, setRemembered] = useState<Remembered>(EMPTY_REMEMBERED);
-
-  if (remembered.reasoning !== reasoning) {
-    const byIndex = new Map(remembered.byIndex);
-    if (lastThinkingIndex >= 0 && reasoning) byIndex.set(lastThinkingIndex, reasoning);
-    setRemembered({ reasoning, byIndex });
-  }
-
   const timeline = useMemo(
-    () => timelineFromRun(metadata, streamedText, remembered.byIndex),
-    [metadata, streamedText, remembered],
+    () => timelineFromRun(metadata, streamedText, rememberedReasoning),
+    [metadata, streamedText, rememberedReasoning],
   );
 
   return (
