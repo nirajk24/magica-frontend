@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { useUI } from "@/stores/ui";
 
@@ -44,8 +44,17 @@ export function StepGroup({
   const Chevron = open ? ChevronDown : ChevronRight;
   const unit = steps === 1 ? "step" : "steps";
 
+  /**
+   * The body outlives `open` by one collapse animation, so there are still rows to shrink. `inert`
+   * covers the gap and the reduced-motion path, where no transition ends and the rows stay mounted
+   * at zero height: a collapsed group is off the tab order and out of the accessibility tree either
+   * way.
+   */
+  const [rendered, setRendered] = useState(open);
+  if (open && !rendered) setRendered(true);
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       <button
         type="button"
         onClick={() => setStepGroupOpen(groupKey, !open)}
@@ -74,7 +83,22 @@ export function StepGroup({
         />
       </button>
 
-      {open && <div className="flex flex-col gap-3">{children}</div>}
+      <div
+        inert={!open}
+        data-testid="step-group-body"
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+        onTransitionEnd={(event) => {
+          // This box's own transition is the collapse; a child's bubbling up is not.
+          if (!open && event.target === event.currentTarget) setRendered(false);
+        }}
+      >
+        <div className="overflow-hidden">
+          {rendered && <div className="flex flex-col gap-3 pt-3">{children}</div>}
+        </div>
+      </div>
     </div>
   );
 }

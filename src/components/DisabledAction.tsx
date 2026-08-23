@@ -21,7 +21,8 @@ export function DisabledAction({
   showLabel = false,
   trailingIcon: TrailingIcon,
 }: {
-  icon: IconComponent;
+  /** Omitted by text-only controls, such as a tool card's `View more`. */
+  icon?: IconComponent;
   label: string;
   reason: string;
   className?: string;
@@ -43,7 +44,7 @@ export function DisabledAction({
           className,
         )}
       >
-        <Icon className="size-4 shrink-0" aria-hidden />
+        {Icon && <Icon className="size-4 shrink-0" aria-hidden />}
         {showLabel && label}
         {TrailingIcon && <TrailingIcon className="size-4 shrink-0" aria-hidden />}
       </TooltipTrigger>

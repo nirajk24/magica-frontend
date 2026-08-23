@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronRight, CircleCheck, CircleX, Clock, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { DisabledAction } from "@/components/DisabledAction";
 import { cn } from "@/lib/cn";
 import type { ToolView } from "@/lib/timeline";
 import { formatDuration } from "@/lib/format";
@@ -161,7 +161,9 @@ export function DetailRows({
         ) : (
           <DisabledAction
             label="View more"
+            showLabel
             reason="The full tool detail panel isn't part of this build yet."
+            className="mt-2 text-xs"
           />
         ))}
 
@@ -173,26 +175,6 @@ export function DetailRows({
 
       {footer}
     </div>
-  );
-}
-
-/**
- * `View more` opens the tool detail side panel in the reference, not an in-card expansion — so until
- * that panel exists it states why it does nothing rather than inventing a different behaviour.
- */
-function DisabledAction({ label, reason }: { label: string; reason: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        type="button"
-        aria-disabled
-        onClick={(event) => event.preventDefault()}
-        className="mt-2 cursor-not-allowed text-xs text-info/60"
-      >
-        {label}
-      </TooltipTrigger>
-      <TooltipContent>{reason}</TooltipContent>
-    </Tooltip>
   );
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatScreen } from "@/components/chat/ChatScreen";
 import { timelineFromMessage } from "@/lib/timeline";
@@ -146,6 +146,10 @@ describe("the panel and the virtualized list", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     await user.click(screen.getAllByRole("button", { name: /Completed \d+ step/ })[1]!);
+    // The group keeps its rows until the collapse animation ends, which jsdom never runs.
+    for (const body of screen.getAllByTestId("step-group-body")) {
+      fireEvent.transitionEnd(body);
+    }
 
     expect(screen.queryByRole("button", { name: "View more" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
