@@ -2,7 +2,7 @@
 
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useMemo, useState } from "react";
-import type { ActiveRun, MessageDTO } from "@/contracts";
+import type { ActiveRun, AttachmentDTO, MessageDTO } from "@/contracts";
 import { PlanCard } from "@/components/blocks/PlanCard";
 import { PlanProgressCard } from "@/components/blocks/PlanProgressCard";
 import { Composer, type ComposerSubmit } from "@/components/chat/Composer";
@@ -21,7 +21,7 @@ import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
 import { generationDetails } from "@/lib/task-files";
 import { findToolView } from "@/lib/timeline";
 import { useAttachmentList } from "@/queries/use-attachments";
-import { useUploadAttachments } from "@/queries/use-upload-attachments";
+import { useUploadAttachments, type UploadItem } from "@/queries/use-upload-attachments";
 import { parseActivePlan, parseWaitpoint } from "@/lib/waitpoints";
 import { useResolveWaitpoint } from "@/queries/use-resolve-waitpoint";
 import { useLlmStatus } from "@/queries/use-llm-status";
@@ -82,7 +82,10 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       return;
     }
 
-    setOptimistic({ chatId, message: optimisticUserMessage(submission.content) });
+    setOptimistic({
+      chatId,
+      message: optimisticUserMessage(submission.content, uploads.items),
+    });
     send.mutate(submission, {
       onSettled: () => setOptimistic(null),
       onSuccess: () => uploads.reset(),
@@ -278,21 +281,60 @@ function liveRunToRender(activeRun: ActiveRun | null, messages: readonly Message
 }
 
 /**
+ * The uploads the optimistic bubble should render, in chip order.
+ *
+ * Only ready items appear: an upload still in flight has no attachment id, so it was not part of the
+ * submission either. The id is the server's own, which is what lets a click on this bubble open the
+ * preview once the attachment list has caught up.
+ */
+function optimisticAttachments(items: readonly UploadItem[]): AttachmentDTO[] {
+  return items
+    .filter((item) => item.status === "ready" && item.attachmentId !== null)
+    .map((item) => ({
+      id: item.attachmentId as string,
+      type: mediaTypeOf(item.contentType),
+      source: "uploaded",
+      // The local object URL, so the thumbnail is on screen without waiting for a round trip.
+      url: item.previewUrl,
+      name: item.name,
+      contentType: item.contentType,
+      size: item.size,
+      status: "ready",
+      metadata: null,
+      expiresAt: null,
+      createdAt: new Date().toISOString(),
+    }));
+}
+
+/** Non-media files never reach a ready upload, so the fallback is unreachable rather than a guess. */
+function mediaTypeOf(contentType: string): AttachmentDTO["type"] {
+  if (contentType.startsWith("video/")) return "video";
+  if (contentType.startsWith("audio/")) return "audio";
+
+  return "image";
+}
+
+/**
  * The bubble shown between pressing Enter and the server confirming.
  *
  * It is deliberately not a `MessageDTO` from the cache — see `useSendMessage`. The id is a local
  * marker and never reaches the server. It is held against the chat it was typed into, because
  * `/chat` sends and then replaces the route: React may keep this component, and an unkeyed bubble
  * would sit beside the real message for a render.
+ *
+ * INVARIANT: it carries the attachments too. The reference shows text and image together the instant
+ * Enter is pressed, and a bubble built without them reads as the image having been dropped.
  */
-function optimisticUserMessage(content: string): MessageDTO {
+function optimisticUserMessage(content: string, uploads: readonly UploadItem[]): MessageDTO {
+  const attachments = optimisticAttachments(uploads);
+
   return {
     id: "optimistic-user-message",
     role: "user",
     status: "success",
     content,
     contentBlocks: null,
-    attachments: null,
+    attachments: attachments.length > 0 ? attachments : null,
     assets: null,
     toolInvocations: [],
     aiModel: null,

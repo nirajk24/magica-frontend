@@ -82,9 +82,19 @@ export function AttachButton({
  * The chips for files being attached: a square thumbnail per file with a ✕ badge overlapping its
  * corner, the way the reference draws a pending attachment. A failing chip keeps its reason on the
  * tooltip and inline below the strip, with a retry.
+ *
+ * `hidden` blanks the strip for the length of a send without discarding the uploads: the reference
+ * empties the composer the instant Enter is pressed, and the files must still be there to put back
+ * if that send is refused.
  */
-export function UploadChips({ uploads }: { uploads: UploadAttachments }) {
-  if (uploads.items.length === 0) return null;
+export function UploadChips({
+  uploads,
+  hidden = false,
+}: {
+  uploads: UploadAttachments;
+  hidden?: boolean;
+}) {
+  if (hidden || uploads.items.length === 0) return null;
 
   const firstError = uploads.items.find((item) => item.error !== null)?.error ?? null;
 

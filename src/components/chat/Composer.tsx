@@ -85,7 +85,7 @@ export function Composer({
 
   return (
     <div className="rounded-composer border border-border bg-surface bg-linear-to-b from-composer-from to-composer-to p-4 transition-colors focus-within:border-border-strong">
-      <UploadChips uploads={uploads} />
+      <UploadChips uploads={uploads} hidden={pending} />
       <textarea
         ref={textarea}
         rows={1}

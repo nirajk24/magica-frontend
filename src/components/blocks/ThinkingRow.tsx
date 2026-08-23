@@ -20,6 +20,9 @@ import type { BlockProps } from "@/components/blocks/types";
  *
  * It shows no duration, and its chevron sits beside the label rather than at the far right — both
  * measured off the reference, which renders every reasoning row as a bare `Reasoned ⌄`.
+ *
+ * The body scrolls past a fixed height rather than growing. The reference's rows stay open and run to
+ * a sentence or two, but reasoning length is the model's to decide, so the row is bounded here.
  */
 export function ThinkingRow({ block, streaming }: BlockProps) {
   if (block.type !== "thinking") return null;
@@ -35,7 +38,7 @@ export function ThinkingRow({ block, streaming }: BlockProps) {
       chevron="inline"
     >
       {thinking.length > 0 ? (
-        <div className="rounded-card border border-border p-3 text-xs leading-5 whitespace-pre-wrap text-fg">
+        <div className="max-h-[220px] overflow-y-auto rounded-card border border-border p-3 text-xs leading-5 whitespace-pre-wrap text-fg">
           {thinking}
         </div>
       ) : undefined}
