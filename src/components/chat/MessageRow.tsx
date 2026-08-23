@@ -36,7 +36,7 @@ function UserMessage({ message }: { message: MessageDTO }) {
 
   return (
     <div className="group flex flex-col items-end gap-1.5">
-      <div className="max-w-[80%] rounded-bubble bg-surface px-4 py-2.5 text-[15px] leading-6 text-fg">
+      <div className="max-w-[80%] rounded-bubble bg-surface px-4 py-3 text-base leading-7 text-fg">
         {message.attachments && <AttachmentGallery attachments={message.attachments} />}
         <p className="whitespace-pre-wrap">{message.content}</p>
       </div>
@@ -67,7 +67,7 @@ function AssistantMessage({
       {hasBlocks ? (
         <MessageTimeline timeline={timeline} timelineId={message.id} />
       ) : (
-        <p className="text-[15px] leading-7 whitespace-pre-wrap text-fg">{message.content}</p>
+        <p className="text-base leading-7 whitespace-pre-wrap text-fg">{message.content}</p>
       )}
 
       {message.assets && <AssetStrip assets={message.assets} />}

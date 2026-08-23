@@ -27,24 +27,42 @@ export function MessageTimeline({
     <div className="flex flex-col gap-4">
       {timeline.segments.map((segment) => (
         <div key={segment.segment} className="flex flex-col gap-3">
-          {segment.rows.length > 0 && (
-            <StepGroup
-              groupKey={`${timelineId}:${segment.segment}`}
-              steps={segment.stepCount}
-              streaming={segment.streaming}
-              failed={segment.failed}
-            >
-              {segment.rows.map((item, index) => (
-                <Block
-                  key={`${segment.segment}-${index}`}
-                  block={item.block}
-                  tools={timeline.tools}
-                  streaming={item.streaming}
-                  assetUrls={timeline.assetUrls}
-                />
-              ))}
-            </StepGroup>
-          )}
+          {segment.rows.length > 0 &&
+            (segment.stepCount > 0 ? (
+              <StepGroup
+                groupKey={`${timelineId}:${segment.segment}`}
+                steps={segment.stepCount}
+                streaming={segment.streaming}
+                failed={segment.failed}
+              >
+                {segment.rows.map((item, index) => (
+                  <Block
+                    key={`${segment.segment}-${index}`}
+                    block={item.block}
+                    tools={timeline.tools}
+                    streaming={item.streaming}
+                    assetUrls={timeline.assetUrls}
+                  />
+                ))}
+              </StepGroup>
+            ) : (
+              /**
+               * A turn that only talked has no steps to group. Counting none of them and then
+               * announcing "Completed 0 steps" puts a collapsed header over the token footer and
+               * nothing else — so the rows stand on their own.
+               */
+              <div className="flex flex-col gap-3">
+                {segment.rows.map((item, index) => (
+                  <Block
+                    key={`${segment.segment}-${index}`}
+                    block={item.block}
+                    tools={timeline.tools}
+                    streaming={item.streaming}
+                    assetUrls={timeline.assetUrls}
+                  />
+                ))}
+              </div>
+            ))}
 
           {segment.prose.map((item, index) => (
             <Block

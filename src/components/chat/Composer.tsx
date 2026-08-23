@@ -94,7 +94,7 @@ export function Composer({
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         aria-label="Message"
-        className="block max-h-[200px] w-full resize-none overflow-y-auto bg-transparent text-[15px] leading-6 text-fg outline-none placeholder:text-fg-subtle"
+        className="block max-h-[200px] w-full resize-none overflow-y-auto bg-transparent text-base leading-7 text-fg outline-none placeholder:text-fg-subtle"
       />
 
       <div className="mt-1 flex items-center justify-between">

@@ -7,7 +7,7 @@ export function TextBlock({ block, assetUrls }: BlockProps) {
   if (block.type !== "text") return null;
 
   return (
-    <div className="text-[15px] leading-7 text-fg">
+    <div className="text-base leading-7 text-fg">
       <Markdown suppressUrls={assetUrls}>{block.text}</Markdown>
     </div>
   );
