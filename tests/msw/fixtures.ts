@@ -585,7 +585,12 @@ export const apiKeysPage: ApiKeysPage = {
   ],
 };
 
-/** The only response that ever carries the plaintext. Nothing may cache it. */
+/**
+ * The only response that ever carries the plaintext. Nothing may cache it.
+ *
+ * The value is deliberately all zeros: a realistic-looking random key in a public repository trips
+ * secret scanners and makes a reviewer check whether it is live.
+ */
 export const createdApiKey: CreateApiKeyResult = {
   apiKey: {
     id: "key_new",
@@ -597,7 +602,7 @@ export const createdApiKey: CreateApiKeyResult = {
     createdAt: "2026-08-23T09:00:00.000Z",
     revokedAt: null,
   },
-  key: "mk_live_2f8a91c40be7d6153ab2094fe7318cd5a6b0e4f21d93c7aa",
+  key: "mk_live_000000000000000000000000000000000000000000000000",
 };
 
 export const webhookEndpointsPage: WebhookEndpointsPage = {
@@ -618,7 +623,7 @@ export const createdWebhookEndpoint: CreateWebhookEndpointResult = {
     events: ["agent.completed"],
     createdAt: "2026-08-23T09:00:00.000Z",
   },
-  secret: "whsec_Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MA",
+  secret: "whsec_0000000000000000000000000000000000000000",
 };
 
 export const webhookDeliveriesPage: WebhookDeliveriesPage = {
