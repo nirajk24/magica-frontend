@@ -44,7 +44,7 @@ agent worker. Without the worker, sends are accepted and no turn ever runs.
 ### Checks
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm test    # 367 tests across 33 files
+pnpm typecheck && pnpm lint && pnpm test    # 389 tests across 34 files
 pnpm build                                  # fails on drifted contracts before it builds
 pnpm sync-contracts                         # re-copy the backend's schemas
 
@@ -95,7 +95,7 @@ magica-frontend/
 ├── e2e/                      Playwright: an anonymous-surface project and an opt-in live-turn one
 ├── playwright.config.ts
 └── tests/
-    ├── unit/                 33 files, 367 tests
+    ├── unit/                 34 files, 389 tests
     └── msw/                  handlers and fixtures, typed as the contracts
 ```
 
