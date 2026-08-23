@@ -59,7 +59,7 @@ export function ToolCard({
 export function CreditsChip({ tool }: ToolCardProps): ReactNode {
   if (tool.status !== "completed" || !tool.creditUsed || tool.creditUsed === "0") return null;
 
-  return <span className="font-mono text-xs text-fg-muted">{formatCredits(tool.creditUsed)}</span>;
+  return <span className="text-[10px] text-fg">{formatCredits(tool.creditUsed)}</span>;
 }
 
 export function OutputStrip({ urls, label }: { urls: readonly string[]; label: string }) {

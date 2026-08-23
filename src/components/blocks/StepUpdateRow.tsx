@@ -7,13 +7,13 @@ export function StepUpdateRow({ block }: BlockProps) {
 
   return (
     <div className="flex items-start gap-2">
-      <ClipboardList className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden />
-      <p className="text-sm text-fg">
+      <ClipboardList className="mt-0.5 size-3.5 shrink-0 text-fg-muted" aria-hidden />
+      <p className="text-[13px] text-fg">
         Step update — {block.stepKey}: {block.status}
         {block.note && <span className="text-fg-muted"> — {block.note}</span>}
       </p>
       {block.status === "completed" && (
-        <Check className="mt-0.5 size-3.5 shrink-0 text-success" aria-label="Completed" />
+        <Check className="mt-0.5 size-3 shrink-0 text-success" aria-label="Completed" />
       )}
     </div>
   );

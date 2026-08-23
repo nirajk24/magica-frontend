@@ -14,13 +14,22 @@ import type { Timeline } from "@/lib/timeline";
  * Rows sit inside the segment's step group and prose sits below it, which is the order every terminal
  * capture shows.
  */
-export function MessageTimeline({ timeline }: { timeline: Timeline }) {
+export function MessageTimeline({
+  timeline,
+  timelineId,
+}: {
+  timeline: Timeline;
+  /** Stable identity for this turn (message id, or the live run's id) — keys the step groups'
+   *  expand state so a virtualized remount does not reset it. */
+  timelineId: string;
+}) {
   return (
     <div className="flex flex-col gap-4">
       {timeline.segments.map((segment) => (
         <div key={segment.segment} className="flex flex-col gap-3">
           {segment.rows.length > 0 && (
             <StepGroup
+              groupKey={`${timelineId}:${segment.segment}`}
               steps={segment.stepCount}
               streaming={segment.streaming}
               failed={segment.failed}

@@ -23,7 +23,7 @@ export function CreditsPopover() {
     <Popover>
       <PopoverTrigger
         aria-label="Available credits"
-        className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-panel px-3 text-sm font-semibold text-fg transition-colors hover:bg-surface"
+        className="flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm font-semibold text-fg transition-colors hover:bg-surface"
       >
         <CreditsSpark className="size-4" />
         {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
@@ -35,7 +35,7 @@ export function CreditsPopover() {
 
           <div className="mt-2 flex items-center justify-between">
             <span className="text-sm text-fg-muted">Available Credits</span>
-            <span className="text-lg font-semibold text-fg">
+            <span className="text-sm text-fg">
               {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
             </span>
           </div>

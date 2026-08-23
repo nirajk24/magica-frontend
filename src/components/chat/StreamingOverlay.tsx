@@ -23,9 +23,12 @@ const EMPTY_REMEMBERED: Remembered = { reasoning: null, byIndex: new Map() };
 export function StreamingOverlay({
   metadata,
   streamedText,
+  timelineId = "live",
 }: {
   metadata: RunMetadata;
   streamedText: string;
+  /** Keys the step groups' expand state; the mounting run passes its own id. */
+  timelineId?: string;
 }) {
   const lastThinkingIndex = metadata.blocks.reduce(
     (found, block, index) => (block.type === "thinking" ? index : found),
@@ -49,7 +52,7 @@ export function StreamingOverlay({
   return (
     <div className="flex flex-col" data-testid="streaming-overlay">
       <div aria-live="polite" aria-atomic="false">
-        <MessageTimeline timeline={timeline} />
+        <MessageTimeline timeline={timeline} timelineId={timelineId} />
       </div>
     </div>
   );

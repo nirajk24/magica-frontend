@@ -1,7 +1,7 @@
 "use client";
 
 import { SignInButton, useAuth } from "@clerk/nextjs";
-import { ArrowRight, CreditCard, EllipsisVertical, Settings, Sparkles, UserPlus } from "lucide-react";
+import { ArrowRight, CreditCard, EllipsisVertical, Settings, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { AccountMenu } from "@/components/shell/AccountMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -50,14 +50,14 @@ export function SidebarFooter() {
                   icon={Settings}
                   label="Settings"
                   reason="Settings aren't part of this build."
-                  className="flex flex-1 items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm"
                   showLabel
                 />
                 <DisabledAction
                   icon={Sparkles}
                   label="Updates"
                   reason="Release notes aren't part of this build."
-                  className="flex flex-1 items-center justify-center gap-2 rounded-card border border-border px-3 py-2 text-sm"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm"
                   showLabel
                 />
               </div>
@@ -90,13 +90,27 @@ export function SidebarFooter() {
 function InviteRow() {
   return (
     <DisabledAction
-      icon={UserPlus}
+      icon={TeamGroupIcon}
       label="Invite team members"
       reason="Teams aren't part of this build."
-      className="flex w-full items-center gap-2 rounded-card border border-border px-3 py-2 text-sm [&>svg:last-child]:ml-auto"
+      className="flex w-full items-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm [&>svg:last-child]:ml-auto"
       showLabel
       trailingIcon={ArrowRight}
     />
+  );
+}
+
+/** The reference's invite glyph: a solid three-person group, which lucide has no filled version of. */
+function TeamGroupIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <circle cx="12" cy="7.4" r="2.9" />
+      <circle cx="5.6" cy="8.6" r="2.2" />
+      <circle cx="18.4" cy="8.6" r="2.2" />
+      <path d="M12 11.6c2.98 0 5.42 2.06 5.9 4.86.08.44-.28.84-.73.84H6.83c-.45 0-.81-.4-.73-.84.48-2.8 2.92-4.86 5.9-4.86Z" />
+      <path d="M5.6 12c.53 0 1.04.1 1.5.27a7.3 7.3 0 0 0-2.34 3.83H2.7c-.42 0-.75-.38-.66-.79C2.44 13.4 3.88 12 5.6 12Z" />
+      <path d="M18.4 12c1.72 0 3.16 1.4 3.56 3.31.09.41-.24.79-.66.79h-2.06a7.3 7.3 0 0 0-2.34-3.83c.46-.17.97-.27 1.5-.27Z" />
+    </svg>
   );
 }
 
@@ -121,9 +135,9 @@ function CreditBlock() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between px-1 text-sm">
+      <div className="flex items-center justify-between px-1 text-xs">
         <span className="text-fg-muted">Available Credits</span>
-        <span className="font-mono text-fg">
+        <span className="text-fg">
           {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
         </span>
       </div>

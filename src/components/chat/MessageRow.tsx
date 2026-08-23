@@ -65,7 +65,7 @@ function AssistantMessage({
   return (
     <div className="flex flex-col">
       {hasBlocks ? (
-        <MessageTimeline timeline={timeline} />
+        <MessageTimeline timeline={timeline} timelineId={message.id} />
       ) : (
         <p className="text-[15px] leading-7 whitespace-pre-wrap text-fg">{message.content}</p>
       )}

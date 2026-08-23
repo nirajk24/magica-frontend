@@ -48,7 +48,7 @@ export function ThemeToggle() {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1">
+    <div className="grid grid-cols-3 gap-1 rounded-full border border-border bg-bg p-0.5">
       {OPTIONS.map(({ value, icon: Icon, label }) => {
         const active = hydrated && theme === value;
 
@@ -60,11 +60,11 @@ export function ThemeToggle() {
             aria-label={label}
             aria-pressed={active}
             className={cn(
-              "flex h-7 items-center justify-center rounded-full transition-colors",
-              active ? "bg-panel text-fg shadow-sm" : "text-fg-muted hover:text-fg",
+              "flex h-6 items-center justify-center rounded-full transition-colors",
+              active ? "bg-panel text-fg shadow-sm ring-1 ring-border" : "text-fg-muted hover:text-fg",
             )}
           >
-            <Icon className="size-4" aria-hidden />
+            <Icon className="size-3.5" aria-hidden />
           </button>
         );
       })}

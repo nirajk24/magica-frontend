@@ -26,10 +26,11 @@ import { useLlmStatus } from "@/queries/use-llm-status";
 import { sendFailureMessage, useSendMessage } from "@/queries/use-send-message";
 import { useUI } from "@/stores/ui";
 
-const COLUMN = "mx-auto w-full max-w-[820px] px-6";
+/** The reference's composer runs slightly wider than the transcript it sits under. */
+const COMPOSER_COLUMN = "mx-auto w-full max-w-[940px] px-6";
 
 /**
- * The new-chat screen runs wider than a conversation: 900px against 820px, measured off the
+ * The new-chat screen runs wider than a conversation: 900px against 880px, measured off the
  * reference at two very different viewport widths, so it is a fixed maximum rather than a fraction.
  */
 const EMPTY_STATE_COLUMN = "mx-auto w-full max-w-[900px] px-6";
@@ -132,7 +133,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       )}
 
       <div className={showEmptyState ? "min-h-0 flex-1 overflow-y-auto pt-28 pb-10" : "shrink-0 pb-6"}>
-        <div className={showEmptyState ? EMPTY_STATE_COLUMN : COLUMN}>
+        <div className={showEmptyState ? EMPTY_STATE_COLUMN : COMPOSER_COLUMN}>
           {showEmptyState && <EmptyStateHeader />}
 
           {progressPlan && (

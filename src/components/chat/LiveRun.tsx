@@ -115,7 +115,11 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
     <div className="flex flex-col">
       <ConnectionPill connection={connection} />
       {metadata ? (
-        <StreamingOverlay metadata={metadata} streamedText={parts.join("")} />
+        <StreamingOverlay
+          metadata={metadata}
+          streamedText={parts.join("")}
+          timelineId={`live:${run.runId}`}
+        />
       ) : (
         <PendingTurn />
       )}

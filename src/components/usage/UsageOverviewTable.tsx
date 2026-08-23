@@ -43,7 +43,7 @@ export function UsageOverviewTable({
   const sorted = sortCategories(categories, sort);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-panel">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border text-fg">
@@ -185,19 +185,19 @@ function SkeletonRows() {
       {Array.from({ length: SKELETON_ROWS }, (_, index) => (
         <tr key={index} aria-hidden>
           <td className="px-6 py-5">
-            <div className="h-4 w-32 animate-pulse rounded bg-surface" />
+            <div className="h-4 w-32 animate-pulse rounded bg-border" />
           </td>
           <td className="px-6 py-5">
-            <div className="ml-auto h-4 w-16 animate-pulse rounded bg-surface" />
+            <div className="ml-auto h-4 w-16 animate-pulse rounded bg-border" />
           </td>
           <td className="px-6 py-5">
-            <div className="ml-auto h-4 w-8 animate-pulse rounded bg-surface" />
+            <div className="ml-auto h-4 w-8 animate-pulse rounded bg-border" />
           </td>
           <td className="px-6 py-5">
-            <div className="h-4 w-40 animate-pulse rounded bg-surface" />
+            <div className="h-4 w-40 animate-pulse rounded bg-border" />
           </td>
           <td className="px-6 py-5">
-            <div className="ml-auto h-4 w-24 animate-pulse rounded bg-surface" />
+            <div className="ml-auto h-4 w-24 animate-pulse rounded bg-border" />
           </td>
         </tr>
       ))}

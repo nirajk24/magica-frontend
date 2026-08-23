@@ -5,7 +5,7 @@ export function CitationsRow({ block }: BlockProps) {
   if (block.type !== "citations" || block.items.length === 0) return null;
 
   return (
-    <ul className="flex flex-col gap-1 text-sm">
+    <ul className="flex flex-col gap-1 text-[13px]">
       {block.items.map((item) => (
         <li key={item.url}>
           <a

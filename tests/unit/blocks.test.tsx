@@ -210,7 +210,7 @@ describe("a tool card", () => {
 describe("step groups", () => {
   it("collapses a finished turn to its header and counts the rows inside", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<MessageTimeline timeline={timelineFromMessage(fixtures.assistantMessage)} />);
+    renderWithProviders(<MessageTimeline timeline={timelineFromMessage(fixtures.assistantMessage)} timelineId="test" />);
 
     const groups = screen.getAllByRole("button", { name: /Completed 1 step/ });
 
@@ -223,7 +223,7 @@ describe("step groups", () => {
   });
 
   it("leaves prose outside the group, so it reads even while collapsed", () => {
-    renderWithProviders(<MessageTimeline timeline={timelineFromMessage(fixtures.assistantMessage)} />);
+    renderWithProviders(<MessageTimeline timeline={timelineFromMessage(fixtures.assistantMessage)} timelineId="test" />);
 
     expect(screen.getByText("Here is your mountain at sunrise.")).toBeVisible();
   });
@@ -236,7 +236,7 @@ describe("step groups", () => {
     const timeline = timelineFromMessage(message);
     timeline.segments[1]!.streaming = true;
 
-    renderWithProviders(<MessageTimeline timeline={timeline} />);
+    renderWithProviders(<MessageTimeline timeline={timeline} timelineId="test" />);
 
     expect(screen.getByRole("button", { name: /Working · 1 step/ })).toBeInTheDocument();
     expect(screen.getByText("Generating image")).toBeInTheDocument();

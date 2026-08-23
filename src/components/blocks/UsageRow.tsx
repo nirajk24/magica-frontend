@@ -13,7 +13,7 @@ export function UsageRow({ block }: BlockProps) {
   if (block.type !== "usage") return null;
 
   return (
-    <p className="font-mono text-xs text-fg-subtle">
+    <p className="text-[10px] text-fg-muted">
       {formatTokens(block.inputTokens)} in · {formatTokens(block.outputTokens)} out
     </p>
   );

@@ -38,13 +38,18 @@ const RATE_LIMIT_NOTE =
 export function TopBar({
   chatId,
   showFiles = false,
+  showActions = true,
 }: {
   /** The conversation whose model the pill names, when the route is inside one. */
   chatId?: string;
   showFiles?: boolean;
+  /** The usage page shows a bare top bar — no model pill, no credits chip — like the reference. */
+  showActions?: boolean;
 }) {
   const { isSignedIn } = useAuth();
   const setFilesOpen = useUI((state) => state.setFilesOpen);
+
+  if (!showActions) return <header className="h-14 shrink-0" />;
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 px-4">
@@ -59,7 +64,7 @@ export function TopBar({
                   type="button"
                   aria-label="Files in this task"
                   onClick={() => setFilesOpen(true)}
-                  className="grid size-9 place-items-center rounded-full border border-border bg-panel text-fg-muted transition-colors hover:bg-surface hover:text-fg"
+                  className="grid size-9 place-items-center rounded-full border border-border text-fg-muted transition-colors hover:bg-surface hover:text-fg"
                 >
                   <FolderOpen className="size-4" aria-hidden />
                 </TooltipTrigger>
@@ -128,20 +133,22 @@ function ModelPicker({ chatId }: { chatId: string }) {
           <DropdownMenuTrigger
             aria-label={limited ? `${modelLabel(selected)} — rate limited` : modelLabel(selected)}
             className={cn(
-              "group flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold transition-colors",
-              limited ? "bg-amber/15 text-amber hover:bg-amber/25" : "bg-surface text-fg hover:bg-border",
+              "group flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold transition-colors",
+              limited
+                ? "bg-amber/15 text-amber hover:bg-amber/25"
+                : "border border-border text-fg hover:bg-surface",
             )}
           >
             {limited ? (
               <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
             ) : (
-              <span className="grid size-5 shrink-0 place-items-center rounded-[7px] bg-fg text-bg">
-                <MagicaLogo className="size-3.5" />
+              <span className="grid size-4 shrink-0 place-items-center rounded-[5px] bg-fg text-bg">
+                <MagicaLogo className="size-2.5" />
               </span>
             )}
             <span className="max-w-[220px] truncate">{modelLabel(selected)}</span>
             <ChevronDown
-              className="size-3.5 opacity-60 transition-transform duration-150 group-data-[state=open]:rotate-180"
+              className="size-3 opacity-60 transition-transform duration-150 group-data-[state=open]:rotate-180"
               aria-hidden
             />
           </DropdownMenuTrigger>

@@ -8,7 +8,7 @@ import { MessageRow } from "@/components/chat/MessageRow";
 import { PendingTurn } from "@/components/chat/PendingTurn";
 import { ScrollToBottom } from "@/components/chat/ScrollToBottom";
 
-const COLUMN = "mx-auto w-full max-w-[820px] px-6";
+const COLUMN = "mx-auto w-full max-w-[880px] px-6";
 
 /**
  * A row of the transcript: a stored message, or the run currently being written.
@@ -53,7 +53,7 @@ export function MessageList({
         data={items as TranscriptItem[]}
         computeItemKey={(_index, item) => keyFor(item)}
         initialTopMostItemIndex={Math.max(items.length - 1, 0)}
-        followOutput={(isAtBottom) => (isAtBottom ? "smooth" : false)}
+        followOutput={(isAtBottom) => (isAtBottom ? "auto" : false)}
         atBottomStateChange={setAtBottom}
         startReached={onStartReached}
         itemContent={(_index, item) => (

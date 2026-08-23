@@ -80,7 +80,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Menu className="size-5" aria-hidden />
           </button>
           <div className="min-w-0 flex-1">
-            <TopBar chatId={chatId} showFiles={chatId !== undefined} />
+            <TopBar
+              chatId={chatId}
+              showFiles={chatId !== undefined}
+              showActions={segments[0] !== "usage"}
+            />
           </div>
         </div>
 

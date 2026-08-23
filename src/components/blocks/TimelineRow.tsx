@@ -54,13 +54,15 @@ export function TimelineRow({
 
   const header = (
     <>
-      <Icon className={cn("size-4 shrink-0 text-fg", iconClassName)} />
-      <span className={cn("text-sm font-semibold text-fg", labelClassName)}>{label}</span>
-      {expandable && chevron === "inline" && <Chevron className="size-4 text-fg-muted" aria-hidden />}
+      <Icon className={cn("size-3.5 shrink-0 text-fg", iconClassName)} />
+      <span className={cn("text-[13px] font-semibold text-fg", labelClassName)}>{label}</span>
+      {expandable && chevron === "inline" && (
+        <Chevron className="size-3.5 text-fg-muted" aria-hidden />
+      )}
       <StatusGlyph status={status} />
       {typeof durationMs === "number" && (
-        <span className="flex items-center gap-1 font-mono text-xs text-fg">
-          <Clock className="size-3" aria-hidden />
+        <span className="flex items-center gap-1 font-mono text-[11px] text-fg">
+          <Clock className="size-2.5" aria-hidden />
           {formatDuration(durationMs)}
         </span>
       )}
@@ -80,7 +82,7 @@ export function TimelineRow({
           {chevron === "end" && (
             <span className="ml-auto flex items-center gap-2">
               {right}
-              <Chevron className="size-4 text-fg-subtle" aria-hidden />
+              <Chevron className="size-3.5 text-fg-subtle" aria-hidden />
             </span>
           )}
         </button>
@@ -98,13 +100,13 @@ export function TimelineRow({
 
 function StatusGlyph({ status }: { status?: RowStatus }) {
   if (status === "running" || status === "pending" || status === "streaming") {
-    return <Loader2 className="size-3.5 animate-spin text-info" aria-label="Running" />;
+    return <Loader2 className="size-3 animate-spin text-info" aria-label="Running" />;
   }
   if (status === "completed") {
-    return <CircleCheck className="size-3.5 text-success" aria-label="Completed" />;
+    return <CircleCheck className="size-3 text-success" aria-label="Completed" />;
   }
   if (status === "failed") {
-    return <CircleX className="size-3.5 text-danger" aria-label="Failed" />;
+    return <CircleX className="size-3 text-danger" aria-label="Failed" />;
   }
 
   return null;

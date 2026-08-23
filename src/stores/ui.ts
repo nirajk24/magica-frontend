@@ -25,6 +25,9 @@ type UIState = {
   stoppingRuns: string[];
   planModeChats: string[];
   toasts: Toast[];
+  /** Step groups the user toggled by hand, keyed `{timelineId}:{segment}`. Virtualized rows
+   *  unmount off-screen, so this cannot live in the row's own state. */
+  expandedStepGroups: Record<string, boolean>;
   setDraft: (chatId: string, text: string) => void;
   clearDraft: (chatId: string) => void;
   setModel: (chatId: string, modelId: ModelId) => void;
@@ -37,6 +40,7 @@ type UIState = {
   setOpenPanel: (panel: UIState["openPanel"]) => void;
   markStopping: (runId: string) => void;
   clearStopping: (runId: string) => void;
+  setStepGroupOpen: (groupKey: string, open: boolean) => void;
   pushToast: (toast: Omit<Toast, "id">) => void;
   dismissToast: (id: string) => void;
 };
@@ -67,6 +71,7 @@ export const useUI = create<UIState>()(
       stoppingRuns: [],
       planModeChats: [],
       toasts: [],
+      expandedStepGroups: {},
 
       setDraft: (chatId, text) =>
         set((s) => ({ drafts: { ...s.drafts, [chatId]: text } })),
@@ -104,6 +109,9 @@ export const useUI = create<UIState>()(
 
       clearStopping: (runId) =>
         set((s) => ({ stoppingRuns: s.stoppingRuns.filter((id) => id !== runId) })),
+
+      setStepGroupOpen: (groupKey, open) =>
+        set((s) => ({ expandedStepGroups: { ...s.expandedStepGroups, [groupKey]: open } })),
 
       pushToast: (toast) =>
         set((s) => ({

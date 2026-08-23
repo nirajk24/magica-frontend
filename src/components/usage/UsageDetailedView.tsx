@@ -36,7 +36,7 @@ export function UsageDetailedView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-panel px-6 py-4">
         <div>
           <p className="font-semibold text-fg">Detailed records</p>
           <p className="mt-0.5 text-sm text-fg-muted">
@@ -69,11 +69,11 @@ export function UsageDetailedView({
       </div>
 
       {!chosen && !loading ? (
-        <p className="rounded-2xl border border-border px-6 py-14 text-center text-fg-muted">
+        <p className="rounded-2xl border border-border bg-panel px-6 py-14 text-center text-fg-muted">
           No usage in this period.
         </p>
       ) : (
-        <div className="rounded-2xl border border-border">
+        <div className="rounded-2xl border border-border bg-panel">
           <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5">
             <div>
               <h2 className="text-2xl font-semibold text-fg">
@@ -151,13 +151,13 @@ function SkeletonRows() {
       {Array.from({ length: SKELETON_ROWS }, (_, index) => (
         <tr key={index} aria-hidden>
           <td className="px-6 py-5">
-            <div className="h-4 w-16 animate-pulse rounded bg-surface" />
+            <div className="h-4 w-16 animate-pulse rounded bg-border" />
           </td>
           <td className="px-6 py-5">
-            <div className="h-4 w-44 animate-pulse rounded bg-surface" />
+            <div className="h-4 w-44 animate-pulse rounded bg-border" />
           </td>
           <td className="px-6 py-5">
-            <div className="ml-auto h-4 w-24 animate-pulse rounded bg-surface" />
+            <div className="ml-auto h-4 w-24 animate-pulse rounded bg-border" />
           </td>
         </tr>
       ))}

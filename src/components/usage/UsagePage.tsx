@@ -109,7 +109,7 @@ export function UsagePage() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border px-5 py-3.5">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-border bg-panel px-5 py-3">
           <FilterDropdown
             label="Show"
             value={SIDE_OPTIONS.find((option) => option.value === show)?.label ?? ""}
@@ -166,8 +166,8 @@ export function UsagePage() {
               onClick={() => setTab(option.value)}
               className={
                 tab === option.value
-                  ? "rounded-full bg-panel py-3 text-sm text-fg shadow-sm ring-1 ring-border"
-                  : "rounded-full py-3 text-sm text-fg-muted transition-colors hover:text-fg"
+                  ? "rounded-full bg-panel py-2.5 text-sm text-fg shadow-sm"
+                  : "rounded-full py-2.5 text-sm text-fg-muted transition-colors hover:text-fg"
               }
             >
               {option.label}
@@ -176,7 +176,7 @@ export function UsagePage() {
         </div>
 
         {pageQuery.isError ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border py-14">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-panel py-14">
             <p className="text-fg">Couldn&apos;t load your usage.</p>
             <button
               type="button"
@@ -221,8 +221,8 @@ function StatCard({
   value: string | undefined | false;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-border px-5 py-5">
-      <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-border">
+    <div className="flex items-center gap-4 rounded-2xl border border-border bg-panel px-5 py-4">
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-border">
         <Icon className="size-5 text-fg" aria-hidden />
       </span>
       <div className="min-w-0">
@@ -230,7 +230,7 @@ function StatCard({
         {value ? (
           <p className="truncate text-xl font-bold text-fg">{value}</p>
         ) : (
-          <div aria-hidden className="mt-1.5 h-5 w-24 animate-pulse rounded bg-surface" />
+          <div aria-hidden className="mt-1.5 h-5 w-24 animate-pulse rounded bg-border" />
         )}
       </div>
     </div>

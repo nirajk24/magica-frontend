@@ -1,8 +1,10 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
+
+type IconComponent = ComponentType<{ className?: string }>;
 
 /**
  * A control the reference shows but this build does not implement yet, rendered with the reason.
@@ -19,14 +21,14 @@ export function DisabledAction({
   showLabel = false,
   trailingIcon: TrailingIcon,
 }: {
-  icon: LucideIcon;
+  icon: IconComponent;
   label: string;
   reason: string;
   className?: string;
   /** Icon-only controls name themselves through `aria-label`; labelled ones also render the text. */
   showLabel?: boolean;
   /** A second glyph after the label, for rows the reference ends with an affordance. */
-  trailingIcon?: LucideIcon;
+  trailingIcon?: IconComponent;
 }) {
   return (
     <Tooltip>

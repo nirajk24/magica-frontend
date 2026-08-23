@@ -23,11 +23,10 @@
  * that must read as a distinct panel has to use `--surface`, or it renders with no fill at all in the
  * one theme the reference shows it raised in. This has already been the cause of five flat boxes.
  *
- * `--bg` / `--bg-subtle` in dark are the ONE pair that is deliberately not the sampled value. Every
- * lossless dark capture puts the reference's canvas at #121212; ours sits at #0f0f0f because the
- * darker ground was preferred on review. They move together — the reference's sidebar is identical
- * to its canvas in dark, so darkening only one would introduce a seam the reference never shows.
- * `--surface` is unchanged, so raised elements read slightly more raised than the reference.
+ * `--bg` / `--bg-subtle` in dark sit at #111111, an on-review midpoint between the sampled #121212
+ * and a darker #0f0f0f that were each tried and rejected. They move together — the reference's
+ * sidebar is identical to its canvas in dark, so darkening only one would introduce a seam the
+ * reference never shows.
  *
  * The three text tones sit ~7% past their sampled values in both directions — darker in light,
  * brighter in dark — an on-review preference (like D-12): the sampled greys read washed next to the
@@ -44,7 +43,7 @@
  * both themes**, verified against the live product on review: no fill, a hairline on the bare
  * canvas. Filling them is the "darker background" mistake the review caught twice, once per theme.
  * That is why the dark `--border` sits at #242424 rather than the sampled #1b1b1b — a border-only
- * box on a #0f0f0f canvas vanishes behind a 1b hairline (the invisible-panels bug, relived).
+ * box on the dark canvas vanishes behind a 1b hairline (the invisible-panels bug, relived).
  *
  * `--tab-strip` is the template tab row's band, and it exists in ONE theme: the dark capture shows a
  * #191919 band behind the tabs, the light capture shows bare text on the canvas. It is transparent
@@ -132,8 +131,8 @@
 
 .dark {
   color-scheme: dark;
-  --bg: #0f0f0f;
-  --bg-subtle: #0f0f0f;
+  --bg: #111111;
+  --bg-subtle: #111111;
   --surface: #191919;
   --border: #242424;
   --fg: #f5f5f5;
@@ -152,7 +151,7 @@
   --composer-to: #191919;
 
   --panel: #191919;
-  --panel-inset: #0f0f0f;
+  --panel-inset: #111111;
 
   --border-strong: #3f3f3f;
   --tab-strip: #191919;
