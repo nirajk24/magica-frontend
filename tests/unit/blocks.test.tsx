@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ContentBlock, MessageDTO, ToolInvocationDTO } from "@/contracts";
 import { Block, blockRenderers, cardFor, rendererFor, toolCardRenderers } from "@/components/blocks";
 import { ToolCard } from "@/components/blocks/ToolCard";
+import { fieldValue } from "@/components/blocks/tool-output";
 import { MessageTimeline } from "@/components/chat/MessageTimeline";
 import { timelineFromMessage, type ToolView } from "@/lib/timeline";
 import { useUI } from "@/stores/ui";
@@ -345,5 +346,30 @@ describe("row anatomy measured off the reference", () => {
 
     expect(screen.getByText("Model")).toBeInTheDocument();
     expect(screen.getByText("gpt-image-2-text")).toBeInTheDocument();
+  });
+});
+
+describe("an input field the card has to summarise", () => {
+  /**
+   * A tool is free to take an array of objects — a plan's steps, a set of questions. Serialising
+   * one puts a wall of braces in a row sized for a phrase, and those payloads have cards of their
+   * own that render them properly.
+   */
+  it("counts a structured value instead of serialising it", () => {
+    expect(fieldValue([{ id: "city" }, { id: "colour" }, { id: "mood" }])).toBe("3 items");
+    expect(fieldValue([{ id: "only" }])).toBe("1 item");
+    expect(fieldValue({ width: 1200, height: 1203 })).toBe("2 fields");
+  });
+
+  it("still reads a flat list out, because that is short enough to be useful", () => {
+    expect(fieldValue(["red", "blue"])).toBe("red, blue");
+    expect(fieldValue([10, 20])).toBe("10, 20");
+  });
+
+  it("leaves scalars exactly as they were", () => {
+    expect(fieldValue("a mountain at sunrise")).toBe("a mountain at sunrise");
+    expect(fieldValue(0)).toBe("0");
+    expect(fieldValue(false)).toBe("false");
+    expect(fieldValue(null)).toBe("—");
   });
 });

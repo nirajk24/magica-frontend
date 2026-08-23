@@ -60,12 +60,27 @@ export function fieldLabel(key: string): string {
   );
 }
 
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
+/**
+ * One input field as the card and the panel show it.
+ *
+ * INVARIANT: a structured value is summarised, never serialised. A tool is free to take an array of
+ * objects — a plan's steps, a set of questions — and dumping that as JSON puts a wall of braces in a
+ * row sized for a phrase. Those payloads have cards of their own that render them properly.
+ */
 export function fieldValue(value: unknown): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
 
-  return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    const flat = value.every((item) => item === null || typeof item !== "object");
+
+    return flat ? value.map(fieldValue).join(", ") : count(value.length, "item");
+  }
+
+  return count(Object.keys(value as object).length, "field");
 }
 
 /** Sanitized input as ordered label/value pairs. A non-object input has no rows to show. */
