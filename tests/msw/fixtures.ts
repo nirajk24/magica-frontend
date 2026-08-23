@@ -602,7 +602,7 @@ export const createdApiKey: CreateApiKeyResult = {
     createdAt: "2026-08-23T09:00:00.000Z",
     revokedAt: null,
   },
-  key: "mk_live_000000000000000000000000000000000000000000000000",
+  key: "mk_live_example_not_a_real_key",
 };
 
 export const webhookEndpointsPage: WebhookEndpointsPage = {
@@ -623,7 +623,7 @@ export const createdWebhookEndpoint: CreateWebhookEndpointResult = {
     events: ["agent.completed"],
     createdAt: "2026-08-23T09:00:00.000Z",
   },
-  secret: "whsec_0000000000000000000000000000000000000000",
+  secret: "mgwh_example_not_a_real_secret",
 };
 
 export const webhookDeliveriesPage: WebhookDeliveriesPage = {
