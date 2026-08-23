@@ -221,7 +221,18 @@ function NavRow({
     );
   }
 
-  const link = (
+  const link = item.external ? (
+    <a
+      href={item.href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={item.label}
+      onClick={onNavigate}
+      className={className}
+    >
+      {content}
+    </a>
+  ) : (
     <Link href={item.href} aria-label={item.label} onClick={onNavigate} className={className}>
       {content}
     </Link>

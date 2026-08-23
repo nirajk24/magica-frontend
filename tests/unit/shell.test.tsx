@@ -73,6 +73,15 @@ describe("the sidebar", () => {
     expect(screen.getByRole("link", { name: "Tasks" })).toHaveAttribute("href", "/chat/recent");
   });
 
+  it("sends API / MCP straight out to the published reference, as the product does", () => {
+    renderWithProviders(<Sidebar />);
+
+    const docs = screen.getByRole("link", { name: "API / MCP" });
+
+    expect(docs).toHaveAttribute("href", env.NEXT_PUBLIC_API_DOCS_URL);
+    expect(docs).toHaveAttribute("target", "_blank");
+  });
+
   it("renders the sections we do not implement as disabled with a reason", async () => {
     const user = userEvent.setup();
     renderWithProviders(<Sidebar />);

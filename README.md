@@ -9,7 +9,8 @@ therefore not "render a chat" but **keep one screen truthful across two sources*
 and a database — without writing the timeline twice.
 
 The API lives in [magica-backend](https://github.com/nirajk24/magica-backend), which is also the
-source of `src/contracts/` — generated here, never hand-edited.
+source of `src/contracts/` — generated here, never hand-edited. Its public REST surface is
+documented at [magica-8fc30897.mintlify.site](https://magica-8fc30897.mintlify.site).
 
 | | |
 |---|---|
@@ -38,6 +39,7 @@ agent worker. Without the worker, sends are accepted and no turn ever runs.
 | `NEXT_PUBLIC_API_URL` | backend origin — the client calls `${it}/api/v1` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | authentication |
 | `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | hosted sign-in path |
+| `NEXT_PUBLIC_API_DOCS_URL` | hosted API reference; optional — absent, the settings pane hides the link |
 
 ### Checks
 

@@ -21,6 +21,7 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_API_URL: "http://localhost:3001",
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_vitest",
+      NEXT_PUBLIC_API_DOCS_URL: "https://docs.test",
     },
   },
 });
