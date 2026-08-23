@@ -53,7 +53,7 @@ export function PlanCard({
   return (
     <section
       aria-label="Plan approval"
-      className="rounded-card border border-border bg-surface p-4"
+      className="rounded-card border border-border p-4"
     >
       <h3 className="text-[15px] font-semibold text-fg">{plan.title}</h3>
       <p className="mt-1 text-sm text-fg-muted">{plan.overview}</p>
@@ -65,7 +65,7 @@ export function PlanCard({
               {index + 1}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-fg">{step.title}</span>
+              <span className="block text-sm font-semibold text-fg">{step.title}</span>
               <span className="block text-sm text-fg-muted">{step.description}</span>
             </span>
             <CreditChip amount={step.estimatedCredits} />
@@ -170,7 +170,7 @@ function PlanAction({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        "flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
         ghost ? "border border-border text-fg hover:bg-bg" : "bg-fg text-bg hover:opacity-90",
       )}
     >

@@ -23,7 +23,7 @@ export function CreditsPopover() {
     <Popover>
       <PopoverTrigger
         aria-label="Available credits"
-        className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-panel px-3 text-sm font-medium text-fg transition-colors hover:bg-surface"
+        className="flex h-9 items-center gap-1.5 rounded-full border border-border bg-panel px-3 text-sm font-semibold text-fg transition-colors hover:bg-surface"
       >
         <CreditsSpark className="size-4" />
         {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
@@ -31,7 +31,7 @@ export function CreditsPopover() {
 
       <PopoverContent className="w-[310px] rounded-2xl p-2.5">
         <div className="rounded-xl bg-panel-inset p-3.5">
-          <p className="text-xs font-medium tracking-wide text-fg-subtle">FREE TIER</p>
+          <p className="text-xs font-semibold tracking-wide text-fg-subtle">FREE TIER</p>
 
           <div className="mt-2 flex items-center justify-between">
             <span className="text-sm text-fg-muted">Available Credits</span>
@@ -43,7 +43,7 @@ export function CreditsPopover() {
           <button
             type="button"
             onClick={() => setAddCreditsOpen(true)}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-fg py-2.5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-fg py-2.5 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
           >
             <CreditCard className="size-4" aria-hidden />
             Add Credits

@@ -35,7 +35,7 @@ export function ThinkingRow({ block, streaming }: BlockProps) {
       chevron="inline"
     >
       {thinking.length > 0 ? (
-        <div className="rounded-card border border-border bg-surface p-3 text-xs leading-5 whitespace-pre-wrap text-fg">
+        <div className="rounded-card border border-border p-3 text-xs leading-5 whitespace-pre-wrap text-fg">
           {thinking}
         </div>
       ) : undefined}

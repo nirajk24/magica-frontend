@@ -81,7 +81,7 @@ export function TopBar({
             <SignUpButton mode="modal">
               <button
                 type="button"
-                className="h-8 rounded-full bg-fg px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+                className="h-8 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
               >
                 Sign up
               </button>
@@ -128,7 +128,7 @@ function ModelPicker({ chatId }: { chatId: string }) {
           <DropdownMenuTrigger
             aria-label={limited ? `${modelLabel(selected)} — rate limited` : modelLabel(selected)}
             className={cn(
-              "group flex h-9 items-center gap-2 rounded-full px-3 text-sm font-medium transition-colors",
+              "group flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold transition-colors",
               limited ? "bg-amber/15 text-amber hover:bg-amber/25" : "bg-surface text-fg hover:bg-border",
             )}
           >
@@ -167,7 +167,7 @@ function ModelPicker({ chatId }: { chatId: string }) {
                 <MagicaLogo className="size-5" />
               </span>
               <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="flex items-center gap-1.5 text-[15px] font-medium">
+                <span className="flex items-center gap-1.5 text-[15px] font-semibold">
                   {modelLabel(id)}
                   {id === limitedModel && (
                     <span className="rounded-full bg-amber/15 px-1.5 text-[11px] font-normal text-amber">

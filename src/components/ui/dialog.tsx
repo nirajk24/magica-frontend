@@ -48,7 +48,7 @@ function DialogContent({
         {...props}
       >
         {showTitle ? (
-          <DialogPrimitive.Title className="px-4 pt-4 text-sm font-medium text-fg">
+          <DialogPrimitive.Title className="px-4 pt-4 text-sm font-semibold text-fg">
             {title}
           </DialogPrimitive.Title>
         ) : (

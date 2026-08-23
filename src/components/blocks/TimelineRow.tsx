@@ -55,7 +55,7 @@ export function TimelineRow({
   const header = (
     <>
       <Icon className={cn("size-4 shrink-0 text-fg", iconClassName)} />
-      <span className={cn("text-sm font-medium text-fg", labelClassName)}>{label}</span>
+      <span className={cn("text-sm font-semibold text-fg", labelClassName)}>{label}</span>
       {expandable && chevron === "inline" && <Chevron className="size-4 text-fg-muted" aria-hidden />}
       <StatusGlyph status={status} />
       {typeof durationMs === "number" && (
@@ -144,7 +144,7 @@ export function DetailRows({
   const shown = rows.slice(0, visible);
 
   return (
-    <div className="rounded-card border border-border bg-surface p-3">
+    <div className="rounded-card border border-border p-3">
       <Grid rows={shown} />
 
       {rows.length > visible &&

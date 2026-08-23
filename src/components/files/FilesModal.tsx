@@ -214,7 +214,7 @@ function FileRows({
               </span>
               <FileThumb file={file} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-fg">{file.name}</span>
+                <span className="block truncate text-sm font-semibold text-fg">{file.name}</span>
                 <span className="block text-xs text-fg-subtle">
                   {[
                     extensionLabel(file),

@@ -24,13 +24,13 @@ export function AssistantFooter({ message, chatId }: { message: MessageDTO; chat
   return (
     <div className="mt-3 flex flex-col gap-2">
       {message.creditUsed !== "0" && (
-        <p className="flex items-center gap-1 text-[11px] text-fg-subtle">
-          <CircleDollarSign className="size-3" aria-hidden />
+        <p className="flex items-center gap-1 text-[10px] text-fg-muted">
+          <CircleDollarSign className="size-[11px]" aria-hidden />
           {formatCredits(message.creditUsed)} credits
         </p>
       )}
 
-      <div className="flex items-center gap-3 text-fg-subtle">
+      <div className="flex items-center gap-3 text-fg-muted [&_svg]:size-3.5 [&_svg]:stroke-[2.3] [&_svg]:[stroke-linejoin:round]">
         <CopyButton text={message.content} />
         <DisabledAction
           icon={GitFork}
@@ -76,7 +76,7 @@ function FeedbackButton({
         onClick={onClick}
         className={cn("transition-colors", active ? "text-fg" : "hover:text-fg")}
       >
-        <Icon className={cn("size-3.5", active && "fill-current")} aria-hidden />
+        <Icon className={cn(active && "fill-current")} aria-hidden />
       </TooltipTrigger>
       <TooltipContent>{active ? `${label}d — click to undo` : label}</TooltipContent>
     </Tooltip>

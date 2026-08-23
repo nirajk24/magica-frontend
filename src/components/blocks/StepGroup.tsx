@@ -44,7 +44,7 @@ export function StepGroup({
         {streaming ? (
           <span>
             Working ·{" "}
-            <span className="font-medium text-fg">
+            <span className="font-semibold text-fg">
               {steps} {unit}
             </span>
           </span>

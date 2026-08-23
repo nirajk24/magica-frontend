@@ -65,7 +65,7 @@ export function TasksPage() {
 
           <Link
             href="/chat"
-            className="flex h-10 items-center gap-2 rounded-full bg-fg px-4 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+            className="flex h-10 items-center gap-2 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
           >
             <CirclePlus className="size-4" aria-hidden />
             New task

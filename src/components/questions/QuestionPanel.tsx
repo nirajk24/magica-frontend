@@ -84,7 +84,7 @@ export function QuestionPanel({
       className="rounded-composer border border-border bg-surface bg-linear-to-b from-composer-from to-composer-to p-4"
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="min-w-0 truncate text-sm font-medium text-fg">
+        <p className="min-w-0 truncate text-sm font-semibold text-fg">
           {question.prompt}
           {question.required && <span className="ml-0.5 text-fg-subtle">*</span>}
         </p>
@@ -366,7 +366,7 @@ function PanelFooter({
           type="button"
           disabled={resolving || saveDisabled}
           onClick={onSave}
-          className="flex h-8 items-center gap-1.5 rounded-full bg-fg px-3.5 text-sm font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-8 items-center gap-1.5 rounded-full bg-fg px-3.5 text-sm font-semibold text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {resolving && <Spinner className="size-3.5" />}
           Save & Next

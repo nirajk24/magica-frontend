@@ -47,7 +47,7 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
             className={cn(
               "shrink-0 rounded-full px-3 py-1 whitespace-nowrap transition-colors",
               category === name
-                ? "bg-panel font-medium text-fg shadow-sm"
+                ? "bg-panel font-semibold text-fg shadow-sm"
                 : "text-fg-muted hover:text-fg",
             )}
           >
@@ -72,7 +72,7 @@ export function TemplateGallery({ onPick }: { onPick: (template: Template) => vo
               aria-hidden
             />
             <div className="px-3 py-2.5">
-              <p className="truncate text-sm font-medium text-fg">{template.title}</p>
+              <p className="truncate text-sm font-semibold text-fg">{template.title}</p>
               <p className="truncate text-sm text-fg-muted">{template.description}</p>
             </div>
           </button>

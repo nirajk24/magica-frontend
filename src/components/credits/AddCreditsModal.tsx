@@ -70,7 +70,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
       </p>
 
       <div>
-        <p className="text-sm font-medium text-fg">Amount</p>
+        <p className="text-sm font-semibold text-fg">Amount</p>
         <div className="mt-2 grid grid-cols-4 gap-1 rounded-xl bg-surface p-1">
           {PRESETS_M.map((preset) => (
             <button
@@ -84,7 +84,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
               className={cn(
                 "rounded-lg py-2 text-sm transition-colors",
                 custom === "" && millions === preset
-                  ? "bg-panel font-medium text-fg shadow-sm"
+                  ? "bg-panel font-semibold text-fg shadow-sm"
                   : "text-fg-muted hover:text-fg",
               )}
             >
@@ -95,7 +95,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
       </div>
 
       <div>
-        <label htmlFor="custom-credits" className="text-sm font-medium text-fg">
+        <label htmlFor="custom-credits" className="text-sm font-semibold text-fg">
           Custom amount
         </label>
         <input
@@ -134,7 +134,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
           type="button"
           disabled={!valid || topUp.isPending}
           onClick={submit}
-          className="flex h-10 items-center gap-2 rounded-full bg-fg px-5 text-sm font-medium text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-10 items-center gap-2 rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {topUp.isPending ? <Spinner className="size-4" /> : <CreditCard className="size-4" aria-hidden />}
           Add Credits

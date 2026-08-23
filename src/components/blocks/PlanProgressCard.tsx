@@ -19,7 +19,7 @@ export function PlanProgressCard({ plan }: { plan: ActivePlan }) {
   const done = plan.steps.filter((step) => step.status === "completed").length;
 
   return (
-    <section aria-label="Plan progress" className="rounded-card border border-border bg-surface p-4">
+    <section aria-label="Plan progress" className="rounded-card border border-border p-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="min-w-0 truncate text-[15px] font-semibold text-fg">{plan.title}</h3>
         <span className="shrink-0 text-sm text-fg-muted">

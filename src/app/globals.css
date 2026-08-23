@@ -40,6 +40,12 @@
  * in light, the canvas in dark). A row that is raised back out of the band takes `--panel` again, so
  * the focused row and the panel always share one value and the band always differs from both.
  *
+ * Expanded blocks — a reasoning box, a tool card's detail grid, a plan card — are **border-only in
+ * both themes**, verified against the live product on review: no fill, a hairline on the bare
+ * canvas. Filling them is the "darker background" mistake the review caught twice, once per theme.
+ * That is why the dark `--border` sits at #242424 rather than the sampled #1b1b1b — a border-only
+ * box on a #0f0f0f canvas vanishes behind a 1b hairline (the invisible-panels bug, relived).
+ *
  * `--tab-strip` is the template tab row's band, and it exists in ONE theme: the dark capture shows a
  * #191919 band behind the tabs, the light capture shows bare text on the canvas. It is transparent
  * in light on purpose — giving it a light value re-introduces the strip the reference does not draw.
@@ -101,7 +107,7 @@
   --bg: #ffffff;
   --bg-subtle: #f9f9f9;
   --surface: #f7f7f7;
-  --border: #f2f2f2;
+  --border: #e9e9e9;
   --fg: #111111;
   --fg-muted: #444444;
   --fg-subtle: #606060;
@@ -129,7 +135,7 @@
   --bg: #0f0f0f;
   --bg-subtle: #0f0f0f;
   --surface: #191919;
-  --border: #1b1b1b;
+  --border: #242424;
   --fg: #f5f5f5;
   --fg-muted: #9d9d9d;
   --fg-subtle: #646464;
@@ -188,8 +194,10 @@
 body {
   background-color: var(--bg);
   color: var(--fg);
-  /* The reference's type sits a step heavier than the system default; 450 on a variable font. */
-  font-weight: 450;
+  /* The reference's type sits a step heavier than the system default; 500 on a variable font,
+     raised three times on review — the reference's grotesque reads medium at body sizes. Because the
+     base IS medium, in-page emphasis uses `font-semibold`; a `font-medium` accent would vanish. */
+  font-weight: 500;
 }
 
 /*

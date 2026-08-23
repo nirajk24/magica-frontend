@@ -108,7 +108,7 @@ function AddCreditsButton() {
     <button
       type="button"
       onClick={() => setAddCreditsOpen(true)}
-      className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+      className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
     >
       <CreditCard className="size-4" aria-hidden />
       Add Credits
