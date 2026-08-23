@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import type {
   ActivePlan,
   ActiveRun,
+  UsagePage,
   AttachmentDTO,
   ChatDTO,
   ChatWithMessages,
@@ -324,6 +325,47 @@ export const llmStatus: LlmStatus = { limitedModel: null, rateLimitedUntil: null
 export const rateLimitedLlmStatus: LlmStatus = {
   limitedModel: "nvidia/nemotron-3-super-120b-a12b:free",
   rateLimitedUntil: "2026-08-22T10:05:00.000Z",
+};
+
+/** What the fixture balance becomes after the default 20M top-up. */
+export const toppedUpBalance = "49994120";
+
+/** Per-tool spend for the usage overview: two tools and the signup grant, figures settled. */
+export const usagePage: UsagePage = {
+  from: "2026-08-21T00:00:00.000Z",
+  to: "2026-09-20T00:00:00.000Z",
+  totalDebited: "24970000",
+  totalCredited: "30000000",
+  records: 44,
+  categories: [
+    {
+      key: "agent_chat",
+      label: "AI Agent Chat",
+      kind: "tool",
+      debited: "4940000",
+      credited: "0",
+      count: 36,
+      latestAt: "2026-08-23T03:49:21.000Z",
+    },
+    {
+      key: "gpt_image_2",
+      label: "AI Gpt Image 2",
+      kind: "tool",
+      debited: "80000",
+      credited: "0",
+      count: 6,
+      latestAt: "2026-08-23T03:44:25.000Z",
+    },
+    {
+      key: "credit_adjustment",
+      label: "AI Credit Adjustment",
+      kind: "adjustment",
+      debited: "0",
+      credited: "30000000",
+      count: 1,
+      latestAt: "2026-08-21T14:12:35.000Z",
+    },
+  ],
 };
 
 export const creditsPage: CreditsPage = {

@@ -39,6 +39,10 @@ export const handlers = [
 
   http.get(`${API}/credits`, () => ok(fixtures.creditsPage)),
 
+  http.post(`${API}/credits/top-up`, () => ok({ balance: fixtures.toppedUpBalance })),
+
+  http.get(`${API}/credits/usage`, () => ok(fixtures.usagePage)),
+
   http.get(`${API}/llm/status`, () => ok(fixtures.llmStatus)),
 
   http.post(`${API}/runs/:runId/cancel`, () => ok({ ok: true })),
