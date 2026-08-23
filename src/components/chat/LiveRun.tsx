@@ -19,6 +19,17 @@ const LIVENESS_TICK_MS = 10_000;
 export type RunConnection = "live" | "reconnecting" | "polling";
 
 /**
+ * The last snapshot seen for a run, held outside the component because the component is the thing
+ * being replaced.
+ *
+ * Resubscribing is a remount by design, and a fresh mount has no metadata until the subscription
+ * delivers. Rendering the pending row in that gap blanks a turn that is mid-flight, which is what a
+ * reader sees as the transcript flickering between its steps and a bare "Thinking" row. One slot:
+ * only the run currently on screen can ever be read back.
+ */
+let lastSnapshot: { runId: string; metadata: RunMetadata } | null = null;
+
+/**
  * Subscribes to one run with one token, and renders the turn while it runs.
  *
  * INVARIANT: mount this keyed on `triggerRunId` + token. `useRealtimeRun`'s subscription effect does
@@ -33,7 +44,9 @@ export type RunConnection = "live" | "reconnecting" | "polling";
  *
  * A waitpoint arriving in the metadata invalidates the active-run query: the plan card and the
  * question panel render from `pendingWaitpoint` — the source that also survives a reload — so the
- * realtime signal's only job is to make that source refetch now instead of on the next visit.
+ * realtime signal's only job is to make that source refetch now instead of on the next visit. It
+ * fires only while that source does not already carry the waitpoint, because the refetch changes
+ * the token this subtree is keyed on and the metadata still names it after the remount.
  *
  * A fourth path covers the one the other three miss: a transport that goes quiet without erroring
  * (§4.6 step 6). Retries and the REST fallback both key off an error, so silence would otherwise
@@ -118,14 +131,34 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
     void settle();
   }, [finished, chatId, queryClient]);
 
-  const metadata = parseMetadata(realtimeRun?.metadata);
-  const waitpointId = metadata?.waitpoint?.id ?? null;
+  const delivered = parseMetadata(realtimeRun?.metadata);
+  const metadata =
+    delivered ?? (lastSnapshot?.runId === run.runId ? lastSnapshot.metadata : null);
 
   useEffect(() => {
-    if (!waitpointId) return;
+    if (delivered) lastSnapshot = { runId: run.runId, metadata: delivered };
+  }, [delivered, run.runId]);
+
+  const waitpointId = metadata?.waitpoint?.id ?? null;
+
+  /**
+   * The waitpoint the cache has already been told about. Compared against, rather than remembered in
+   * a ref, because the refetch below changes the token this subtree is keyed on — so the mount that
+   * would hold the ref is the one being replaced.
+   */
+  const signalledWaitpointId = run.pendingWaitpoint?.id ?? null;
+
+  /**
+   * INVARIANT: signal a waitpoint only while `active-run` does not already carry it. The metadata
+   * still names it when the replacement subscribes, so an unguarded refetch mints a token, remounts,
+   * re-signals and refetches again for as long as the run stays parked — which reads on screen as
+   * the turn flickering between its transcript and a bare pending row.
+   */
+  useEffect(() => {
+    if (!waitpointId || waitpointId === signalledWaitpointId) return;
 
     void queryClient.invalidateQueries({ queryKey: qk.activeRun(chatId) });
-  }, [waitpointId, chatId, queryClient]);
+  }, [waitpointId, signalledWaitpointId, chatId, queryClient]);
 
   /**
    * Everything that changes when the turn actually advances, and nothing that changes on a bare
@@ -142,6 +175,9 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
         parts.length,
       ].join("|")
     : `pending|${parts.length}`;
+
+  /** Parked on an interaction, not stalled: the turn resumes when the reader answers, not on a tick. */
+  const parked = metadata?.phase === "waiting";
 
   const advancedSinceTick = useRef(true);
   const silentTicks = useRef(0);
@@ -160,9 +196,13 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
    * INVARIANT: one `active-run` refetch per silent episode, reset by any progress. Each refetch mints
    * a token and resubscribes, so a tool that legitimately runs quiet for a minute must not churn the
    * ten-connection cap once per tick.
+   *
+   * A parked run is exempt. It is idle on purpose — waiting on the person reading this screen — so
+   * nothing advances until they answer, and treating that as a dead transport resubscribes on a
+   * timer for as long as the card is up.
    */
   useEffect(() => {
-    if (finished) return;
+    if (finished || parked) return;
 
     const timer = setInterval(() => {
       if (advancedSinceTick.current) {
@@ -180,7 +220,7 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
     }, LIVENESS_TICK_MS);
 
     return () => clearInterval(timer);
-  }, [finished, chatId, queryClient]);
+  }, [finished, parked, chatId, queryClient]);
 
   return (
     <div className="flex flex-col">

@@ -57,7 +57,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const isNew = chatId === NEW_CHAT_ID;
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
-  const activeRun = useActiveRun(chatId).data ?? null;
+  const activeRunQuery = useActiveRun(chatId);
+  const activeRun = activeRunQuery.data ?? null;
   const { query, chat, messages } = useChatTranscript(chatId, activeRun?.runId ?? null);
   const live = liveRunToRender(activeRun, messages);
   const send = useSendMessage(chatId);
@@ -97,8 +98,15 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   /**
    * A send that has been accepted but has no run to render yet. The reference shows the turn the
    * instant the message lands, so this cannot wait for dispatch — see `PendingTurn`.
+   *
+   * A transcript whose last row is a user message is owed a turn, so it counts too until `active-run`
+   * has answered. That request mints a realtime token and is by far the slowest call on the screen,
+   * while the transcript beside it returns in a fraction of the time — so without this, opening a
+   * chat mid-turn shows the question with nothing under it for as long as the token takes.
    */
-  const awaitingRun = live === null && (send.isPending || pending !== null);
+  const owedTurn = messages.at(-1)?.role === "user";
+  const awaitingRun =
+    live === null && (send.isPending || pending !== null || (activeRunQuery.isPending && owedTurn));
 
 
   const rateLimited = Boolean(useLlmStatus().data?.rateLimitedUntil);

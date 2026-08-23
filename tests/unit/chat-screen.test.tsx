@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { http } from "msw";
+import { delay, http } from "msw";
 import { screen, waitFor } from "@testing-library/react";
 import { ChatScreen } from "@/components/chat/ChatScreen";
 import { env } from "@/lib/env";
@@ -66,5 +66,36 @@ describe("ChatScreen", () => {
     renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
 
     expect(await screen.findByTestId("virtuoso")).toBeInTheDocument();
+  });
+
+  /**
+   * `active-run` mints a realtime token, so it answers far slower than the transcript beside it.
+   * Rendering nothing in that window blanks a turn that is genuinely in flight.
+   */
+  it("shows the turn while active-run is still answering", async () => {
+    server.use(
+      fixtures.chatHandlerWith([fixtures.userMessage]),
+      http.get(`${CHATS}/:chatId/active-run`, async () => {
+        await delay("infinite");
+      }),
+    );
+
+    renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
+
+    expect(await screen.findByText(fixtures.userMessage.content)).toBeInTheDocument();
+    expect(screen.getByText("Thinking")).toBeInTheDocument();
+  });
+
+  it("shows nothing extra when the transcript is not owed a turn", async () => {
+    server.use(
+      http.get(`${CHATS}/:chatId/active-run`, async () => {
+        await delay("infinite");
+      }),
+    );
+
+    renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
+
+    expect(await screen.findByText("Here is your mountain at sunrise.")).toBeInTheDocument();
+    expect(screen.queryByText("Thinking")).not.toBeInTheDocument();
   });
 });
