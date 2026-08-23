@@ -17,6 +17,9 @@ export const qk = {
   attachments: (params: { source?: string; chatId?: string } = {}) =>
     ["attachments", params.source ?? null, params.chatId ?? null] as const,
   llmStatus: () => ["llm-status"] as const,
+  apiKeys: () => ["api-keys"] as const,
+  webhookEndpoints: () => ["webhook-endpoints"] as const,
+  webhookDeliveries: (endpointId: string) => ["webhook-deliveries", endpointId] as const,
 };
 
 const MAX_ATTEMPTS = 3;

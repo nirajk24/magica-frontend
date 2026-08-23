@@ -27,14 +27,27 @@ function recordChatsQuery() {
 }
 
 describe("the tasks page", () => {
+  /**
+   * The clock is pinned near the fixtures. `Intl.RelativeTimeFormat` with `numeric: "auto"` switches
+   * phrasing as a date ages — a day-old row reads "yesterday", not "1 day ago" — so a fixture with a
+   * fixed timestamp changes what this renders depending on when the suite runs.
+   */
   it("lists tasks with the time since they were last touched", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-08-22T12:00:00.000Z"));
     renderWithProviders(<TasksPage />);
 
     expect(await screen.findByRole("link", { name: /Premium Scandinavian Stamp Sheet/ })).toHaveAttribute(
       "href",
       `/chat/${fixtures.CHAT_ID}`,
     );
-    expect((await screen.findAllByText(/ago|just now/)).length).toBe(fixtures.chatsPage.chats.length);
+    // `numeric: "auto"` says "yesterday" and "last month" rather than "1 day ago", so the whole
+    // vocabulary has to be matched or this passes only until a fixture crosses a unit boundary.
+    expect((await screen.findAllByText(/ago|just now|yesterday|last (month|year)/)).length).toBe(
+      fixtures.chatsPage.chats.length,
+    );
+
+    vi.useRealTimers();
   });
 
   it("shows eight skeleton rows rather than a blank page while loading", () => {

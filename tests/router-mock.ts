@@ -9,3 +9,12 @@ export const routerMock = {
   forward: vi.fn(),
   prefetch: vi.fn(),
 };
+
+/**
+ * The rest of the router surface, mutable so a test can put the app on a route or a query string.
+ * Reset between tests alongside `routerMock`.
+ */
+export const locationMock = {
+  pathname: "/",
+  search: "",
+};

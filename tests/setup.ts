@@ -43,12 +43,12 @@ vi.mock("react-virtuoso", async () => {
  * `useRouter` throws outside a mounted App Router, so navigation is a spy the tests can assert on.
  */
 vi.mock("next/navigation", async () => {
-  const { routerMock } = await import("./router-mock");
+  const { routerMock, locationMock } = await import("./router-mock");
 
   return {
     useRouter: () => routerMock,
-    usePathname: () => "/",
-    useSearchParams: () => new URLSearchParams(),
+    usePathname: () => locationMock.pathname,
+    useSearchParams: () => new URLSearchParams(locationMock.search),
     useParams: () => ({}),
     useSelectedLayoutSegments: () => [],
     redirect: vi.fn(),
@@ -68,8 +68,10 @@ const initialUIState = { ...useUI.getState() };
 
 afterEach(cleanup);
 afterEach(async () => {
-  const { routerMock } = await import("./router-mock");
+  const { routerMock, locationMock } = await import("./router-mock");
   for (const spy of Object.values(routerMock)) spy.mockClear();
+  locationMock.pathname = "/";
+  locationMock.search = "";
 
   const { resetClerkMock } = await import("./clerk-mock");
   resetClerkMock();

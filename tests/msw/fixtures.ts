@@ -3,7 +3,12 @@ import { env } from "@/lib/env";
 import type {
   ActivePlan,
   ActiveRun,
+  ApiKeysPage,
+  CreateApiKeyResult,
+  CreateWebhookEndpointResult,
   UsagePage,
+  WebhookDeliveriesPage,
+  WebhookEndpointsPage,
   AttachmentDTO,
   ChatDTO,
   ChatWithMessages,
@@ -554,3 +559,85 @@ export const runMetadata: RunMetadata = {
 
 /** The text the stream would have delivered for `runMetadata`, sliced by each block's `chars`. */
 export const streamedText = "I'll generate that for you.Here is your mountain at sun";
+
+export const apiKeysPage: ApiKeysPage = {
+  apiKeys: [
+    {
+      id: "key_live",
+      name: "production",
+      fingerprint: "9f2c1a4e",
+      rateLimitPerMinute: 100,
+      rateLimitPerDay: 10000,
+      expiresAt: null,
+      createdAt: "2026-08-20T09:00:00.000Z",
+      revokedAt: null,
+    },
+    {
+      id: "key_dead",
+      name: "laptop",
+      fingerprint: "1b7d40aa",
+      rateLimitPerMinute: null,
+      rateLimitPerDay: null,
+      expiresAt: null,
+      createdAt: "2026-08-18T09:00:00.000Z",
+      revokedAt: "2026-08-19T09:00:00.000Z",
+    },
+  ],
+};
+
+/** The only response that ever carries the plaintext. Nothing may cache it. */
+export const createdApiKey: CreateApiKeyResult = {
+  apiKey: {
+    id: "key_new",
+    name: "integration",
+    fingerprint: "44ce90f1",
+    rateLimitPerMinute: 100,
+    rateLimitPerDay: 10000,
+    expiresAt: null,
+    createdAt: "2026-08-23T09:00:00.000Z",
+    revokedAt: null,
+  },
+  key: "mk_live_2f8a91c40be7d6153ab2094fe7318cd5a6b0e4f21d93c7aa",
+};
+
+export const webhookEndpointsPage: WebhookEndpointsPage = {
+  endpoints: [
+    {
+      id: "wh_1",
+      url: "https://receiver.test/hooks/magica",
+      events: ["agent.completed", "agent.failed"],
+      createdAt: "2026-08-21T09:00:00.000Z",
+    },
+  ],
+};
+
+export const createdWebhookEndpoint: CreateWebhookEndpointResult = {
+  endpoint: {
+    id: "wh_2",
+    url: "https://example.com/hooks/magica",
+    events: ["agent.completed"],
+    createdAt: "2026-08-23T09:00:00.000Z",
+  },
+  secret: "whsec_Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MA",
+};
+
+export const webhookDeliveriesPage: WebhookDeliveriesPage = {
+  deliveries: [
+    {
+      id: "dlv_1",
+      event: "agent.completed",
+      status: "delivered",
+      attempts: 1,
+      lastAttemptAt: "2026-08-23T09:05:00.000Z",
+      createdAt: "2026-08-23T09:05:00.000Z",
+    },
+    {
+      id: "dlv_2",
+      event: "agent.failed",
+      status: "failed",
+      attempts: 3,
+      lastAttemptAt: "2026-08-23T09:06:00.000Z",
+      createdAt: "2026-08-23T09:06:00.000Z",
+    },
+  ],
+};

@@ -126,6 +126,19 @@ export const handlers = [
   }),
 
   http.delete(`${API}/attachments/:attachmentId`, () => ok({ ok: true })),
+  http.get(`${API}/api-keys`, () => ok(fixtures.apiKeysPage)),
+
+  http.post(`${API}/api-keys`, () => ok(fixtures.createdApiKey)),
+
+  http.delete(`${API}/api-keys/:apiKeyId`, () => ok({ ok: true })),
+
+  http.get(`${API}/webhooks`, () => ok(fixtures.webhookEndpointsPage)),
+
+  http.post(`${API}/webhooks`, () => ok(fixtures.createdWebhookEndpoint)),
+
+  http.delete(`${API}/webhooks/:endpointId`, () => ok({ ok: true })),
+
+  http.get(`${API}/webhooks/:endpointId/deliveries`, () => ok(fixtures.webhookDeliveriesPage)),
 ];
 
 /** The upload quota refusing one file, which is field-specific so the composer can point at it. */
@@ -169,3 +182,11 @@ export const cancelFails = http.post(`${API}/runs/:runId/cancel`, () => errors.i
 export const retryFails = http.post(`${API}/messages/:messageId/retry`, () =>
   errors.runAlreadyActive(),
 );
+
+/** Key management refusing, so the create path's failure surfaces rather than silently no-opping. */
+export const createKeyFails = http.post(`${API}/api-keys`, () => errors.internal());
+
+/** An account with no keys and no endpoints — the empty states both cards must render. */
+export const noApiKeys = http.get(`${API}/api-keys`, () => ok({ apiKeys: [] }));
+
+export const noWebhookEndpoints = http.get(`${API}/webhooks`, () => ok({ endpoints: [] }));

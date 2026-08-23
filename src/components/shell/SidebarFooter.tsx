@@ -2,6 +2,7 @@
 
 import { SignInButton, useAuth } from "@clerk/nextjs";
 import { ArrowRight, CreditCard, EllipsisVertical, Settings, Sparkles } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { AccountMenu } from "@/components/shell/AccountMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -21,6 +22,10 @@ import { useUI } from "@/stores/ui";
 export function SidebarFooter() {
   const { isSignedIn } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const openSettings = () => router.replace(`${pathname}?settings=api-keys`, { scroll: false });
 
   return (
     <div className="flex flex-col gap-2 border-t border-border px-3 py-3">
@@ -46,13 +51,14 @@ export function SidebarFooter() {
           {isSignedIn && (
             <>
               <div className="flex gap-2">
-                <DisabledAction
-                  icon={Settings}
-                  label="Settings"
-                  reason="Settings aren't part of this build."
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm"
-                  showLabel
-                />
+                <button
+                  type="button"
+                  onClick={openSettings}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-bg px-3 py-2 text-sm text-fg transition-colors hover:bg-surface"
+                >
+                  <Settings className="size-4" strokeWidth={2} />
+                  Settings
+                </button>
                 <DisabledAction
                   icon={Sparkles}
                   label="Updates"
@@ -122,7 +128,7 @@ function AddCreditsButton() {
     <button
       type="button"
       onClick={() => setAddCreditsOpen(true)}
-      className="flex w-full items-center justify-center gap-2 rounded-card bg-fg px-3 py-2 text-sm font-semibold text-bg transition-opacity hover:opacity-90"
+      className="flex w-full items-center justify-center gap-2 rounded-card bg-solid px-3 py-2 text-sm font-semibold text-solid-fg transition-opacity hover:opacity-90"
     >
       <CreditCard className="size-4" aria-hidden />
       Add Credits

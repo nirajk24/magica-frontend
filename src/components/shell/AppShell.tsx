@@ -3,11 +3,12 @@
 import { useAuth } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
 import { useSelectedLayoutSegments } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { FullPageSpinner } from "@/components/FullPageSpinner";
 import { PANEL_WIDTH } from "@/components/panels/ToolDetailPanel";
 import { AddCreditsModal } from "@/components/credits/AddCreditsModal";
 import { SearchPalette } from "@/components/shell/SearchPalette";
+import { SettingsModal } from "@/components/settings/SettingsModal";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { cn } from "@/lib/cn";
@@ -45,6 +46,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex h-dvh gap-2 p-2">
       <SearchPalette />
       <AddCreditsModal />
+      <Suspense fallback={null}>
+        <SettingsModal />
+      </Suspense>
 
       <div className="hidden md:flex">
         <Sidebar />

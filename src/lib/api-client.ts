@@ -8,14 +8,21 @@ import {
   CreditsPage,
   Health,
   LlmStatus,
+  ApiKeysPage,
   AttachmentResponse,
   AttachmentsPage,
+  CreateApiKeyResult,
+  CreateWebhookEndpointResult,
   Ok,
   SendMessage,
   SendMessageResult,
   SignUploadsResult,
   TopUpResult,
   UsagePage,
+  WebhookDeliveriesPage,
+  WebhookEndpointsPage,
+  type CreateApiKey,
+  type CreateWebhookEndpoint,
   type CreateAttachment,
   type SignUploads,
   type UpdateAttachment,
@@ -226,6 +233,35 @@ export function createApi(getToken: TokenSource) {
         `/messages/${encodeURIComponent(messageId)}/feedback`,
         { method: "PATCH", body: JSON.stringify(body) },
         Ok,
+        getToken,
+      ),
+
+    getApiKeys: () => request("/api-keys", {}, ApiKeysPage, getToken),
+
+    createApiKey: (body: CreateApiKey) =>
+      request("/api-keys", { method: "POST", body: JSON.stringify(body) }, CreateApiKeyResult, getToken),
+
+    revokeApiKey: (apiKeyId: string) =>
+      request(`/api-keys/${encodeURIComponent(apiKeyId)}`, { method: "DELETE" }, Ok, getToken),
+
+    getWebhookEndpoints: () => request("/webhooks", {}, WebhookEndpointsPage, getToken),
+
+    createWebhookEndpoint: (body: CreateWebhookEndpoint) =>
+      request(
+        "/webhooks",
+        { method: "POST", body: JSON.stringify(body) },
+        CreateWebhookEndpointResult,
+        getToken,
+      ),
+
+    deleteWebhookEndpoint: (endpointId: string) =>
+      request(`/webhooks/${encodeURIComponent(endpointId)}`, { method: "DELETE" }, Ok, getToken),
+
+    getWebhookDeliveries: (endpointId: string) =>
+      request(
+        `/webhooks/${encodeURIComponent(endpointId)}/deliveries`,
+        {},
+        WebhookDeliveriesPage,
         getToken,
       ),
   };
