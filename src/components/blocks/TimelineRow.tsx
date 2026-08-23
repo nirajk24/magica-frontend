@@ -185,8 +185,8 @@ function Grid({ rows }: { rows: readonly DetailRow[] }) {
     <dl className="grid grid-cols-[minmax(0,90px)_1fr] gap-x-4 gap-y-2.5 text-xs leading-5">
       {rows.map(([label, value]) => (
         <div key={label} className="col-span-2 grid grid-cols-subgrid">
-          <dt className="text-fg-muted">{label}</dt>
-          <dd className="break-words text-fg">{value}</dd>
+          <dt className="min-w-0 break-words text-fg-muted">{label}</dt>
+          <dd className="min-w-0 break-words text-fg">{value}</dd>
         </div>
       ))}
     </dl>

@@ -124,16 +124,45 @@ export function ChatScreen({ chatId }: { chatId: string }) {
     : null;
   const previewGeneration = generationDetails(messages, previewAttachment?.url ?? null);
 
+  const planPending = waitpoint?.kind === "plan_approval";
+
+  /**
+   * The approval card is the last thing in the transcript, not a docked panel: it belongs to the turn
+   * that produced it, so it scrolls away with the conversation rather than covering it.
+   */
+  const planCard =
+    waitpoint?.kind === "plan_approval" ? (
+      <PlanCard
+        plan={waitpoint.plan}
+        resolving={resolve.isPending}
+        onApprove={(executionMode) =>
+          resolve.mutate({
+            waitpointId: waitpoint.id,
+            body: { kind: "plan_approval", approved: true, executionMode },
+          })
+        }
+        onRequestChanges={(feedback) =>
+          resolve.mutate({
+            waitpointId: waitpoint.id,
+            body: { kind: "plan_approval", approved: false, feedback },
+          })
+        }
+      />
+    ) : null;
+
   const items = useMemo<TranscriptItem[]>(() => {
     const rows: TranscriptItem[] = [...messages, ...(pending ? [pending] : [])].map((message) => ({
       kind: "message",
       message,
     }));
 
-    if (live) return [...rows, { kind: "live", chatId, run: live }];
+    if (live) rows.push({ kind: "live", chatId, run: live });
+    else if (awaitingRun) rows.push({ kind: "pending" });
 
-    return awaitingRun ? [...rows, { kind: "pending" }] : rows;
-  }, [messages, pending, live, chatId, awaitingRun]);
+    if (planPending) rows.push({ kind: "plan" });
+
+    return rows;
+  }, [messages, pending, live, chatId, awaitingRun, planPending]);
 
   /** The masthead and templates give way the moment there is a turn to show. */
   const showEmptyState = isNew && items.length === 0;
@@ -150,6 +179,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
             <MessageList
               items={items}
               chatId={chatId}
+              planCard={planCard}
               runActive={activeRun !== null}
               onStartReached={() => {
                 if (query.hasNextPage && !query.isFetchingNextPage) void query.fetchNextPage();
@@ -166,27 +196,6 @@ export function ChatScreen({ chatId }: { chatId: string }) {
           {progressPlan && (
             <div className="mb-3">
               <PlanProgressCard plan={progressPlan} />
-            </div>
-          )}
-
-          {waitpoint?.kind === "plan_approval" && (
-            <div className="mb-3">
-              <PlanCard
-                plan={waitpoint.plan}
-                resolving={resolve.isPending}
-                onApprove={(executionMode) =>
-                  resolve.mutate({
-                    waitpointId: waitpoint.id,
-                    body: { kind: "plan_approval", approved: true, executionMode },
-                  })
-                }
-                onRequestChanges={(feedback) =>
-                  resolve.mutate({
-                    waitpointId: waitpoint.id,
-                    body: { kind: "plan_approval", approved: false, feedback },
-                  })
-                }
-              />
             </div>
           )}
 

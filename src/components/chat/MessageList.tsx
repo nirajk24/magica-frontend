@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { ActiveRun, MessageDTO } from "@/contracts";
 import { LiveRun } from "@/components/chat/LiveRun";
@@ -19,7 +19,9 @@ const COLUMN = "mx-auto w-full max-w-[880px] px-6";
 export type TranscriptItem =
   | { kind: "message"; message: MessageDTO }
   | { kind: "live"; chatId: string; run: ActiveRun }
-  | { kind: "pending" };
+  | { kind: "pending" }
+  /** The plan awaiting approval. A transcript row, so it ends the conversation instead of floating over it. */
+  | { kind: "plan" };
 
 /**
  * The virtualized message list the brief asks for by name.
@@ -35,12 +37,15 @@ export function MessageList({
   chatId,
   runActive = false,
   onStartReached,
+  planCard,
 }: {
   items: readonly TranscriptItem[];
   /** The conversation on screen; rows need it to write back into the right cache. */
   chatId: string;
   runActive?: boolean;
   onStartReached?: () => void;
+  /** Rendered for the `plan` row. Built by the screen, which owns the resolve mutation. */
+  planCard?: ReactNode;
 }) {
   const virtuoso = useRef<VirtuosoHandle>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -62,6 +67,8 @@ export function MessageList({
               <MessageRow message={item.message} chatId={chatId} runActive={runActive} />
             ) : item.kind === "pending" ? (
               <PendingTurn />
+            ) : item.kind === "plan" ? (
+              planCard
             ) : (
               <LiveRun
                 key={`${item.run.triggerRunId}:${item.run.publicAccessToken}`}
@@ -89,6 +96,7 @@ export function MessageList({
 
 function keyFor(item: TranscriptItem): string {
   if (item.kind === "message") return item.message.id;
+  if (item.kind === "live") return `live:${item.run.runId}`;
 
-  return item.kind === "pending" ? "pending" : `live:${item.run.runId}`;
+  return item.kind;
 }
