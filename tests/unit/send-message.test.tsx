@@ -3,6 +3,7 @@ import { delay, http, HttpResponse } from "msw";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatScreen } from "@/components/chat/ChatScreen";
+import { Sidebar } from "@/components/shell/Sidebar";
 import { env } from "@/lib/env";
 import { qk } from "@/lib/query-client";
 import { useUI } from "@/stores/ui";
@@ -89,6 +90,7 @@ describe("sending a message", () => {
         content: "make a poster",
         planMode: true,
         modelId: fixtures.chat.modelId,
+        attachmentIds: [],
       }),
     );
   });
@@ -138,6 +140,55 @@ describe("starting a conversation at /chat/new", () => {
 
     await waitFor(() => expect(routerMock.replace).toHaveBeenCalled());
     expect(queryClient.getQueryData(qk.chat(fixtures.CHAT_ID))).toBeDefined();
+  });
+
+});
+
+/**
+ * The sidebar is mounted alongside the screen because an invalidation only refetches a query
+ * something is watching — asserting on the cache alone would pass with no sidebar in the product.
+ */
+describe("what a send makes stale", () => {
+  const sendWithSidebar = async (chatId: string, text: string) => {
+    const user = userEvent.setup();
+    server.use(noActiveRun);
+    renderWithProviders(
+      <>
+        <Sidebar />
+        <ChatScreen chatId={chatId} />
+      </>,
+    );
+    await screen.findByText("Recent tasks");
+
+    await user.type(screen.getByLabelText("Message"), `${text}{Enter}`);
+  };
+
+  it("lifts the chat in Recent tasks as the send lands, not on the next reload", async () => {
+    let listReads = 0;
+    server.use(
+      http.get(`${API}/chats`, () => {
+        listReads += 1;
+        return HttpResponse.json({ data: fixtures.chatsPage });
+      }),
+    );
+
+    await sendWithSidebar(fixtures.CHAT_ID, "another turn");
+    await waitFor(() => expect(listReads).toBeGreaterThan(1));
+  });
+
+  it("refetches the list for a chat the server has only just created", async () => {
+    let listReads = 0;
+    server.use(
+      http.get(`${API}/chats`, () => {
+        listReads += 1;
+        return HttpResponse.json({ data: fixtures.chatsPage });
+      }),
+    );
+
+    await sendWithSidebar("new", "start something");
+
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalled());
+    await waitFor(() => expect(listReads).toBeGreaterThan(1));
   });
 });
 

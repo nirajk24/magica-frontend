@@ -70,7 +70,78 @@ export const handlers = [
   http.delete(`${API}/chats/:chatId`, () => ok({ ok: true })),
 
   http.patch(`${API}/messages/:messageId/feedback`, () => ok({ ok: true })),
+
+  /** One signed assembly per requested file, in request order — the shape the client relies on. */
+  http.post(`${API}/uploads/sign`, async ({ request }) => {
+    const body = (await request.json()) as { files?: unknown[] };
+    const count = body.files?.length ?? 0;
+
+    return ok({
+      assemblies: Array.from({ length: count }, (_, index) => ({
+        params: `{"auth":{"key":"fixture"},"num_expected_upload_files":1,"file":${index}}`,
+        signature: `sha384:fixture-signature-${index}`,
+      })),
+      expiresAt: fixtures.signUploadsResult.expiresAt,
+    });
+  }),
+
+  /** Upsert on `assemblyId`: the reported file comes back as the attachment row it became. */
+  http.post(`${API}/attachments`, async ({ request }) => {
+    const report = (await request.json()) as {
+      assemblyId: string;
+      status: string;
+      file: { name: string; contentType: string; size: number; url?: string; metadata?: unknown };
+    };
+
+    return ok({
+      attachment: {
+        ...fixtures.attachment,
+        id: `attachment-${report.assemblyId}`,
+        name: report.file.name,
+        contentType: report.file.contentType,
+        size: report.file.size,
+        url: report.file.url ?? null,
+        status: report.status,
+        metadata: (report.file.metadata as Record<string, unknown> | undefined) ?? null,
+      },
+    });
+  }),
+
+  http.get(`${API}/attachments`, ({ request }) => {
+    const source = new URL(request.url).searchParams.get("source");
+    const { attachments } = fixtures.attachmentsPage;
+
+    return ok({
+      attachments: source
+        ? attachments.filter((attachment) => attachment.source === source)
+        : attachments,
+      nextCursor: null,
+    });
+  }),
+
+  http.patch(`${API}/attachments/:attachmentId`, async ({ params, request }) => {
+    const { name } = (await request.json()) as { name: string };
+
+    return ok({ attachment: { ...fixtures.attachment, id: String(params.attachmentId), name } });
+  }),
+
+  http.delete(`${API}/attachments/:attachmentId`, () => ok({ ok: true })),
 ];
+
+/** The upload quota refusing one file, which is field-specific so the composer can point at it. */
+export const uploadQuotaExceeded = http.post(`${API}/uploads/sign`, () =>
+  HttpResponse.json(
+    {
+      error: {
+        code: "QUOTA_EXCEEDED",
+        message: "That file is over the 0.5 GB per-file limit.",
+        traceId: "req_fixture",
+        details: { field: "files.0.size" },
+      },
+    },
+    { status: 413 },
+  ),
+);
 
 /** A run parked on a waitpoint, one handler per kind. */
 export const waitingOnPlan = http.get(`${API}/chats/:chatId/active-run`, () =>

@@ -17,6 +17,10 @@ import { NEW_CHAT_ID, useChatModel } from "@/queries/use-chat";
  *
  * `qk.activeRun` is seeded from the response rather than refetched: every field is already in the
  * parsed result, and a refetch would mint a second realtime token against a ten-connection cap.
+ *
+ * The chat *list* is invalidated as well as the conversation: sending moves the chat's `updatedAt`,
+ * and the reference lifts that row to the top of Recent tasks as it happens. `qk.chats()` is the
+ * prefix every filtered and searched list shares, so one call covers them all.
  */
 export async function applyRunStart(
   queryClient: QueryClient,
@@ -32,7 +36,10 @@ export async function applyRunStart(
   };
 
   queryClient.setQueryData(qk.activeRun(result.chatId), activeRun);
-  await queryClient.invalidateQueries({ queryKey: qk.chat(result.chatId) });
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: qk.chat(result.chatId) }),
+    queryClient.invalidateQueries({ queryKey: qk.chats() }),
+  ]);
 }
 
 /**
@@ -60,8 +67,8 @@ export function useSendMessage(chatId: string) {
   const modelId = selectedModel(pendingModel, useChatModel(chatId));
 
   return useMutation({
-    mutationFn: ({ content, planMode }: ComposerSubmit) =>
-      api.sendMessage(chatId, { content, planMode, modelId }),
+    mutationFn: ({ content, planMode, attachmentIds }: ComposerSubmit) =>
+      api.sendMessage(chatId, { content, planMode, modelId, attachmentIds }),
 
     onMutate: ({ content }: ComposerSubmit) => {
       clearDraft(chatId);
@@ -85,6 +92,8 @@ export function useSendMessage(chatId: string) {
             api.getChat(result.chatId, pageParam),
           initialPageParam: undefined as string | undefined,
         });
+        // The server created the chat, so Recent tasks has a row it has never seen.
+        void queryClient.invalidateQueries({ queryKey: qk.chats() });
         router.replace(`/chat/${result.chatId}`);
         return;
       }

@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowUp, ClipboardList, Mic, Paperclip, Plug } from "lucide-react";
+import { ArrowUp, ClipboardList, Mic, Plug } from "lucide-react";
 import { useLayoutEffect, useRef, type KeyboardEvent } from "react";
 import { DisabledAction } from "@/components/DisabledAction";
 import { Spinner } from "@/components/Spinner";
+import { AttachButton, UploadChips } from "@/components/chat/ComposerAttachments";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
+import { useUploadAttachments, type UploadAttachments } from "@/queries/use-upload-attachments";
 import { useUI } from "@/stores/ui";
 
 const MAX_HEIGHT = 200;
@@ -21,7 +23,7 @@ const MAX_HEIGHT = 200;
  */
 const RESTING_HEIGHT = 64;
 
-export type ComposerSubmit = { content: string; planMode: boolean };
+export type ComposerSubmit = { content: string; planMode: boolean; attachmentIds: string[] };
 
 /**
  * The pinned composer.
@@ -35,6 +37,7 @@ export function Composer({
   runActive = false,
   stopping = false,
   pending = false,
+  uploads: sharedUploads,
   onSubmit,
   onStop,
 }: {
@@ -44,6 +47,8 @@ export function Composer({
   /** Held from the Stop click until the cancelled turn is on screen, so the control cannot flicker. */
   stopping?: boolean;
   pending?: boolean;
+  /** Passed in by the screen that owns the send, so a successful send can clear the chips. */
+  uploads?: UploadAttachments;
   onSubmit: (submission: ComposerSubmit) => void;
   onStop?: () => void;
 }) {
@@ -52,6 +57,8 @@ export function Composer({
   const setDraft = useUI((state) => state.setDraft);
   const planMode = useUI((state) => state.planModeChats.includes(chatId));
   const togglePlanMode = useUI((state) => state.togglePlanMode);
+  const ownUploads = useUploadAttachments();
+  const uploads = sharedUploads ?? ownUploads;
 
   useLayoutEffect(() => {
     const element = textarea.current;
@@ -61,11 +68,12 @@ export function Composer({
     element.style.height = `${Math.min(Math.max(element.scrollHeight, RESTING_HEIGHT), MAX_HEIGHT)}px`;
   }, [draft]);
 
-  const canSend = draft.trim().length > 0 && !runActive && !pending;
+  const attachmentsBlocking = !uploads.settled || uploads.items.some((i) => i.status === "failed");
+  const canSend = draft.trim().length > 0 && !runActive && !pending && !attachmentsBlocking;
 
   const submit = () => {
     if (!canSend) return;
-    onSubmit({ content: draft.trim(), planMode });
+    onSubmit({ content: draft.trim(), planMode, attachmentIds: uploads.readyIds });
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -77,6 +85,7 @@ export function Composer({
 
   return (
     <div className="rounded-composer border border-border bg-surface bg-linear-to-b from-composer-from to-composer-to p-4 transition-colors focus-within:border-border-strong">
+      <UploadChips uploads={uploads} />
       <textarea
         ref={textarea}
         rows={1}
@@ -90,11 +99,7 @@ export function Composer({
 
       <div className="mt-1 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <DisabledAction
-            icon={Paperclip}
-            label="Attach a file"
-            reason="Attachments aren't part of this build yet."
-          />
+          <AttachButton uploads={uploads} disabled={runActive} />
           <DisabledAction
             icon={Plug}
             label="Connect apps"

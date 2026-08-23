@@ -1,66 +1,57 @@
 "use client";
 
 import { Download, FileText, Music, Video, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import type { MessageDTO } from "@/contracts";
+import { useState } from "react";
+import type { AttachmentDTO } from "@/contracts";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Spinner } from "@/components/Spinner";
 import { cn } from "@/lib/cn";
 import { formatBytes, formatMessageTime } from "@/lib/format";
-import {
-  FILE_CATEGORIES,
-  collectTaskFiles,
-  type TaskFile,
-  type TaskFileKind,
-} from "@/lib/task-files";
+import { FILE_CATEGORIES, attachmentKind, type TaskFileKind } from "@/lib/task-files";
 import { useHydrated } from "@/lib/use-hydrated";
+import { isAttachmentExpired, useAttachmentList } from "@/queries/use-attachments";
 import { useUI } from "@/stores/ui";
 
 /**
- * `All files in this task` — a view over the transcript already in the cache, so it needs no route
- * and it is exactly as fresh as the conversation behind it.
+ * `All files in this task` — the attachments route scoped to this chat, uploads and generated media
+ * in one list. The type tabs filter the fetched rows client-side; the route owns order and paging.
  *
  * The header sits between two hairlines — one under the title row, one under the tabs — which is
  * what makes the reference's boundary read clean. The active pill is the mid-grey, not black.
  *
  * `Download all` walks every shown file; a row's own click opens the preview. Downloads go through
  * an anchor with the `download` attribute — a cross-origin CDN may open the file instead of saving
- * it, which is the browser's call, not ours.
+ * it, which is the browser's call, not ours. An expired upload's URL is dead, so its row says so
+ * and downloads skip it.
  */
-export function FilesModal({ messages, pending }: { messages: readonly MessageDTO[]; pending: boolean }) {
+export function FilesModal({ chatId }: { chatId: string }) {
   const open = useUI((state) => state.filesOpen);
   const setOpen = useUI((state) => state.setFilesOpen);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent title="All files in this task" showTitle={false} className="w-[660px] rounded-2xl p-0">
-        <ModalBody messages={messages} pending={pending} onClose={() => setOpen(false)} />
+        <ModalBody chatId={chatId} onClose={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function ModalBody({
-  messages,
-  pending,
-  onClose,
-}: {
-  messages: readonly MessageDTO[];
-  pending: boolean;
-  onClose: () => void;
-}) {
+function ModalBody({ chatId, onClose }: { chatId: string; onClose: () => void }) {
   const [category, setCategory] = useState<TaskFileKind | null>(null);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const setPreviewFile = useUI((state) => state.setPreviewFile);
-  const files = useMemo(() => collectTaskFiles(messages), [messages]);
-  const shown = category ? files.filter((file) => file.kind === category) : files;
-  const allSelected = shown.length > 0 && shown.every((file) => selected.has(file.key));
+  const { query, attachments } = useAttachmentList({ chatId });
+  const shown = category
+    ? attachments.filter((attachment) => attachmentKind(attachment) === category)
+    : attachments;
+  const allSelected = shown.length > 0 && shown.every((attachment) => selected.has(attachment.id));
 
-  const toggleSelect = (key: string) =>
+  const toggleSelect = (id: string) =>
     setSelected((current) => {
       const next = new Set(current);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
 
@@ -74,7 +65,9 @@ function ModalBody({
             disabled={shown.length === 0}
             aria-pressed={allSelected}
             onClick={() =>
-              setSelected(allSelected ? new Set() : new Set(shown.map((file) => file.key)))
+              setSelected(
+                allSelected ? new Set() : new Set(shown.map((attachment) => attachment.id)),
+              )
             }
             className="rounded-md px-2 py-1 transition-colors hover:text-fg disabled:opacity-50"
           >
@@ -84,8 +77,9 @@ function ModalBody({
             type="button"
             disabled={shown.length === 0}
             onClick={() => {
-              const targets = selected.size > 0 ? shown.filter((f) => selected.has(f.key)) : shown;
-              for (const file of targets) downloadFile(file);
+              const targets =
+                selected.size > 0 ? shown.filter((a) => selected.has(a.id)) : shown;
+              for (const attachment of targets) downloadAttachment(attachment);
             }}
             className="flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors hover:text-fg disabled:opacity-50"
           >
@@ -109,7 +103,9 @@ function ModalBody({
         className="flex items-center gap-1.5 overflow-x-auto border-b border-border px-5 py-3"
       >
         {FILE_CATEGORIES.map(({ label, kind }) => {
-          const count = kind ? files.filter((file) => file.kind === kind).length : files.length;
+          const count = kind
+            ? attachments.filter((attachment) => attachmentKind(attachment) === kind).length
+            : attachments.length;
           const active = category === kind;
 
           return (
@@ -132,21 +128,33 @@ function ModalBody({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {pending ? (
+        {query.isPending ? (
           <div className="grid h-full place-items-center">
             <Spinner className="size-5" />
           </div>
         ) : shown.length === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-fg-subtle">
-            {files.length === 0 ? "No files in this task yet." : "Nothing of that type here."}
+            {attachments.length === 0 ? "No files in this task yet." : "Nothing of that type here."}
           </p>
         ) : (
-          <FileRows
-            files={shown}
-            selected={selected}
-            onToggleSelect={toggleSelect}
-            onOpen={(file) => setPreviewFile(file.key)}
-          />
+          <>
+            <FileRows
+              attachments={shown}
+              selected={selected}
+              onToggleSelect={toggleSelect}
+              onOpen={(attachment) => setPreviewFile(attachment.id)}
+            />
+            {query.hasNextPage && (
+              <button
+                type="button"
+                onClick={() => query.fetchNextPage()}
+                disabled={query.isFetchingNextPage}
+                className="mt-2 w-full rounded-md py-2 text-sm text-fg-muted transition-colors hover:text-fg"
+              >
+                {query.isFetchingNextPage ? "Loading..." : "Load more"}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -158,21 +166,21 @@ function ModalBody({
  * anything is selected each row shows its checkbox; `Download all` then takes the selection.
  */
 function FileRows({
-  files,
+  attachments,
   selected,
   onToggleSelect,
   onOpen,
 }: {
-  files: readonly TaskFile[];
+  attachments: readonly AttachmentDTO[];
   selected: ReadonlySet<string>;
-  onToggleSelect: (key: string) => void;
-  onOpen: (file: TaskFile) => void;
+  onToggleSelect: (id: string) => void;
+  onOpen: (attachment: AttachmentDTO) => void;
 }) {
   const hydrated = useHydrated();
-  const groups = new Map<string, TaskFile[]>();
-  for (const file of files) {
-    const label = dayLabel(file.createdAt);
-    groups.set(label, [...(groups.get(label) ?? []), file]);
+  const groups = new Map<string, AttachmentDTO[]>();
+  for (const attachment of attachments) {
+    const label = dayLabel(attachment.createdAt);
+    groups.set(label, [...(groups.get(label) ?? []), attachment]);
   }
 
   return (
@@ -180,65 +188,84 @@ function FileRows({
       {[...groups.entries()].map(([label, rows]) => (
         <div key={label}>
           <p className="px-2 pt-2 pb-1 text-xs text-fg-subtle">{hydrated ? label : ""}</p>
-          {rows.map((file) => (
-            <button
-              key={file.key}
-              type="button"
-              onClick={() => onOpen(file)}
-              className="group/row flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface"
-            >
-              <span
-                role="checkbox"
-                aria-checked={selected.has(file.key)}
-                aria-label={`Select ${file.name}`}
-                tabIndex={0}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleSelect(file.key);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== " " && event.key !== "Enter") return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onToggleSelect(file.key);
-                }}
-                className={cn(
-                  "grid size-4 shrink-0 place-items-center rounded border text-[10px] transition-opacity",
-                  selected.has(file.key)
-                    ? "border-accent bg-accent text-accent-fg"
-                    : "border-border-strong opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100",
-                  selected.size > 0 && "opacity-100",
-                )}
+          {rows.map((attachment) => {
+            const expired = isAttachmentExpired(attachment);
+
+            return (
+              <button
+                key={attachment.id}
+                type="button"
+                onClick={() => onOpen(attachment)}
+                className="group/row flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface"
               >
-                {selected.has(file.key) && "✓"}
-              </span>
-              <FileThumb file={file} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-fg">{file.name}</span>
-                <span className="block text-xs text-fg-subtle">
-                  {[
-                    extensionLabel(file),
-                    hydrated ? formatMessageTime(file.createdAt) : null,
-                    file.size !== null ? formatBytes(file.size) : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
+                <span
+                  role="checkbox"
+                  aria-checked={selected.has(attachment.id)}
+                  aria-label={`Select ${attachment.name}`}
+                  tabIndex={0}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleSelect(attachment.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== " " && event.key !== "Enter") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onToggleSelect(attachment.id);
+                  }}
+                  className={cn(
+                    "grid size-4 shrink-0 place-items-center rounded border text-[10px] transition-opacity",
+                    selected.has(attachment.id)
+                      ? "border-accent bg-accent text-accent-fg"
+                      : "border-border-strong opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100",
+                    selected.size > 0 && "opacity-100",
+                  )}
+                >
+                  {selected.has(attachment.id) && "✓"}
                 </span>
-              </span>
-            </button>
-          ))}
+                <FileThumb attachment={attachment} expired={expired} />
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={cn(
+                      "block truncate text-sm font-semibold",
+                      expired ? "text-fg-subtle" : "text-fg",
+                    )}
+                  >
+                    {attachment.name}
+                  </span>
+                  <span className="block text-xs text-fg-subtle">
+                    {[
+                      extensionLabel(attachment),
+                      hydrated ? formatMessageTime(attachment.createdAt) : null,
+                      attachment.size > 0 ? formatBytes(attachment.size) : "—",
+                      expired ? "Expired" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       ))}
     </div>
   );
 }
 
-function FileThumb({ file }: { file: TaskFile }) {
-  if (file.kind === "image" && file.url) {
-    return <img src={file.url} alt="" className="size-11 shrink-0 rounded-lg bg-surface object-cover" />;
+function FileThumb({ attachment, expired }: { attachment: AttachmentDTO; expired: boolean }) {
+  if (attachmentKind(attachment) === "image" && attachment.url && !expired) {
+    return (
+      <img
+        src={attachment.url}
+        alt=""
+        className="size-11 shrink-0 rounded-lg bg-surface object-cover"
+      />
+    );
   }
 
-  const Icon = file.kind === "video" ? Video : file.kind === "audio" ? Music : FileText;
+  const kind = attachmentKind(attachment);
+  const Icon = kind === "video" ? Video : kind === "audio" ? Music : FileText;
 
   return (
     <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-surface text-fg-subtle">
@@ -258,19 +285,23 @@ function dayLabel(iso: string, now: Date = new Date()): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function extensionLabel(file: TaskFile): string {
-  const dot = file.name.lastIndexOf(".");
+function extensionLabel(attachment: AttachmentDTO): string {
+  const dot = attachment.name.lastIndexOf(".");
 
-  return dot > 0 ? file.name.slice(dot + 1).toUpperCase() : file.kind.toUpperCase();
+  return dot > 0
+    ? attachment.name.slice(dot + 1).toUpperCase()
+    : attachmentKind(attachment).toUpperCase();
 }
 
 /** An anchor click with `download`; a cross-origin CDN may open instead of saving — browser's call. */
-export function downloadFile(file: TaskFile): void {
-  if (!file.url) return;
+export function downloadAttachment(
+  attachment: Pick<AttachmentDTO, "url" | "name" | "expiresAt">,
+): void {
+  if (!attachment.url || isAttachmentExpired(attachment)) return;
 
   const anchor = document.createElement("a");
-  anchor.href = file.url;
-  anchor.download = file.name;
+  anchor.href = attachment.url;
+  anchor.download = attachment.name;
   anchor.target = "_blank";
   anchor.rel = "noreferrer";
   anchor.click();

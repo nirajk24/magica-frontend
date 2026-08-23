@@ -1,12 +1,14 @@
 "use client";
 
 import type { AttachmentDTO } from "@/contracts";
+import { isAttachmentExpired } from "@/queries/use-attachments";
 import { useUI } from "@/stores/ui";
 
 /**
  * Sent attachments, which the reference renders above the bubble text and considerably larger than
  * a chip. A ready attachment with no URL yet keeps its box, so the transcript does not reflow as
- * images arrive after a reload.
+ * images arrive after a reload. An expired upload keeps its box too — its URL is dead, so the
+ * placeholder says so instead of fetching it.
  */
 export function AttachmentGallery({ attachments }: { attachments: readonly AttachmentDTO[] }) {
   const setPreviewFile = useUI((state) => state.setPreviewFile);
@@ -16,7 +18,14 @@ export function AttachmentGallery({ attachments }: { attachments: readonly Attac
   return (
     <div className="mb-2 flex flex-col gap-2">
       {attachments.map((attachment) =>
-        attachment.url && attachment.type === "image" ? (
+        isAttachmentExpired(attachment) ? (
+          <div
+            key={attachment.id}
+            className="flex h-40 w-full items-center justify-center rounded-card bg-surface text-xs text-fg-subtle"
+          >
+            {attachment.name} — expired
+          </div>
+        ) : attachment.url && attachment.type === "image" ? (
           <button
             key={attachment.id}
             type="button"

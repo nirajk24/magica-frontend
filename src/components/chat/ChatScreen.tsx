@@ -18,8 +18,10 @@ import { ApiError } from "@/lib/api-client";
 import { useActiveRun } from "@/queries/use-active-run";
 import { useStopRun } from "@/queries/use-cancel-run";
 import { NEW_CHAT_ID, useChatTranscript } from "@/queries/use-chat";
-import { findTaskFile } from "@/lib/task-files";
+import { generationDetails } from "@/lib/task-files";
 import { findToolView } from "@/lib/timeline";
+import { useAttachmentList } from "@/queries/use-attachments";
+import { useUploadAttachments } from "@/queries/use-upload-attachments";
 import { parseActivePlan, parseWaitpoint } from "@/lib/waitpoints";
 import { useResolveWaitpoint } from "@/queries/use-resolve-waitpoint";
 import { useLlmStatus } from "@/queries/use-llm-status";
@@ -72,6 +74,8 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   );
   const pending = optimistic?.chatId === chatId ? optimistic.message : null;
 
+  const uploads = useUploadAttachments();
+
   const submit = (submission: ComposerSubmit) => {
     if (!isSignedIn) {
       openSignIn();
@@ -79,7 +83,10 @@ export function ChatScreen({ chatId }: { chatId: string }) {
     }
 
     setOptimistic({ chatId, message: optimisticUserMessage(submission.content) });
-    send.mutate(submission, { onSettled: () => setOptimistic(null) });
+    send.mutate(submission, {
+      onSettled: () => setOptimistic(null),
+      onSuccess: () => uploads.reset(),
+    });
   };
 
   const failure = send.isError ? sendFailureMessage(send.error) : null;
@@ -95,7 +102,24 @@ export function ChatScreen({ chatId }: { chatId: string }) {
   const panelTool = openPanel ? findToolView(messages, openPanel.invocationId) : null;
   const previewFileKey = useUI((state) => state.previewFileKey);
   const setPreviewFile = useUI((state) => state.setPreviewFile);
-  const previewFile = previewFileKey ? findTaskFile(messages, previewFileKey) : null;
+
+  /**
+   * The preview row comes from the attachments route, which is also what the files modal reads — so
+   * the two share one cache entry and opening a preview costs no request of its own.
+   *
+   * The key is an attachment id from a chip or a files row, but a generated image in the transcript
+   * only knows its URL, so both resolve here. A just-sent upload the list has not paged to yet is
+   * still verbatim on its own message, which is the fallback.
+   */
+  const { attachments: chatAttachments } = useAttachmentList({ chatId }, { enabled: !isNew });
+  const previewAttachment = previewFileKey
+    ? (chatAttachments.find((a) => a.id === previewFileKey || a.url === previewFileKey) ??
+      messages
+        .flatMap((message) => message.attachments ?? [])
+        .find((a) => a.id === previewFileKey || a.url === previewFileKey) ??
+      null)
+    : null;
+  const previewGeneration = generationDetails(messages, previewAttachment?.url ?? null);
 
   const items = useMemo<TranscriptItem[]>(() => {
     const rows: TranscriptItem[] = [...messages, ...(pending ? [pending] : [])].map((message) => ({
@@ -189,6 +213,7 @@ export function ChatScreen({ chatId }: { chatId: string }) {
                 stopping={stop.stopping}
                 placeholder={isNew ? "Assign a task or ask anything..." : "Send a message..."}
                 pending={send.isPending}
+                uploads={uploads}
                 onSubmit={submit}
                 onStop={stop.stop}
               />
@@ -218,8 +243,15 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       </div>
 
       {panelTool && <ToolDetailPanel tool={panelTool} onClose={() => setOpenPanel(null)} />}
-      {!isNew && <FilesModal messages={messages} pending={query.isPending} />}
-      {previewFile && <ImagePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />}
+      {!isNew && <FilesModal chatId={chatId} />}
+      {previewAttachment && (
+        <ImagePreviewModal
+          attachment={previewAttachment}
+          prompt={previewGeneration?.prompt ?? null}
+          model={previewGeneration?.model ?? null}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </div>
   );
 }

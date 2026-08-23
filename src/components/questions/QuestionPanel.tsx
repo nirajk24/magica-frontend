@@ -1,10 +1,12 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Pencil, Upload, X } from "lucide-react";
-import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { Question, QuestionsPayload, ResolveWaitpoint } from "@/contracts";
 import { Spinner } from "@/components/Spinner";
+import { UploadChips } from "@/components/chat/ComposerAttachments";
 import { cn } from "@/lib/cn";
+import { useUploadAttachments } from "@/queries/use-upload-attachments";
 
 type Answers = Record<string, string | string[]>;
 
@@ -163,7 +165,14 @@ function QuestionBody({
     );
   }
 
-  return <ImageAnswer maxImages={question.maxImages} resolving={resolving} onSkip={onSkip} />;
+  return (
+    <ImageAnswer
+      maxImages={question.maxImages}
+      resolving={resolving}
+      onSave={onSave}
+      onSkip={onSkip}
+    />
+  );
 }
 
 function TextAnswer({
@@ -311,27 +320,65 @@ function SelectAnswer({
 }
 
 /**
- * The image question, in a build with no uploads. The zone is drawn so the panel matches the
- * reference's shape, and it says why it cannot accept a file instead of pretending to.
+ * The image question: a drop zone over the same upload pipeline the composer uses. The answer that
+ * goes back is the attachment IDS — never URLs; the server resolves ids at resolve time, and a
+ * non-ready or foreign id answers 404.
  */
 function ImageAnswer({
   maxImages,
   resolving,
+  onSave,
   onSkip,
 }: {
   maxImages: number;
   resolving: boolean;
+  onSave: (value: string[]) => void;
   onSkip: () => void;
 }) {
+  const uploads = useUploadAttachments(maxImages);
+  const input = useRef<HTMLInputElement>(null);
+
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-fg-subtle">Images (0/{maxImages})</p>
-      <div className="flex flex-col items-center gap-1 rounded-card border border-dashed border-border py-6 text-center">
+      <p className="text-xs text-fg-subtle">
+        Images ({uploads.items.length}/{maxImages})
+      </p>
+
+      <UploadChips uploads={uploads} />
+
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        multiple={maxImages > 1}
+        hidden
+        aria-hidden
+        tabIndex={-1}
+        onChange={(event) => {
+          uploads.addFiles([...(event.target.files ?? [])]);
+          event.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        disabled={uploads.full}
+        onClick={() => input.current?.click()}
+        className="flex flex-col items-center gap-1 rounded-card border border-dashed border-border py-6 text-center transition-colors hover:border-border-strong disabled:cursor-not-allowed disabled:opacity-60"
+      >
         <Upload className="size-4 text-fg-subtle" aria-hidden />
-        <p className="text-sm text-fg-muted">Uploads aren&apos;t part of this build</p>
-        <p className="text-xs text-fg-subtle">Skip this one — the agent will work around it.</p>
-      </div>
-      <PanelFooter hint="Esc to skip" resolving={resolving} onSkip={onSkip} />
+        <span className="text-sm text-fg-muted">
+          {uploads.full ? "That's the limit for this question" : "Click to upload an image"}
+        </span>
+        <span className="text-xs text-fg-subtle">Or skip — the agent will work around it.</span>
+      </button>
+
+      <PanelFooter
+        hint="Esc to skip"
+        resolving={resolving}
+        saveDisabled={uploads.readyIds.length === 0 || !uploads.settled}
+        onSave={() => onSave(uploads.readyIds)}
+        onSkip={onSkip}
+      />
     </div>
   );
 }

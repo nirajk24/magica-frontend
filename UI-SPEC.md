@@ -497,9 +497,14 @@ Captures: `02-composer/*` · every chat capture.
 - The light fill is a whisper of a gradient, `#fafafa → #fdfdfd`, measured off the lossless PNG — the
   earlier `#f2f2f2 → #f9f9f9` reading was too dark at the top.
 - Attachment chip: small thumbnail with a round ✕ badge on its top-right corner, above the textarea
-  (`02-composer/attachment-chip__thumbnail-x__light.jpg`).
+  (`02-composer/attachment-chip__thumbnail-x__light.jpg`). **BUILT at 56px** — the capture's own chip
+  is ~54px at 1x, and the badge overlaps the corner rather than sitting inside it. A chip mid-upload
+  dims its thumbnail behind a spinner; a failed one takes a red border and a retry glyph, with the
+  server's reason on the tooltip and inline under the strip.
 - Attach popover, anchored above the paperclip: caption "Add a file from your device or select one
   from your library", then `Select Asset` (ghost, full width) and `+ Upload` (solid, full width).
+- **Send is held while any chip is unsettled**, and while one has failed — an id that does not exist
+  yet cannot travel with the message, and `attachmentIds` is validated for uniqueness server-side.
 
 **The stop control is the send button's disc in red**, not a different shape or size. Measured on a
 lossless dark capture whose device scale was fixed from the 24 CSS px menu bar: the disc is 43 device
@@ -634,9 +639,10 @@ The frontend renders the number it is given and never computes or estimates one.
 dismisses without resolving (the waitpoint stays pending and a "resume answering" pill takes the
 composer's top edge). Answers and skips accumulate client-side and submit **once** after the last
 question — one waitpoint, one resolution. Skip is never blocked, required questions included. The
-**image type is skip-only in this build**: the drop zone renders so the panel keeps the reference's
-shape, and it says uploads aren't part of this build instead of pretending. Keyboard: `Enter`
-submits, `Esc` skips, `↑↓` move a select's focus.
+**image type uploads for real** through the same pipeline as the composer, bounded by the question's
+own `maxImages`, and its answer is the **attachment ids** — never URLs. The server resolves ids at
+resolve time, which is what stops a client naming a file it does not own; a non-ready or foreign id
+answers `404`. Keyboard: `Enter` submits, `Esc` skips, `↑↓` move a select's focus.
 
 Captures: all 7 files in `10-questions/`. This is the PDF's "Options" waitpoint (p109) and it is
 called out under "easy to add … waitpoint types" (p538).
@@ -896,13 +902,13 @@ own requests. Reached from the credits popover's `View usage` — the sidebar ha
 |---|---|---|---|---|
 | Tool detail | right-side panel, **538px** measured, full height, shadowed | **the content column narrows to make room for it.** Nothing is clipped — the transcript and the composer reflow into the remaining width, and both the panel's entrance and the reflow animate | 5 | `04-tool-cards/detail-side-panel__light.jpg`, plus the live product |
 | Tool detail, maximized | full-window, `Restore` tooltip on the toggle | same content, only the width changes | 5 | `04-tool-cards/detail-fullscreen__input-images__light.jpg` |
-| Files in this task | **BUILT** — centred modal 480px | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | 6 | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
+| Files in this task | **BUILT** — centred modal 480px, over `GET /attachments?chatId=` (uploads and generated media in one list, server order, `Load more` on the cursor). Type tabs filter the fetched rows client-side. A generated row's size reads `—`, because nothing reports the byte size of a file on a provider's CDN; an expired upload is labelled and skipped by `Download all` | header `All files in this task` + `Select all` + `⤓ Download all` + ✕; tab pills `All¹ Documents Images¹ Videos Audio Code files`; day group `Today`; row = thumb + name + `PNG · 02:55 PM · 1.3 MB` | built | `07-modals/files__loaded-1-image__light.jpg`, `…loading-spinner…` |
 | Media library | large **sheet** over the content column, not a small modal | header `Media Library / 0 files` + ✕; search + refresh + `Upload Media`; `Your Media` tabs `All / Generated / My Uploads / Favorites`; Sort/Filter; grid/list toggle; right rail `All / My folders` | 6 | `07-modals/media-library__{empty,loading-skeletons}__light.jpg` |
-| Image preview | **BUILT** — centred wide modal 920px, two columns. A view over the transcript: files are the cached messages' assets + ready attachments (`lib/task-files.ts`), no route involved. Dimensions are measured off the loaded image; a generated file's prompt/model are joined from the invocation its `toolCallId` names. Favorite/rename/delete render disabled — they need asset routes that do not exist (UI-7). Copy Link and Download work | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
+| Image preview | **BUILT** — centred wide modal 920px, two columns, over `GET /attachments` (same cache entry as the files modal, so opening one costs no request). Dimensions are measured off the loaded image; a generated file's prompt/model are joined from the invocation its `toolCallId` names, because attachment rows carry neither. **Rename (`PATCH`) and delete (`DELETE`) are live**; favorite stays disabled — no route carries it (UI-7). An expired upload shows a notice instead of fetching its dead URL | left preview + expand + ✕; right rows `File Name` (editable, pencil) / `Created on` / `Source` / `Size` / `Dimensions`; 2×2 actions `Add to Favorite · Copy Link · Download · Delete File` (red) | 6 | `07-modals/image-preview__details-actions__light.jpg` |
 | Image preview of a **generated** asset | **BUILT** — same modal, two extra rows | a scrollable `Prompt` block with its own `Copy` button at the top, and a `Model` row (`gpt-image-2-text`). `Source` reads `Generated in chat` rather than `Uploaded`. So the panel is source-aware: the captured file was an upload, which is why it shows neither | 6 | observed live, no capture in the library |
 | Credits popover | **BUILT** — anchored under the credits chip, right-aligned | reference: `MONTHLY PLAN` · `Available Credits` + balance · `Add Credits` · green renewal pill · `UPGRADE PLAN` row · footer `View usage` \| `Billing details`. Ours (D-3): `FREE TIER` label, no upgrade/billing; `View usage` opens `/usage` (§7.2) | built | `08-credits/popover__{monthly-plan,plan-balance-usage}__light.jpg` + live shots both themes |
 | Add credits | **BUILT** — centred modal 440px | reference: title + subtitle · `$1 = 1 million credits` note · `Amount` chips `$20/$50/$100/$200` · `Custom amount` · summary `Credits / Total` · auto-recharge banner · `Cancel` / `Purchase Credits`. Ours (D-3): same layout with the dollars removed — presets `20M/50M/100M/200M`, no auto-recharge, "credits are free in this build" note, `Add Credits` submit. Amount travels as microcredits (`M × 1_000_000`); the response's balance is written into the cache so the chip updates the moment the modal closes | built | `07-modals/add-credits__amounts-autorecharge__light.jpg` + live shots both themes |
-| Attach popover | above the paperclip | `Select Asset` / `+ Upload` | 6 | `02-composer/attach-popover__select-asset-upload__light.jpg` |
+| Attach popover | **BUILT** — above the paperclip, 240px | caption, then `Select Asset` (ghost, **disabled** — the library picker is not built, UI-7) and `Upload` (solid, live: opens the file picker, `image/*,video/*,audio/*`) | built | `02-composer/attach-popover__select-asset-upload__light.jpg` |
 | Settings / Upgrade / Clerk | reference-only | — | — | `07-modals/{settings__account__dark,upgrade__*,clerk__*}` |
 
 **The panel's body is not the card's two-column grid.** It is a flowing list of `Label: value` lines
@@ -940,7 +946,7 @@ Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-
 | `StreamingOverlay` | `components/chat/StreamingOverlay.tsx` | `03-streaming/*` | 1 |
 | `AssistantFooter` | `components/chat/AssistantFooter.tsx` | `06-messages/footer__…dark.png` | 1 |
 | `AssetStrip` | `components/chat/AssetStrip.tsx` | `03-streaming/terminal-text-streaming__…` | 1 |
-| `AttachmentChip` | `components/chat/AttachmentChip.tsx` | `02-composer/attachment-chip__…` | 6 |
+| `AttachButton` `UploadChips` | `components/chat/ComposerAttachments.tsx` | `02-composer/{attach-popover,attachment-chip}__…` | built |
 | `ScrollToBottom` | `components/chat/ScrollToBottom.tsx` | `06-messages/capabilities-answer+scroll-btn…` | 2 |
 | `TurnOutcome` | `components/chat/TurnOutcome.tsx` | `06-messages/interrupted__…dark.jpg` | 2 |
 | `ConnectionPill` | `components/chat/ConnectionPill.tsx` | none — UI-21 | 2 |
@@ -962,6 +968,7 @@ Ours diverge on payment: no `$` amounts, no upgrade plan, no billing details (D-
 | `SearchPalette` | `components/shell/SearchPalette.tsx` | none — observed live, §7.1 | built |
 | `FilesModal` `MediaLibrary` `ImagePreview` `AddCredits` | `components/modals/` | `07-modals/*` | 6 |
 | `UsagePage` `UsageOverviewTable` `UsageDetailedView` | `components/usage/` | `screenshots/usage-*` — §7.2 | built |
+| `FilesModal` `ImagePreviewModal` | `components/files/` | `07-modals/{files,image-preview}__*` | built |
 
 ---
 
@@ -1153,6 +1160,37 @@ Leaving a failure collapsed would put the tool's error one click away on the one
 is to explain itself. The flag is computed on the timeline segment, not in a renderer, so live and
 persisted turns get it from the same place.
 
+**UI-23 — one signed assembly per file, and the signed `params` string is never re-serialized.**
+`POST /uploads/sign` answers one `{params, signature}` pair per requested file, in request order, and
+each is signed with `num_expected_upload_files: 1`. So a batch of three files is three assemblies and
+three Uppy instances — not one assembly carrying three. `params` is handed to the Transloadit plugin
+as the **string the server signed**: parsing and re-stringifying it changes byte order or spacing and
+the signature stops matching, which fails as an opaque provider rejection rather than as a client bug.
+
+**The finished file is read from `uploads[]`, never from `results`.** A no-steps assembly leaves
+`results` empty — `results[":original"]` is `undefined` — and the uploaded file is `uploads[0]`, whose
+`ssl_url` / `mime` / `size` / `meta` are what `POST /attachments` reports. `meta` carries width and
+height, which is the only place image dimensions arrive from the server at all.
+
+Two consequences worth keeping:
+
+- **Signing is per file, not per batch.** A `413 QUOTA_EXCEEDED` is field-specific
+  (`details.field = files.N.size`; 0.5 GB per file, 5 GB per month), and signing one at a time is
+  what lets that land on the chip that caused it instead of failing four innocent files with it.
+- **Reporting the assembly is idempotent server-side** (upsert on `assemblyId`), so a retry or a
+  reconnect reposting the same completion is expected rather than guarded against here.
+
+**UI-24 — an attachment travels as an id, and expiry is a UI state.** The composer and the image
+question both send `attachmentIds`; no client anywhere sends a URL, because the server resolves ids
+to URLs itself and that is what makes a foreign id a `404` rather than a way to reference someone
+else's file. `SendMessage.attachmentIds` rejects duplicates, so chip order is the render order and
+the list is deduplicated by construction — one chip, one id.
+
+`expiresAt` is Transloadit's 24-hour temporary storage surfacing in the contract. An attachment past
+it renders **as expired** — a labelled placeholder, download and copy-link disabled — rather than as
+an image element pointed at a dead URL, which is a broken-image icon and a console error instead of
+an explanation (D-16).
+
 **UI-21 — the reconnecting pill reports state that already exists.** `LiveRun` already tracks
 `live | reconnecting | polling` across the token refresh, the bounded retries and the REST fallback;
 the pill renders it and computes nothing. It has no capture — the reference gives no sign of its
@@ -1177,11 +1215,13 @@ off or could be better, just flag it."
 | D-7 | **Voice input not built**; mic is visual only | Out of scope, and the PDF never asks for it |
 | D-8 | **Projects / Library / Tools / API-MCP / Unfair Advantage are placeholder pages** | Locked scope: the sidebar rows exist for fidelity, the pages do not |
 | D-9 | **Clerk stays on its development instance**, watermark included | A production instance needs a custom domain we will not buy |
-| D-10 | **No `Use as reference` button on a generated asset** — only `Download` | Feeding an output back as the next turn's input needs the attachment pipeline, which is Phase 6 at the earliest. One button that works beats two where one lies |
+| D-10 | **No `Use as reference` button on a generated asset** — only `Download` | Feeding an output back as the next turn's input would mean re-uploading a CDN file the account already owns, which the upload pipeline has no path for: it signs assemblies for local files. One button that works beats two where one lies |
 | D-11 | **Generated assets render at 340px, not the measured ≈425px** | A fifth narrower keeps a turn's answer and its image on screen together. Preferred on review against the running product |
-| D-12 | **The dark canvas is `#0f0f0f`, not the sampled `#121212`** | Every lossless dark capture puts the reference at `#121212`; the darker ground was preferred on review. `--bg` and `--bg-subtle` move together, because the reference's dark sidebar is identical to its canvas and darkening one alone would introduce a seam the reference never shows. `--surface` is unchanged, so raised elements read slightly more raised |
+| D-12 | **The dark canvas is `#111111`, a shade off the sampled `#121212`** | An on-review midpoint: `#0f0f0f` was tried and read too heavy, the sampled value too light. `--bg` and `--bg-subtle` move together, because the reference's dark sidebar is identical to its canvas and darkening one alone would introduce a seam the reference never shows. `--surface` is unchanged, so raised elements read slightly more raised |
 | D-13 | **The usage page ships Current and Previous period only; `Custom Period` renders disabled** (UI-7). The `Show` menu's credited state is our own reading: it flips the first stat card, the amount column's header and the sort side — no capture shows it | A custom range needs a date-range picker no capture shows opened; guessing a whole control invents UI. The credited view exists (`?show=credited` is in the HAR) but was never captured, so the smallest defensible rendering ships |
 | D-14 | **A usage record's own `View details` renders disabled with the reason** | In the live product it opens per-step costs (`steps[]` in the HAR); our `UsagePage` contract carries no step breakdown, and a disabled control with the reason beats one wired to nothing (UI-7) |
+| D-15 | **`Select Asset` in the attach popover renders disabled; `Upload` is live.** No media-library *picker* is built, so an existing file cannot be re-attached | The picker is the media-library sheet, which is a capture-only surface here (§8). Uploading covers the requirement the PDF actually names; a picker would be a second full screen for the same outcome |
+| D-16 | **Uploads render as expired after 24 hours rather than being re-hosted** | Transloadit's Community plan keeps temporary results 24h, and the contract surfaces `expiresAt` for exactly this. Copying every upload to our own bucket to outlive it is storage this build does not have — so the UI states the limit instead of showing a broken image |
 
 ---
 
@@ -1201,6 +1241,7 @@ comparing screens sees a blank flash where the reference shows a skeleton.
 | Media library | `Loading file count...` subtitle + skeleton tile grid | `07-modals/media-library__loading-skeletons__light.jpg` |
 | Files modal | centred spinner | `07-modals/files__loading-spinner__light.jpg` |
 | Usage page | pulse bars in the stat cards and table rows; the error state is inline with `Try again` | no capture — same vocabulary as the Tasks page skeletons |
+| Uploading attachment | the chip's own thumbnail dims behind a spinner; a failure turns the border red and offers a retry | no capture of a mid-upload chip exists |
 
 ---
 
@@ -1214,7 +1255,8 @@ recovery".
 | Composer | `Enter` send · `Shift+Enter` newline | |
 | Plan card | `Enter` run all (hint rendered in-card) | |
 | Request-changes textarea | `⌘+Enter` submit | hint rendered in-card |
-| Question panel — text / image | `Enter` submit · `Esc` skip | hints rendered under the panel |
+| Question panel — text | `Enter` submit · `Esc` skip | hints rendered under the panel |
+| Question panel — image | `Esc` skip; the zone is a real button, so `Enter`/`Space` opens the picker | uploads for real (§5) |
 | Question panel — select | `↑↓` navigate · `Enter` select · `Esc` skip | |
 | Sidebar New task | `⌘⇧O`, revealed as a chip on hover | `01-shell/sidebar__newtask-shortcut-hover__light.jpg` |
 | Sidebar toggle | `⌘B`, advertised in the toggle's tooltip | works from anywhere; the rail's logo slot is the toggle on hover |

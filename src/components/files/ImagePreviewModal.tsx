@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  Check,
   Copy,
   Download,
   ExternalLink,
@@ -15,31 +16,49 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { DisabledAction } from "@/components/DisabledAction";
+import { Spinner } from "@/components/Spinner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { AttachmentDTO } from "@/contracts";
 import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/format";
-import { downloadFile } from "@/components/files/FilesModal";
+import { attachmentKind } from "@/lib/task-files";
+import { downloadAttachment } from "@/components/files/FilesModal";
 import { useHydrated } from "@/lib/use-hydrated";
-import type { TaskFile } from "@/lib/task-files";
+import {
+  isAttachmentExpired,
+  useDeleteAttachment,
+  useRenameAttachment,
+} from "@/queries/use-attachments";
 
 /**
  * The preview modal: media on the left, a source-aware detail column on the right. A generated file
  * leads with the prompt that produced it — the reference's own order — then name, date, source and
- * model, all read from the invocation the asset names, which is why the panel never has to guess.
- * An upload has no prompt and shows name/date/source/size instead. The whole detail column sits on
- * an inset rounded panel — `--panel-inset`, the same two-level trick as the search palette — with
- * its value boxes and actions raised back to `--panel`.
+ * model; the prompt and model are joined from the transcript, because attachment rows carry neither.
+ * The whole detail column sits on an inset rounded panel — `--panel-inset`, the same two-level trick
+ * as the search palette — with its value boxes and actions raised back to `--panel`.
  *
- * Dimensions are measured off the loaded image itself; no contract carries them. Favorite, rename
- * and delete need asset routes this build does not have, so they render disabled with that reason
- * rather than pretending (UI-7).
+ * Rename and delete are live against the attachment routes. Favorite stays disabled — no route
+ * carries it (UI-7). An expired upload renders as expired; its URL is a dead link and is not fetched.
  */
-export function ImagePreviewModal({ file, onClose }: { file: TaskFile; onClose: () => void }) {
+export function ImagePreviewModal({
+  attachment,
+  prompt,
+  model,
+  onClose,
+}: {
+  attachment: AttachmentDTO;
+  prompt: string | null;
+  model: string | null;
+  onClose: () => void;
+}) {
   const [dimensions, setDimensions] = useState<string | null>(null);
   const hydrated = useHydrated();
+  const remove = useDeleteAttachment();
+  const expired = isAttachmentExpired(attachment);
+  const kind = attachmentKind(attachment);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -52,14 +71,14 @@ export function ImagePreviewModal({ file, onClose }: { file: TaskFile; onClose: 
           <div className="flex min-w-0 flex-1 flex-col p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-[15px] font-semibold text-fg">
-                {file.kind === "image" ? "Image Preview" : "File Preview"}
+                {kind === "image" ? "Image Preview" : "File Preview"}
               </h2>
               <div className="flex items-center gap-1 text-fg-subtle">
-                {file.url && (
+                {attachment.url && !expired && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <a
-                        href={file.url}
+                        href={attachment.url}
                         target="_blank"
                         rel="noreferrer"
                         aria-label="Open in a new tab"
@@ -83,47 +102,38 @@ export function ImagePreviewModal({ file, onClose }: { file: TaskFile; onClose: 
             </div>
 
             <div className="mt-4 grid min-h-0 flex-1 place-items-center">
-              <Media file={file} onDimensions={setDimensions} />
+              <Media attachment={attachment} expired={expired} onDimensions={setDimensions} />
             </div>
           </div>
 
           <div className="m-5 ml-0 flex w-[400px] shrink-0 flex-col gap-4 rounded-2xl bg-panel-inset p-5">
-            {file.prompt && <PromptBlock prompt={file.prompt} />}
+            {prompt && <PromptBlock prompt={prompt} />}
 
             <DetailRow icon={FileIcon} label="File Name">
-              <span className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2">
-                <span className="min-w-0 flex-1 truncate text-sm text-fg">{file.name}</span>
-                <DisabledAction
-                  icon={Pencil}
-                  label="Rename file"
-                  reason="Renaming needs an asset route this build doesn't have."
-                />
-              </span>
+              <FileNameRow attachment={attachment} />
             </DetailRow>
 
             <DetailRow icon={Calendar} label="Created on" inline>
               {hydrated
-                ? new Date(file.createdAt)
+                ? new Date(attachment.createdAt)
                     .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
                     .replaceAll(" ", "-")
                 : ""}
             </DetailRow>
 
             <DetailRow icon={Sparkles} label="Source" inline>
-              {file.source === "generated" ? "Generated in chat" : "Uploaded"}
+              {attachment.source === "generated" ? "Generated in chat" : "Uploaded"}
             </DetailRow>
 
-            {file.model && (
+            {model && (
               <DetailRow icon={Sparkles} label="Model" inline>
-                {file.model}
+                {model}
               </DetailRow>
             )}
 
-            {file.size !== null && (
-              <DetailRow icon={FileIcon} label="Size" inline>
-                {formatBytes(file.size)}
-              </DetailRow>
-            )}
+            <DetailRow icon={FileIcon} label="Size" inline>
+              {attachment.size > 0 ? formatBytes(attachment.size) : "—"}
+            </DetailRow>
 
             {dimensions && (
               <DetailRow icon={Ruler} label="Dimensions" inline>
@@ -135,27 +145,36 @@ export function ImagePreviewModal({ file, onClose }: { file: TaskFile; onClose: 
               <DisabledAction
                 icon={Heart}
                 label="Add to Favorite"
-                reason="Favorites need an asset route this build doesn't have."
+                reason="Favorites aren't part of this build."
                 className={actionClass}
                 showLabel
               />
-              <CopyLink url={file.url} />
+              <CopyLink url={expired ? null : attachment.url} />
               <button
                 type="button"
-                disabled={!file.url}
-                onClick={() => downloadFile(file)}
+                disabled={!attachment.url || expired}
+                onClick={() => downloadAttachment(attachment)}
                 className={cn(actionClass, "transition-colors hover:bg-surface disabled:opacity-50")}
               >
                 <Download className="size-4" aria-hidden />
                 Download
               </button>
-              <DisabledAction
-                icon={Trash2}
-                label="Delete File"
-                reason="Deleting needs an asset route this build doesn't have."
-                className={cn(actionClass, "!text-danger")}
-                showLabel
-              />
+              <button
+                type="button"
+                disabled={remove.isPending}
+                onClick={() => remove.mutate(attachment.id, { onSuccess: onClose })}
+                className={cn(
+                  actionClass,
+                  "text-danger transition-colors hover:bg-surface disabled:opacity-50",
+                )}
+              >
+                {remove.isPending ? (
+                  <Spinner className="size-4" />
+                ) : (
+                  <Trash2 className="size-4" aria-hidden />
+                )}
+                Delete File
+              </button>
             </div>
           </div>
         </div>
@@ -167,27 +186,112 @@ export function ImagePreviewModal({ file, onClose }: { file: TaskFile; onClose: 
 const actionClass =
   "flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-panel px-3 text-sm whitespace-nowrap";
 
-function Media({ file, onDimensions }: { file: TaskFile; onDimensions: (value: string) => void }) {
-  if (!file.url) {
+/** The name box, with the pencil flipping it into an inline rename against the attachment route. */
+function FileNameRow({ attachment }: { attachment: AttachmentDTO }) {
+  const rename = useRenameAttachment();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(attachment.name);
+
+  const save = () => {
+    const name = value.trim();
+    if (!name || name === attachment.name) {
+      setEditing(false);
+      setValue(attachment.name);
+      return;
+    }
+
+    rename.mutate(
+      { attachmentId: attachment.id, name },
+      { onSettled: () => setEditing(false) },
+    );
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") save();
+    if (event.key === "Escape") {
+      setEditing(false);
+      setValue(attachment.name);
+    }
+  };
+
+  return (
+    <span className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2">
+      {editing ? (
+        <input
+          autoFocus
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={onKeyDown}
+          aria-label="File name"
+          className="min-w-0 flex-1 bg-transparent text-sm text-fg outline-none"
+        />
+      ) : (
+        <span className="min-w-0 flex-1 truncate text-sm text-fg">{attachment.name}</span>
+      )}
+      {rename.isPending ? (
+        <Spinner className="size-4 shrink-0" />
+      ) : editing ? (
+        <button
+          type="button"
+          aria-label="Save name"
+          onClick={save}
+          className="shrink-0 text-fg-muted transition-colors hover:text-fg"
+        >
+          <Check className="size-4" aria-hidden />
+        </button>
+      ) : (
+        <button
+          type="button"
+          aria-label="Rename file"
+          onClick={() => setEditing(true)}
+          className="shrink-0 text-fg-subtle transition-colors hover:text-fg"
+        >
+          <Pencil className="size-4" aria-hidden />
+        </button>
+      )}
+    </span>
+  );
+}
+
+function Media({
+  attachment,
+  expired,
+  onDimensions,
+}: {
+  attachment: AttachmentDTO;
+  expired: boolean;
+  onDimensions: (value: string) => void;
+}) {
+  if (expired) {
+    return (
+      <p className="text-sm text-fg-subtle">
+        This upload has expired — uploaded files are kept for 24 hours.
+      </p>
+    );
+  }
+
+  if (!attachment.url) {
     return <p className="text-sm text-fg-subtle">This file has no preview.</p>;
   }
 
-  if (file.kind === "video") {
-    return <video controls src={file.url} className="max-h-[420px] max-w-full rounded-card" />;
+  const kind = attachmentKind(attachment);
+
+  if (kind === "video") {
+    return <video controls src={attachment.url} className="max-h-[420px] max-w-full rounded-card" />;
   }
 
-  if (file.kind === "audio") {
-    return <audio controls src={file.url} className="w-full" />;
+  if (kind === "audio") {
+    return <audio controls src={attachment.url} className="w-full" />;
   }
 
-  if (file.kind !== "image") {
+  if (kind !== "image") {
     return <p className="text-sm text-fg-subtle">No inline preview for this type.</p>;
   }
 
   return (
     <img
-      src={file.url}
-      alt={file.name}
+      src={attachment.url}
+      alt={attachment.name}
       onLoad={(event) =>
         onDimensions(`${event.currentTarget.naturalWidth} X ${event.currentTarget.naturalHeight}`)
       }

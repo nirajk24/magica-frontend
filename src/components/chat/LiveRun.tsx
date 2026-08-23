@@ -91,12 +91,21 @@ export function LiveRun({ chatId, run }: { chatId: string; run: ActiveRun }) {
 
   const finished = Boolean(realtimeRun?.finishedAt);
 
+  /**
+   * A finished turn moved more than the transcript: tool charges have settled against the ledger and
+   * the server may have titled the chat, so the balance and the task list are both stale. The credits
+   * chip is the one a stale value is most visible on — it sits on screen through the whole turn.
+   */
   useEffect(() => {
     if (!finished) return;
 
     const settle = async () => {
       await queryClient.invalidateQueries({ queryKey: qk.chat(chatId) });
       await queryClient.invalidateQueries({ queryKey: qk.activeRun(chatId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: qk.credits() }),
+        queryClient.invalidateQueries({ queryKey: qk.chats() }),
+      ]);
     };
 
     void settle();

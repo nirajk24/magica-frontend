@@ -16,6 +16,8 @@ import type {
   QuestionsPayload,
   RunMetadata,
   SendMessageResult,
+  AttachmentsPage,
+  SignUploadsResult,
   ToolInvocationDTO,
   UsageCategory,
 } from "@/contracts";
@@ -44,6 +46,10 @@ export const chat: ChatDTO = {
   updatedAt: "2026-08-22T10:02:14.000Z",
 };
 
+/**
+ * A live upload. `expiresAt` is deliberately far in the future: the 24h window is real, and a
+ * fixture pinned near the day it was written turns every attachment assertion into a time bomb.
+ */
 export const attachment: AttachmentDTO = {
   id: "01999f00-0000-7000-8000-000000000400",
   type: "image",
@@ -53,9 +59,49 @@ export const attachment: AttachmentDTO = {
   contentType: "image/png",
   size: 1_363_148,
   status: "ready",
-  metadata: null,
-  expiresAt: "2026-08-23T09:59:00.000Z",
+  metadata: { width: 1280, height: 720 },
+  expiresAt: "2099-01-01T00:00:00.000Z",
   createdAt: "2026-08-22T09:59:00.000Z",
+};
+
+/** The same upload past its 24h temp-storage window: the URL is dead and the UI must say so. */
+export const expiredAttachment: AttachmentDTO = {
+  ...attachment,
+  id: "01999f00-0000-7000-8000-000000000401",
+  name: "Old-upload.png",
+  expiresAt: "2026-01-01T00:00:00.000Z",
+  createdAt: "2025-12-31T00:00:00.000Z",
+};
+
+/** What a run produced: catalogued by the backend at finalize, so `size` is 0 — nothing reports it. */
+export const generatedAttachment: AttachmentDTO = {
+  id: "01999f00-0000-7000-8000-000000000402",
+  type: "image",
+  source: "generated",
+  url: IMAGE_URL,
+  name: "mountain.png",
+  contentType: "image/png",
+  size: 0,
+  status: "ready",
+  metadata: null,
+  expiresAt: null,
+  createdAt: "2026-08-22T10:02:14.000Z",
+};
+
+export const attachmentsPage: AttachmentsPage = {
+  attachments: [generatedAttachment, attachment],
+  nextCursor: null,
+};
+
+/** One signed assembly, which is what `/uploads/sign` answers per requested file. */
+export const signUploadsResult: SignUploadsResult = {
+  assemblies: [
+    {
+      params: '{"auth":{"key":"fixture"},"num_expected_upload_files":1}',
+      signature: "sha384:fixture-signature",
+    },
+  ],
+  expiresAt: "2099-01-01T00:00:00.000Z",
 };
 
 export const userMessage: MessageDTO = {

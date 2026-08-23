@@ -8,10 +8,14 @@ import { Spinner } from "@/components/Spinner";
 import { FilterMenu } from "@/components/tasks/FilterMenu";
 import { TaskRow } from "@/components/tasks/TaskRow";
 import { cn } from "@/lib/cn";
+import { useDebounced } from "@/lib/use-debounced";
 import { useChatList, type ChatsFilter } from "@/queries/use-chats";
 import { useDeleteChats } from "@/queries/use-chat-mutations";
 
 const SKELETON_ROWS = 8;
+
+/** Same settle window as the search palette — one search box should not feel like two. */
+const SETTLE_MS = 200;
 
 /**
  * The task list at `/chat/recent`.
@@ -25,7 +29,8 @@ export function TasksPage() {
   const [filter, setFilter] = useState<ChatsFilter>("all");
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const { query, chats } = useChatList({ search, filter });
+  const settledSearch = useDebounced(search, SETTLE_MS);
+  const { query, chats } = useChatList({ search: settledSearch, filter });
   const remove = useDeleteChats();
 
   const toggleSelect = (chatId: string) =>

@@ -8,11 +8,17 @@ import {
   CreditsPage,
   Health,
   LlmStatus,
+  AttachmentResponse,
+  AttachmentsPage,
   Ok,
   SendMessage,
   SendMessageResult,
+  SignUploadsResult,
   TopUpResult,
   UsagePage,
+  type CreateAttachment,
+  type SignUploads,
+  type UpdateAttachment,
   type Feedback,
   type TopUp,
   type ResolveWaitpoint,
@@ -90,6 +96,13 @@ export type ChatsQueryInput = {
   cursor?: string;
   search?: string;
   filter?: "all" | "pinned";
+};
+
+/** The attachment list's server-side filters. Omitted fields mean everything, newest first. */
+export type AttachmentsQueryInput = {
+  cursor?: string;
+  source?: "uploaded" | "generated";
+  chatId?: string;
 };
 
 /** The usage aggregation's window and drill-down. Omitted bounds mean the server's current period. */
@@ -182,6 +195,31 @@ export function createApi(getToken: TokenSource) {
 
     deleteChat: (chatId: string) =>
       request(`/chats/${encodeURIComponent(chatId)}`, { method: "DELETE" }, Ok, getToken),
+
+    signUploads: (body: SignUploads) =>
+      request("/uploads/sign", { method: "POST", body: JSON.stringify(body) }, SignUploadsResult, getToken),
+
+    createAttachment: (body: CreateAttachment) =>
+      request("/attachments", { method: "POST", body: JSON.stringify(body) }, AttachmentResponse, getToken),
+
+    getAttachments: ({ cursor, source, chatId }: AttachmentsQueryInput = {}) =>
+      request(
+        `/attachments${queryString({ cursor, source, chatId })}`,
+        {},
+        AttachmentsPage,
+        getToken,
+      ),
+
+    updateAttachment: (attachmentId: string, body: UpdateAttachment) =>
+      request(
+        `/attachments/${encodeURIComponent(attachmentId)}`,
+        { method: "PATCH", body: JSON.stringify(body) },
+        AttachmentResponse,
+        getToken,
+      ),
+
+    deleteAttachment: (attachmentId: string) =>
+      request(`/attachments/${encodeURIComponent(attachmentId)}`, { method: "DELETE" }, Ok, getToken),
 
     setFeedback: (messageId: string, body: Feedback) =>
       request(

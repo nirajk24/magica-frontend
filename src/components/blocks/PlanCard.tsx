@@ -180,10 +180,20 @@ function PlanAction({
   );
 }
 
-/** `Enter` must still type into the composer and the changes box; the shortcut yields to them. */
+const INTERACTIVE = new Set(["TEXTAREA", "INPUT", "BUTTON", "A", "SELECT", "SUMMARY"]);
+
+/**
+ * Whether the focused element owns `Enter` already, in which case the run-all shortcut yields.
+ *
+ * Buttons and links count, not just fields: `Enter` on a focused button activates it, so a
+ * window-level shortcut fires alongside it — pressing `Enter` on `Request changes` would open the
+ * box and approve the plan in the same keystroke.
+ */
 function isTypingTarget(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
-    (target.tagName === "TEXTAREA" || target.tagName === "INPUT" || target.isContentEditable)
+    (INTERACTIVE.has(target.tagName) ||
+      target.isContentEditable ||
+      target.getAttribute("role") === "button")
   );
 }

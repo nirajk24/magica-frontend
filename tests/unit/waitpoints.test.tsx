@@ -99,6 +99,20 @@ describe("the plan card", () => {
     await waitFor(() => expect(sent).toHaveLength(1));
   });
 
+  it("yields Enter to a focused control, so one keystroke cannot also approve the plan", async () => {
+    const user = userEvent.setup();
+    server.use(waitingOnPlan);
+    const sent = captureResolution();
+
+    renderWithProviders(<ChatScreen chatId={fixtures.CHAT_ID} />);
+    const changes = await screen.findByRole("button", { name: /Request Changes/i });
+
+    changes.focus();
+    await user.keyboard("{Enter}");
+
+    expect(sent).toHaveLength(0);
+  });
+
   it("says an expired waitpoint expired, instead of retrying it forever", async () => {
     const user = userEvent.setup();
     server.use(waitingOnPlan, waitpointExpired);
@@ -129,7 +143,7 @@ describe("the question panel", () => {
 
     await user.type(await screen.findByLabelText("Your answer"), "Swiss typographic{Enter}");
 
-    expect(await screen.findByText(/Uploads aren't part of this build/)).toBeInTheDocument();
+    expect(await screen.findByText(/Click to upload an image/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Skip" }));
 
     await user.click(await screen.findByRole("option", { name: /4:5 portrait/ }));

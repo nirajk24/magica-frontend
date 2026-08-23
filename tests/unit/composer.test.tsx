@@ -37,7 +37,11 @@ describe("Composer", () => {
 
     await user.type(screen.getByLabelText("Message"), "generate a mountain{Enter}");
 
-    expect(onSubmit).toHaveBeenCalledWith({ content: "generate a mountain", planMode: false });
+    expect(onSubmit).toHaveBeenCalledWith({
+      content: "generate a mountain",
+      planMode: false,
+      attachmentIds: [],
+    });
   });
 
   it("inserts a newline on Shift+Enter instead of sending", async () => {
@@ -73,7 +77,11 @@ describe("Composer", () => {
     await user.click(screen.getByRole("button", { name: "Plan mode" }));
     await user.type(screen.getByLabelText("Message"), "make me a poster{Enter}");
 
-    expect(onSubmit).toHaveBeenCalledWith({ content: "make me a poster", planMode: true });
+    expect(onSubmit).toHaveBeenCalledWith({
+      content: "make me a poster",
+      planMode: true,
+      attachmentIds: [],
+    });
   });
 
   it("will not send while a run is active, offering the stop control instead", async () => {
@@ -88,17 +96,34 @@ describe("Composer", () => {
     expect(screen.getByRole("button", { name: "Stop run" })).toBeInTheDocument();
   });
 
+  it("offers the reference's attach choices, with only the asset picker unimplemented", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Composer chatId={CHAT_ID} onSubmit={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Attach a file" }));
+
+    expect(await screen.findByRole("button", { name: "Upload" })).toBeEnabled();
+
+    const picker = screen.getByRole("button", { name: "Select Asset" });
+
+    expect(picker).toHaveAttribute("aria-disabled", "true");
+
+    await user.hover(picker);
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/asset picker isn't part/i);
+  });
+
   it("explains the controls it does not implement yet", async () => {
     const user = userEvent.setup();
     renderWithProviders(<Composer chatId={CHAT_ID} onSubmit={vi.fn()} />);
 
-    const attach = screen.getByRole("button", { name: "Attach a file" });
+    const mic = screen.getByRole("button", { name: "Dictate" });
 
-    expect(attach).toHaveAttribute("aria-disabled", "true");
+    expect(mic).toHaveAttribute("aria-disabled", "true");
 
-    await user.hover(attach);
+    await user.hover(mic);
 
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/aren't part of this build/i);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/isn't part of this build/i);
   });
 
   it("uses the empty-state placeholder when given one", () => {

@@ -14,6 +14,8 @@ export const qk = {
   credits: () => ["credits"] as const,
   usage: (params: { from?: string; to?: string; category?: string } = {}) =>
     ["usage", params.from ?? null, params.to ?? null, params.category ?? null] as const,
+  attachments: (params: { source?: string; chatId?: string } = {}) =>
+    ["attachments", params.source ?? null, params.chatId ?? null] as const,
   llmStatus: () => ["llm-status"] as const,
 };
 
