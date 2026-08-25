@@ -248,3 +248,21 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background-color: color-mix(in srgb, var(--fg) 30%, transparent);
 }
+
+
+/*
+ * Tailwind v4's preflight resets buttons to `cursor: default`, which is the HTML default and not
+ * what anything on the reference does — every control there answers the pointer. Declared once
+ * against the roles rather than sprinkled as `cursor-pointer`, so a new control is never the one
+ * that forgot. `:disabled` keeps the arrow: it is not clickable and must not claim to be.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="menuitem"],
+[role="option"],
+[role="tab"],
+label[for],
+summary,
+select:not(:disabled) {
+  cursor: pointer;
+}
