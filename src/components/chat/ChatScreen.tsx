@@ -53,7 +53,14 @@ const EMPTY_STATE_COLUMN = "mx-auto w-full max-w-[900px] px-6";
  * virtualizer and unmount as soon as they scroll out of view, which would take an open panel with
  * them. The store carries only the invocation id, and the invocation is read back from the messages.
  */
-export function ChatScreen({ chatId }: { chatId: string }) {
+export function ChatScreen({ chatId: routeChatId }: { chatId: string }) {
+  /**
+   * The chat created by the first send on `/chat`. The URL is renamed in place rather than navigated,
+   * so this screen goes on owning the turn it started; keying on the route it was adopted from means
+   * leaving for another chat drops it without an effect.
+   */
+  const [adopted, setAdopted] = useState<{ from: string; chatId: string } | null>(null);
+  const chatId = adopted?.from === routeChatId ? adopted.chatId : routeChatId;
   const isNew = chatId === NEW_CHAT_ID;
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
@@ -91,8 +98,15 @@ export function ChatScreen({ chatId }: { chatId: string }) {
       message: optimisticUserMessage(submission.content, uploads.items),
     });
     send.mutate(submission, {
-      onSettled: () => setOptimistic(null),
-      onSuccess: () => uploads.reset(),
+      onSuccess: (result) => {
+        uploads.reset();
+
+        // The bubble is keyed on `chatId`, so adopting the created chat retires it against a
+        // transcript already prefetched under that id.
+        if (isNew) setAdopted({ from: routeChatId, chatId: result.chatId });
+        else setOptimistic(null);
+      },
+      onError: () => setOptimistic(null),
     });
   };
 
