@@ -127,18 +127,17 @@ describe("sending a message", () => {
 });
 
 describe("starting a conversation at /chat/new", () => {
-  it("moves to the chat the server created", async () => {
+  it("renames the URL to the chat the server created", async () => {
     await send("new", "start something");
 
-    await waitFor(() =>
-      expect(routerMock.replace).toHaveBeenCalledWith(`/chat/${fixtures.CHAT_ID}`),
-    );
+    await waitFor(() => expect(window.location.pathname).toBe(`/chat/${fixtures.CHAT_ID}`));
+    expect(routerMock.replace, "a route change unmounts the turn it just started").not.toHaveBeenCalled();
   });
 
-  it("has the new chat's history cached before it navigates", async () => {
+  it("has the new chat's history cached before the URL changes", async () => {
     const { queryClient } = await send("new", "start something");
 
-    await waitFor(() => expect(routerMock.replace).toHaveBeenCalled());
+    await waitFor(() => expect(window.location.pathname).toBe(`/chat/${fixtures.CHAT_ID}`));
     expect(queryClient.getQueryData(qk.chat(fixtures.CHAT_ID))).toBeDefined();
   });
 
@@ -187,7 +186,7 @@ describe("what a send makes stale", () => {
 
     await sendWithSidebar("new", "start something");
 
-    await waitFor(() => expect(routerMock.replace).toHaveBeenCalled());
+    await waitFor(() => expect(window.location.pathname).toBe(`/chat/${fixtures.CHAT_ID}`));
     await waitFor(() => expect(listReads).toBeGreaterThan(1));
   });
 });
@@ -212,7 +211,7 @@ describe("sending while signed out", () => {
     await send("new", "a prompt worth keeping");
 
     expect(useUI.getState().drafts.new).toBe("a prompt worth keeping");
-    expect(routerMock.replace).not.toHaveBeenCalled();
+    expect(window.location.pathname).not.toBe(`/chat/${fixtures.CHAT_ID}`);
   });
 });
 

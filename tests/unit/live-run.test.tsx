@@ -22,7 +22,9 @@ const snapshot = (phase: RunPhase): RunMetadata => ({
   phase,
   phaseStartedAt: 1_756_000_000_000,
   stepsCompleted: 1,
-  blocks: [],
+  // A turn that has produced nothing renders the pending row, so a fixture standing in for one
+  // mid-flight has to carry a block or it is testing the wrong branch.
+  blocks: [{ segment: 0, type: "text", streaming: true }],
   invocations: [],
   waitpoint: {
     id: fixtures.WAITPOINT_ID,
