@@ -1,6 +1,6 @@
 "use client";
 
-import { Pin, PinOff, Pencil, Trash2 } from "lucide-react";
+import { Pin } from "lucide-react";
 import Link from "next/link";
 import { useState, type KeyboardEvent } from "react";
 import type { ChatDTO } from "@/contracts";
@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/cn";
 import { formatRelativeTime } from "@/lib/format";
+import { useChatRowActions } from "@/components/chat/use-chat-row-actions";
 import { useHydrated } from "@/lib/use-hydrated";
-import { useDeleteChats, useUpdateChat } from "@/queries/use-chat-mutations";
 
 /**
  * One task row: a link at rest, a checkbox target in select mode, and a right-click menu with the
@@ -34,21 +34,10 @@ export function TaskRow({
   selected: boolean;
   onToggleSelect: (chatId: string) => void;
 }) {
-  const [renaming, setRenaming] = useState(false);
-  const update = useUpdateChat();
-  const remove = useDeleteChats();
+  const { actions, renaming, saving, saveRename, cancelRename } = useChatRowActions(chat);
 
   if (renaming) {
-    return (
-      <RenameRow
-        chat={chat}
-        saving={update.isPending}
-        onSave={(title) =>
-          update.mutate({ chatId: chat.id, body: { title } }, { onSuccess: () => setRenaming(false) })
-        }
-        onCancel={() => setRenaming(false)}
-      />
-    );
+    return <RenameRow chat={chat} saving={saving} onSave={saveRename} onCancel={cancelRename} />;
   }
 
   const row = selecting ? (
@@ -81,27 +70,16 @@ export function TaskRow({
     <ContextMenu>
       <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem
-          onSelect={() => update.mutate({ chatId: chat.id, body: { isFavorite: !chat.isFavorite } })}
-        >
-          {chat.isFavorite ? (
-            <PinOff className="size-3.5" aria-hidden />
-          ) : (
-            <Pin className="size-3.5" aria-hidden />
-          )}
-          {chat.isFavorite ? "Unpin" : "Pin"}
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => setRenaming(true)}>
-          <Pencil className="size-3.5" aria-hidden />
-          Rename
-        </ContextMenuItem>
-        <ContextMenuItem
-          className="text-danger data-[highlighted]:text-danger"
-          onSelect={() => remove.mutate([chat.id])}
-        >
-          <Trash2 className="size-3.5" aria-hidden />
-          Delete
-        </ContextMenuItem>
+        {actions.map((action) => (
+          <ContextMenuItem
+            key={action.key}
+            className={action.danger ? "text-danger data-[highlighted]:text-danger" : undefined}
+            onSelect={action.onSelect}
+          >
+            <action.icon className="size-3.5" aria-hidden />
+            {action.label}
+          </ContextMenuItem>
+        ))}
       </ContextMenuContent>
     </ContextMenu>
   );

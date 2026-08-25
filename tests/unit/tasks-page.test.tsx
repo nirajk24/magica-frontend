@@ -189,7 +189,7 @@ describe("the tasks page", () => {
     const row = await screen.findByRole("link", { name: new RegExp(fixtures.chat.title) });
 
     await user.pointer({ keys: "[MouseRight]", target: row });
-    await user.click(await screen.findByRole("menuitem", { name: "Pin" }));
+    await user.click(await screen.findByRole("menuitem", { name: /Pin to top/ }));
 
     await waitFor(() => expect(sent).toEqual({ isFavorite: true }));
   });

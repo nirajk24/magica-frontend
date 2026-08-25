@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { MagicaLogo } from "@/components/MagicaMark";
 import { NAV_ITEMS } from "@/components/shell/nav";
+import { RecentTaskRow } from "@/components/shell/RecentTaskRow";
 import { SidebarFooter } from "@/components/shell/SidebarFooter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
@@ -286,19 +287,12 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
           <EmptyList />
         ) : (
           chats.map((chat) => (
-            <Link
+            <RecentTaskRow
               key={chat.id}
-              href={`/chat/${chat.id}`}
-              onClick={onNavigate}
-              className={cn(
-                "flex h-[34px] items-center truncate rounded-md px-2 text-sm transition-colors",
-                pathname === `/chat/${chat.id}`
-                  ? "bg-surface-selected text-fg"
-                  : "text-fg-muted hover:bg-surface-selected hover:text-fg",
-              )}
-            >
-              {chat.title}
-            </Link>
+              chat={chat}
+              active={pathname === `/chat/${chat.id}`}
+              onNavigate={onNavigate}
+            />
           ))
         )}
       </div>
