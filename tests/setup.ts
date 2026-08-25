@@ -71,10 +71,6 @@ afterEach(async () => {
   const { routerMock, locationMock } = await import("./router-mock");
   for (const spy of Object.values(routerMock)) spy.mockClear();
 
-  // The new-chat hop renames the URL through `history` rather than the router, so the spy reset
-  // above does not undo it and the address carries into the next test.
-  window.history.replaceState(null, "", "/");
-
   locationMock.pathname = "/";
   locationMock.search = "";
   locationMock.segments = [];

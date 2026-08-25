@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import type { ActiveRun, SendMessageResult } from "@/contracts";
 import type { ComposerSubmit } from "@/components/chat/Composer";
 import { ApiError } from "@/lib/api-client";
@@ -42,7 +43,7 @@ export async function applyRunStart(
 }
 
 /**
- * Sends a turn, and for `chatId === 'new'` renames the URL to the chat the server just created.
+ * Sends a turn, and for `chatId === 'new'` moves the browser to the chat the server just created.
  *
  * The optimistic user bubble is held by the screen rather than written into `qk.chat`: an unsent
  * message is not server state, and a hand-built `MessageDTO` in a cache whose every other row was
@@ -59,6 +60,7 @@ export async function applyRunStart(
 export function useSendMessage(chatId: string) {
   const api = useApi();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const setDraft = useUI((state) => state.setDraft);
   const clearDraft = useUI((state) => state.clearDraft);
   const pendingModel = useUI((state) => state.modelByChat[chatId]);
@@ -93,10 +95,11 @@ export function useSendMessage(chatId: string) {
         // The server created the chat, so Recent tasks has a row it has never seen.
         void queryClient.invalidateQueries({ queryKey: qk.chats() });
 
-        // `history` rather than `router`: `/chat` and `/chat/[chatId]` are separate segments, so a
-        // real navigation unmounts the screen and paints `loading.tsx` over a turn that has already
-        // started. The content does not change, only its name — the caller adopts the new id.
-        window.history.replaceState(null, "", `/chat/${result.chatId}`);
+        // The caller has already adopted the created id, so this is only bringing the router's own
+        // state along — without it Next still believes the screen is `/chat`, and `New task` links
+        // there and does nothing. `[chatId]` has no loading boundary, so the current page stays on
+        // screen through the segment fetch rather than blanking behind a fallback.
+        router.replace(`/chat/${result.chatId}`);
         return;
       }
 

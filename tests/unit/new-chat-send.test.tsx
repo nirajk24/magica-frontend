@@ -6,6 +6,7 @@ import { ChatScreen } from "@/components/chat/ChatScreen";
 import { env } from "@/lib/env";
 import { NEW_CHAT_ID } from "@/queries/use-chat";
 import * as fixtures from "../msw/fixtures";
+import { routerMock } from "../router-mock";
 import { server } from "../msw/setup";
 import { renderWithProviders } from "../render";
 
@@ -24,7 +25,7 @@ describe("the first send on a new chat", () => {
     await user.type(await screen.findByLabelText("Message"), "draw me a poster{Enter}");
 
     await vi.waitFor(() =>
-      expect(window.location.pathname).toBe(`/chat/${fixtures.sendMessageResult.chatId}`),
+      expect(routerMock.replace).toHaveBeenCalledWith(`/chat/${fixtures.sendMessageResult.chatId}`),
     );
 
     expect(await screen.findByText(fixtures.userMessage.content)).toBeInTheDocument();
