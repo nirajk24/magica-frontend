@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp, ChevronsUpDown, Eye } from "lucide-react";
 import { useState } from "react";
 import type { UsageCategory } from "@/contracts";
-import { categoryTotal } from "@/components/usage/category-total";
+import { categoryAmount } from "@/components/usage/category-total";
 import type { UsageSide } from "@/components/usage/UsagePage";
 import { cn } from "@/lib/cn";
 import { formatUsageCredits, formatUsageTimestamp } from "@/lib/format";
@@ -40,7 +40,7 @@ export function UsageOverviewTable({
         : { key, dir: key === "label" ? "asc" : "desc" },
     );
 
-  const sorted = sortCategories(categories, sort);
+  const sorted = sortCategories(categories, sort, show);
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-border bg-panel">
@@ -96,7 +96,7 @@ export function UsageOverviewTable({
               <tr key={category.key}>
                 <td className="px-6 py-4 text-[15px] text-fg">{category.label}</td>
                 <td className="px-6 py-4 text-right font-semibold text-fg">
-                  {formatUsageCredits(categoryTotal(category))}
+                  {formatUsageCredits(categoryAmount(category, show))}
                 </td>
                 <td className="px-6 py-4 text-right font-semibold text-fg">{category.count}</td>
                 <td className="px-6 py-4 text-fg">
@@ -121,7 +121,11 @@ export function UsageOverviewTable({
   );
 }
 
-function sortCategories(categories: readonly UsageCategory[], sort: Sort): UsageCategory[] {
+function sortCategories(
+  categories: readonly UsageCategory[],
+  sort: Sort,
+  show: UsageSide,
+): UsageCategory[] {
   const direction = sort.dir === "asc" ? 1 : -1;
 
   return [...categories].sort((a, b) => {
@@ -129,7 +133,7 @@ function sortCategories(categories: readonly UsageCategory[], sort: Sort): Usage
       case "label":
         return direction * a.label.localeCompare(b.label);
       case "amount": {
-        const diff = BigInt(categoryTotal(a)) - BigInt(categoryTotal(b));
+        const diff = BigInt(categoryAmount(a, show)) - BigInt(categoryAmount(b, show));
         return direction * (diff > 0n ? 1 : diff < 0n ? -1 : 0);
       }
       case "count":

@@ -60,7 +60,7 @@ describe("the credits modal", () => {
     useUI.setState({ addCreditsOpen: true });
     renderWithProviders(<AddCreditsModal />);
 
-    expect(await screen.findByText(/no payment provider/)).toBeInTheDocument();
+    expect(await screen.findByText(/Credits pay for what gets generated/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Add Credits$/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });

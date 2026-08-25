@@ -35,9 +35,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-fg">Credits</h2>
-          <p className="mt-1 text-sm text-fg-muted">
-            Every account gets a fixed allowance in this build.
-          </p>
+          <p className="mt-1 text-sm text-fg-muted">Every account gets a fixed allowance.</p>
         </div>
         <button
           type="button"
@@ -57,9 +55,11 @@ function ModalBody({ onClose }: { onClose: () => void }) {
       )}
 
       <p className="text-sm leading-6 text-fg-muted">
-        Credits are spent per tool call, never per message — talking costs nothing. There is no
-        purchase here because there is no payment provider behind it; the allowance is what the demo
-        runs on.
+        Credits pay for what gets generated. Questions and planning don&apos;t use any.
+      </p>
+
+      <p className="text-sm leading-6 text-fg-muted">
+        There&apos;s a separate limit on how much you can run each day.
       </p>
 
       <button

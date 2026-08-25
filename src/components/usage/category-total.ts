@@ -1,12 +1,23 @@
 import type { UsageCategory } from "@/contracts";
+import type { UsageSide } from "@/components/usage/UsagePage";
 
 /**
- * A category's total movement in the window, in microcredits. A category moves on one side only —
- * tools debit, adjustments credit — and the reference's overview lists both kinds in one amount
- * column, so the sum is the displayed value rather than a mixed total.
+ * The amount a category moved on the side currently being shown.
+ *
+ * A category can move on both — a tool debits when it runs and credits back when it is refunded —
+ * so the sum of the two is not what either view is asking for. Showing it put a debited figure
+ * under a "Total Credited" heading, in a table that also listed every category regardless of side.
  */
-export function categoryTotal(category: UsageCategory): string {
-  return (BigInt(category.debited) + BigInt(category.credited)).toString();
+export function categoryAmount(category: UsageCategory, show: UsageSide): string {
+  return show === "credited" ? category.credited : category.debited;
+}
+
+/** The categories that moved on the side being shown; the others belong to the other view. */
+export function categoriesOn(
+  categories: readonly UsageCategory[],
+  show: UsageSide,
+): UsageCategory[] {
+  return categories.filter((category) => BigInt(categoryAmount(category, show)) > 0n);
 }
 
 /** Which side a category moves, for the Debited/Credited chip on its record list. */

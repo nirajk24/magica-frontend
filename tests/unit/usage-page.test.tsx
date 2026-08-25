@@ -9,6 +9,7 @@ import { previousPeriodOf } from "@/queries/use-usage";
 import { errors } from "../msw/handlers";
 import { server } from "../msw/setup";
 import { routerMock } from "../router-mock";
+import { locationMock } from "../router-mock";
 import { renderWithProviders } from "../render";
 import * as fixtures from "../msw/fixtures";
 
@@ -20,24 +21,22 @@ describe("the usage overview", () => {
     renderWithProviders(<UsagePage />);
 
     expect(await screen.findByText("24.97M credits")).toBeInTheDocument();
-    expect(screen.getByText("44")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("42"), "records on the debited side, not both").toBeInTheDocument();
+    expect(screen.getByText("2"), "the credited category belongs to the other view").toBeInTheDocument();
     expect(screen.getAllByText(currentPeriod)).toHaveLength(2);
   });
 
-  it("lists every category with its total movement, newest activity first", async () => {
+  it("lists the categories that moved on the side being shown, newest activity first", async () => {
     renderWithProviders(<UsagePage />);
 
     const rows = within(await screen.findByRole("table")).getAllByRole("row").slice(1);
     expect(rows.map((row) => within(row).getAllByRole("cell")[0]!.textContent)).toEqual([
       "AI Agent Chat",
       "AI Gpt Image 2",
-      "AI Credit Adjustment",
     ]);
 
     expect(within(rows[0]!).getByText("4.94M")).toBeInTheDocument();
     expect(within(rows[1]!).getByText("0.08M")).toBeInTheDocument();
-    expect(within(rows[2]!).getByText("30.00M")).toBeInTheDocument();
   });
 
   it("re-sorts when a column header is clicked", async () => {
@@ -50,7 +49,6 @@ describe("the usage overview", () => {
     const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
     expect(rows.map((row) => within(row).getAllByRole("cell")[0]!.textContent)).toEqual([
       "AI Agent Chat",
-      "AI Credit Adjustment",
       "AI Gpt Image 2",
     ]);
   });
@@ -114,13 +112,27 @@ describe("the usage detailed view", () => {
     await user.click(screen.getByRole("tab", { name: "Detailed View" }));
     expect(await screen.findByText("AI Agent Chat usage records")).toBeInTheDocument();
     expect(await screen.findByText("0.42M")).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole("button", { name: /AI Agent Chat - 4.94M/ }));
-    await user.click(await screen.findByRole("menuitem", { name: /AI Credit Adjustment/ }));
+  /**
+   * The toggle used to move the headline figure and nothing else, so the Credited view listed every
+   * tool that had ever run and priced each by what it had debited.
+   */
+  it("shows only what moved on the credited side, at its credited amount", async () => {
+    const user = userEvent.setup();
+    locationMock.search = "?show=credited";
+    renderWithProviders(<UsagePage />);
+
+    const rows = within(await screen.findByRole("table")).getAllByRole("row").slice(1);
+    expect(rows.map((row) => within(row).getAllByRole("cell")[0]!.textContent)).toEqual([
+      "AI Credit Adjustment",
+    ]);
+    expect(within(rows[0]!).getByText("30.00M")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Detailed View" }));
 
     expect(await screen.findByText("AI Credit Adjustment usage records")).toBeInTheDocument();
     expect(screen.getByText("Credited")).toBeInTheDocument();
-    expect(await screen.findByText("30.00M")).toBeInTheDocument();
   });
 
   it("keeps each record's step-cost drill-down visible but honest about why it is disabled", async () => {

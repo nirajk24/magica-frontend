@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UsageDetailedView } from "@/components/usage/UsageDetailedView";
+import { categoriesOn } from "@/components/usage/category-total";
 import { UsageOverviewTable } from "@/components/usage/UsageOverviewTable";
 import { formatUsageCredits, formatUsagePeriod } from "@/lib/format";
 import { previousPeriodOf, useUsage } from "@/queries/use-usage";
@@ -62,7 +63,9 @@ export function UsagePage() {
 
   const pageQuery = period === "current" ? currentQuery : previousQuery;
   const page = pageQuery.data;
-  const categories = page?.categories ?? [];
+  // Filtered by the side being shown: the toggle used to change only the headline figure, so the
+  // Credited view listed every tool that had ever run and priced them by what they had debited.
+  const categories = categoriesOn(page?.categories ?? [], show);
 
   const categoryKey =
     chosenCategory !== null && categories.some((category) => category.key === chosenCategory)
@@ -100,7 +103,11 @@ export function UsagePage() {
               `${formatUsageCredits(show === "credited" ? page.totalCredited : page.totalDebited)} credits`
             }
           />
-          <StatCard icon={ReceiptText} label="Records" value={page && String(page.records)} />
+          <StatCard
+            icon={ReceiptText}
+            label="Records"
+            value={page && String(categories.reduce((total, category) => total + category.count, 0))}
+          />
           <StatCard icon={ListTree} label="Categories" value={page && String(categories.length)} />
           <StatCard
             icon={CalendarDays}
@@ -201,6 +208,7 @@ export function UsagePage() {
               categories={categories}
               categoryKey={categoryKey}
               detail={detailQuery.data?.categories.find((category) => category.key === categoryKey)}
+              show={show}
               loading={pageQuery.isPending || (categoryKey !== null && detailQuery.isPending)}
               onSelectCategory={setChosenCategory}
             />

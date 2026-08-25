@@ -3,7 +3,8 @@
 import { Check, ChevronDown, Eye } from "lucide-react";
 import { DisabledAction } from "@/components/DisabledAction";
 import type { UsageCategory } from "@/contracts";
-import { categorySide, categoryTotal } from "@/components/usage/category-total";
+import { categoryAmount, categorySide } from "@/components/usage/category-total";
+import type { UsageSide } from "@/components/usage/UsagePage";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,12 +25,14 @@ export function UsageDetailedView({
   categoryKey,
   detail,
   loading,
+  show,
   onSelectCategory,
 }: {
   categories: readonly UsageCategory[];
   categoryKey: string | null;
   detail: UsageCategory | undefined;
   loading: boolean;
+  show: UsageSide;
   onSelectCategory: (key: string) => void;
 }) {
   const chosen = categories.find((category) => category.key === categoryKey);
@@ -47,7 +50,7 @@ export function UsageDetailedView({
         {chosen && (
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-11 items-center gap-6 rounded-xl border border-border bg-panel px-4 text-sm font-semibold text-fg transition-colors hover:bg-surface">
-              {categoryOptionLabel(chosen)}
+              {categoryOptionLabel(chosen, show)}
               <ChevronDown className="size-3.5 text-fg-subtle" aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[14rem]">
@@ -60,7 +63,7 @@ export function UsageDetailedView({
                     className={category.key === categoryKey ? "size-3.5" : "size-3.5 opacity-0"}
                     aria-hidden
                   />
-                  {categoryOptionLabel(category)}
+                  {categoryOptionLabel(category, show)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -141,8 +144,8 @@ export function UsageDetailedView({
   );
 }
 
-function categoryOptionLabel(category: UsageCategory): string {
-  return `${category.label} - ${formatUsageCredits(categoryTotal(category))}`;
+function categoryOptionLabel(category: UsageCategory, show: UsageSide): string {
+  return `${category.label} - ${formatUsageCredits(categoryAmount(category, show))}`;
 }
 
 function SkeletonRows() {
