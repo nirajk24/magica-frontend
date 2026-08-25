@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { BookOpen, PanelLeft, Search, Settings, X } from "lucide-react";
+import { BookOpen, ChevronRight, PanelLeft, Search, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -12,6 +12,7 @@ import { EXAMPLE_TITLES } from "@/examples/titles";
 import { SidebarFooter } from "@/components/shell/SidebarFooter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
+import { useHydrated } from "@/lib/use-hydrated";
 import { useChatList } from "@/queries/use-chats";
 import { useUI } from "@/stores/ui";
 
@@ -331,29 +332,49 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
  */
 function Examples({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const open = useUI((state) => state.examplesOpen);
+  const toggle = useUI((state) => state.toggleExamples);
+
+  // Until the persisted store has hydrated, `open` is the default rather than the stored choice —
+  // rendering the rows before then flashes a section the reader had collapsed.
+  const hydrated = useHydrated();
+  const showing = hydrated && open;
 
   return (
     <div className="mt-4 shrink-0">
-      <p className="px-3 pb-1 text-xs font-normal text-fg-muted">Examples</p>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={showing}
+        className="flex w-full items-center gap-1 rounded-md px-3 py-1 text-xs font-normal text-fg-muted transition-colors hover:text-fg"
+      >
+        <ChevronRight
+          className={cn("size-3 transition-transform", showing && "rotate-90")}
+          aria-hidden
+        />
+        Examples
+      </button>
 
-      <div className="px-2">
-        {EXAMPLE_TITLES.map((example) => (
-          <Link
-            key={example.id}
-            href={`/examples/${example.id}`}
-            onClick={onNavigate}
-            className={cn(
-              "flex h-[34px] items-center gap-1.5 truncate rounded-md px-2 text-sm transition-colors",
-              pathname === `/examples/${example.id}`
-                ? "bg-surface-selected text-fg"
-                : "text-fg-muted hover:bg-surface-selected hover:text-fg",
-            )}
-          >
-            <BookOpen className="size-3 shrink-0 text-fg-subtle" aria-hidden />
-            <span className="truncate">{example.title}</span>
-          </Link>
-        ))}
-      </div>
+      {showing && (
+        <div className="px-2">
+          {EXAMPLE_TITLES.map((example) => (
+            <Link
+              key={example.id}
+              href={`/examples/${example.id}`}
+              onClick={onNavigate}
+              className={cn(
+                "flex h-[34px] items-center gap-1.5 truncate rounded-md px-2 text-sm transition-colors",
+                pathname === `/examples/${example.id}`
+                  ? "bg-surface-selected text-fg"
+                  : "text-fg-muted hover:bg-surface-selected hover:text-fg",
+              )}
+            >
+              <BookOpen className="size-3 shrink-0 text-fg-subtle" aria-hidden />
+              <span className="truncate">{example.title}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

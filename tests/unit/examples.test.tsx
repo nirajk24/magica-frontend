@@ -6,6 +6,7 @@ import { ExampleScreen } from "@/components/examples/ExampleScreen";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { exampleChat } from "@/examples/chats";
 import { EXAMPLE_TITLES } from "@/examples/titles";
+import { useUI } from "@/stores/ui";
 import { clerkMock } from "../clerk-mock";
 import { routerMock } from "../router-mock";
 import { renderWithProviders } from "../render";
@@ -100,5 +101,22 @@ describe("signed out", () => {
 
     expect(clerkMock.openSignIn).toHaveBeenCalled();
     expect(routerMock.push).not.toHaveBeenCalled();
+  });
+});
+
+describe("the examples section", () => {
+  it("collapses to a single row, and the choice survives a remount", async () => {
+    const user = userEvent.setup();
+    const first = renderWithProviders(<Sidebar />);
+
+    await user.click(await first.findByRole("button", { name: /Examples/ }));
+
+    expect(first.queryByText(EXAMPLE_TITLES[0]!.title)).not.toBeInTheDocument();
+    expect(useUI.getState().examplesOpen, "the store is what remembers it").toBe(false);
+
+    first.unmount();
+    const second = renderWithProviders(<Sidebar />);
+
+    expect(second.queryByText(EXAMPLE_TITLES[0]!.title)).not.toBeInTheDocument();
   });
 });

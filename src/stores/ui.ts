@@ -17,6 +17,7 @@ type UIState = {
   drafts: Record<string, string>;
   modelByChat: Record<string, ModelId>;
   sidebarCollapsed: boolean;
+  examplesOpen: boolean;
   searchOpen: boolean;
   addCreditsOpen: boolean;
   filesOpen: boolean;
@@ -33,6 +34,7 @@ type UIState = {
   setModel: (chatId: string, modelId: ModelId) => void;
   togglePlanMode: (chatId: string) => void;
   toggleSidebar: () => void;
+  toggleExamples: () => void;
   setSearchOpen: (open: boolean) => void;
   setAddCreditsOpen: (open: boolean) => void;
   setFilesOpen: (open: boolean) => void;
@@ -63,6 +65,7 @@ export const useUI = create<UIState>()(
       drafts: {},
       modelByChat: {},
       sidebarCollapsed: false,
+      examplesOpen: true,
       searchOpen: false,
       addCreditsOpen: false,
       filesOpen: false,
@@ -94,6 +97,7 @@ export const useUI = create<UIState>()(
         })),
 
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      toggleExamples: () => set((s) => ({ examplesOpen: !s.examplesOpen })),
       setSearchOpen: (searchOpen) => set({ searchOpen }),
       setAddCreditsOpen: (addCreditsOpen) => set({ addCreditsOpen }),
       setFilesOpen: (filesOpen) => set({ filesOpen }),
@@ -124,7 +128,11 @@ export const useUI = create<UIState>()(
     }),
     {
       name: "magica-ui",
-      partialize: (s) => ({ drafts: s.drafts, sidebarCollapsed: s.sidebarCollapsed }),
+      partialize: (s) => ({
+        drafts: s.drafts,
+        sidebarCollapsed: s.sidebarCollapsed,
+        examplesOpen: s.examplesOpen,
+      }),
     },
   ),
 );
