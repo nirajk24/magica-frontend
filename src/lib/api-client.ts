@@ -17,7 +17,6 @@ import {
   SendMessage,
   SendMessageResult,
   SignUploadsResult,
-  TopUpResult,
   UsagePage,
   WebhookDeliveriesPage,
   WebhookEndpointsPage,
@@ -27,7 +26,6 @@ import {
   type SignUploads,
   type UpdateAttachment,
   type Feedback,
-  type TopUp,
   type ResolveWaitpoint,
   type UpdateChat,
   type ErrorCode,
@@ -142,8 +140,6 @@ export function createApi(getToken: TokenSource) {
     getUsage: ({ from, to, category }: UsageQueryInput = {}) =>
       request(`/credits/usage${queryString({ from, to, category })}`, {}, UsagePage, getToken),
 
-    topUp: (body: TopUp) =>
-      request("/credits/top-up", { method: "POST", body: JSON.stringify(body) }, TopUpResult, getToken),
 
     getLlmStatus: () => request("/llm/status", {}, LlmStatus, getToken),
 
