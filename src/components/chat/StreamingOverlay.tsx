@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { RunMetadata } from "@/contracts";
 import { MessageTimeline } from "@/components/chat/MessageTimeline";
+import { PendingTurn } from "@/components/chat/PendingTurn";
 import { timelineFromRun } from "@/lib/timeline";
 
 const EMPTY_REASONING: ReadonlyMap<number, string> = new Map();
@@ -36,6 +37,11 @@ export function StreamingOverlay({
     () => timelineFromRun(metadata, streamedText, rememberedReasoning),
     [metadata, streamedText, rememberedReasoning],
   );
+
+  // A turn publishes its first metadata before the model has produced anything, so the timeline is
+  // empty for as long as the model takes to answer. Rendering it draws no rows at all, which puts
+  // the turn on screen and then takes it off again until the first block arrives.
+  if (timeline.segments.length === 0) return <PendingTurn />;
 
   return (
     <div className="flex flex-col" data-testid="streaming-overlay">

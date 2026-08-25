@@ -9,6 +9,18 @@ import { renderWithProviders } from "../render";
 import * as fixtures from "../msw/fixtures";
 
 describe("StreamingOverlay", () => {
+  it("holds the pending row while the turn has published no blocks yet", () => {
+    renderWithProviders(
+      <StreamingOverlay
+        metadata={{ ...fixtures.runMetadata, blocks: [] }}
+        streamedText=""
+      />,
+    );
+
+    expect(screen.getByText("Thinking")).toBeInTheDocument();
+    expect(screen.queryByTestId("streaming-overlay")).not.toBeInTheDocument();
+  });
+
   it("renders the prose the stream has delivered so far, mid-word", () => {
     renderWithProviders(
       <StreamingOverlay metadata={fixtures.runMetadata} streamedText={fixtures.streamedText} />,
