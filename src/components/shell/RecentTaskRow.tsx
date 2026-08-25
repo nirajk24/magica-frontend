@@ -60,14 +60,21 @@ export function RecentTaskRow({
           aria-label={`Actions for ${chat.title}`}
           onClick={(event) => event.preventDefault()}
           className={cn(
-            "grid size-6 shrink-0 place-items-center rounded text-fg-subtle transition-opacity hover:text-fg focus-visible:opacity-100",
+            "grid size-6 shrink-0 place-items-center rounded text-fg-subtle outline-none transition-opacity hover:text-fg",
+            "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent",
             menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >
           <MoreHorizontal className="size-4" aria-hidden />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start">
+        {/*
+          Radix hands focus back to the trigger on close, and the browser paints that as a ring on a
+          row the pointer has long left. Declined: every action here either moves focus itself
+          (rename opens an input) or removes the row, and the trigger stays in the tab order either
+          way, so nothing is stranded by leaving focus alone.
+        */}
+        <DropdownMenuContent align="start" onCloseAutoFocus={(event) => event.preventDefault()}>
           {actions.map((action) => (
             <DropdownMenuItem
               key={action.key}
