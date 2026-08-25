@@ -22,6 +22,11 @@ export type NavItem = {
   placeholder?: boolean;
   /** Rows that leave the app, opened in their own tab rather than routed to. */
   external?: boolean;
+  /**
+   * Rows whose page reads the caller's own data. Signed out they open the sign-in modal rather
+   * than routing, because the page would only bounce to `/sign-in` and lose the sidebar with it.
+   */
+  requiresAuth?: boolean;
 };
 
 /**
@@ -36,7 +41,7 @@ export type NavItem = {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/chat", label: "New task", icon: CirclePlus },
-  { href: "/chat/recent", label: "Tasks", icon: MessageSquareMore },
+  { href: "/chat/recent", label: "Tasks", icon: MessageSquareMore, requiresAuth: true },
   { href: "/projects", label: "Projects", icon: FolderOpen, placeholder: true },
   { href: "/library", label: "Library", icon: LibraryBig, placeholder: true },
   { href: "/tools", label: "Tools", icon: Boxes, placeholder: true },

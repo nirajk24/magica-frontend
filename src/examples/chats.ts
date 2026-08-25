@@ -200,51 +200,44 @@ const threePosterCampaign = conversation({
   ],
 });
 
-const posterThatGotBlocked = conversation({
-  id: "poster-that-got-blocked",
-  title: "Poster that got blocked",
-  hoursAgo: 70,
+const whatCanYouDo = conversation({
+  id: "what-can-you-do",
+  title: "What can you do?",
+  hoursAgo: 30,
   turns: [
     {
-      ask: "Make a poster of me next to Zendaya on a red carpet.",
+      ask: "What can you actually do?",
       agent: {
-        thinking:
-          "Named public figure. The provider will refuse this, and I would rather say so than spend a render finding out.",
         reply:
-          "I got as far as the layout and the generation was refused — the provider won't render a named public figure, and that's a hard limit rather than something I can phrase around.\n\nNothing was charged. The refusal came back before any image work started, so the hold was released and your balance hasn't moved.\n\nIf you want the same poster, describe the second person instead of naming them: build, hair, outfit, posture. That goes through, and you keep control of the composition — which you don't really have when you name someone, because you get their likeness rather than your framing.",
-        failure: "That prompt was blocked. Try describing the person instead of naming them.",
+          "I make things rather than describe them. Images from a description, edits to images that already exist, crops, and joining video clips together.\n\nWhat I can't do is browse the web, run code, or read a file you haven't given me. If something needs one of those, I'll say so rather than improvise around it.\n\nThe useful part is what happens before any of that. Tell me what the thing is *for* — a poster, a thumbnail, a product shot — and I'll ask about the couple of decisions that actually change the output, rather than guessing and charging you for the guess.",
       },
     },
     {
-      ask: "Ah ok. What if I just say a tall woman in a green dress?",
+      ask: "What does it cost?",
       agent: {
         reply:
-          "That works — nothing in it names anyone, so it goes straight through.\n\nWorth adding a little more if you want the composition to hold: where she's standing relative to you, and roughly what the light is doing. Red carpet shots are usually lit hard from the front, and if I don't know that I'll pick something softer and it'll read as a studio portrait instead.",
+          "Only what gets generated. An image is a few hundredths of a credit at standard quality, a crop is less than that, and video is the expensive one.\n\nEverything around it is free — asking you questions, drawing up a plan, thinking about the brief, changing my mind. That's deliberate rather than generous: it's much cheaper for both of us if I understand what you want before I render it.\n\nA failed tool is refunded in full, including the hold taken when the turn started.",
       },
     },
     {
-      ask: "Yeah — she's to my left, hard flash like press photography. Go on.",
+      ask: "What happens if you get it wrong?",
       agent: {
-        thinking:
-          "Described rather than named, so there's nothing for the filter to catch. Hard frontal flash also suits the format, so it should come back first time.",
-        lead: "Running it with the description in place of the name.",
-        steps: [
-          "Placed the second figure to the left",
-          "Set hard frontal flash, press-photography falloff",
-          "Kept the 4:5 poster frame",
-        ],
-        generations: [
-          {
-            prompt:
-              "Red carpet poster, two figures, tall woman in a green dress to the left, hard frontal press flash, 4:5 poster frame, editorial quality",
-            image: "watercolour",
-            credits: 0.0588,
-            seconds: 49,
-          },
-        ],
         reply:
-          "Done, and it went through first time.\n\nWorth knowing for next time: it's naming a real person that gets refused, not the subject matter. A red carpet, two people, press flash — none of that is a problem. Describe them and you keep the composition you actually wanted.\n\nThe hard flash is doing a lot of the work here. It flattens both figures onto the same plane, which is what makes press photography read as press photography rather than as a portrait.",
-        feedback: "like",
+          "Tell me what's wrong rather than asking again from scratch.\n\nIf the composition is right and only one thing is off — the light, the margin, a colour — that's an edit, and an edit keeps everything that already worked. It's cheaper than a fresh render and, more importantly, it doesn't move the parts you liked.\n\nIf the whole thing missed, say that instead and I'll start over. The distinction matters more than it sounds: regenerating a nearly-right image usually gives you a different nearly-right image.",
+      },
+    },
+    {
+      ask: "Can you plan something out before running it?",
+      agent: {
+        reply:
+          "Yes, and I will by default once something needs more than one billable step.\n\nYou get the steps in order, each naming the tool it will use and what it's estimated to cost, before any of it runs. You can approve the lot, or run it a step at a time so you can stop after the first one if it's heading the wrong way.\n\nI don't price anything myself — the figures come from the system, so a number you see is one I can't have invented.",
+      },
+    },
+    {
+      ask: "What's the thing people usually get wrong?",
+      agent: {
+        reply:
+          "Describing the picture instead of the purpose.\n\n\"A blue poster with big text\" gives me pixels to fill. \"A poster for a record shop opening, seen from across the street\" tells me the type has to be readable at distance, the palette should survive bad printing, and the detail belongs in the middle third. Same request, very different output.\n\nThe other one is naming real people. That gets refused by the provider every time — describe them instead and you keep the composition you wanted.",
       },
     },
   ],
@@ -253,7 +246,7 @@ const posterThatGotBlocked = conversation({
 const BY_ID: Record<string, ChatWithMessages> = {
   "swiss-city-poster": swissCityPoster,
   "three-poster-campaign": threePosterCampaign,
-  "poster-that-got-blocked": posterThatGotBlocked,
+  "what-can-you-do": whatCanYouDo,
 };
 
 export const exampleChat = (id: string): ChatWithMessages | undefined => BY_ID[id];

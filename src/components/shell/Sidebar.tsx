@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { BookOpen, PanelLeft, Search, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -122,6 +122,9 @@ export function Sidebar({
 
       {!collapsed && <RecentTasks onNavigate={onNavigate} />}
 
+      {/* Outside `RecentTasks`, which returns early when signed out — taking these with it. */}
+      {!collapsed && <Examples onNavigate={onNavigate} />}
+
       <div className={cn("mt-auto shrink-0", collapsed ? "pb-3" : "w-full")}>
         {collapsed ? (
           <RailButton label="Settings" onClick={openSettings}>
@@ -194,6 +197,8 @@ function NavRow({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const { isSignedIn } = useAuth();
+  const { openSignIn } = useClerk();
   const active = pathname === item.href;
   const Icon = item.icon;
 
@@ -234,6 +239,21 @@ function NavRow({
           {item.label} isn&apos;t part of this build.
         </TooltipContent>
       </Tooltip>
+    );
+  }
+
+  // A page that reads the caller's own data would only bounce to `/sign-in`, which replaces the
+  // whole shell — sidebar, examples and all — for a visitor who has not decided to sign in yet.
+  if (item.requiresAuth && !isSignedIn) {
+    return (
+      <button
+        type="button"
+        aria-label={item.label}
+        onClick={() => openSignIn()}
+        className={className}
+      >
+        {content}
+      </button>
     );
   }
 
@@ -297,8 +317,6 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
           ))
         )}
       </div>
-
-      <Examples />
     </div>
   );
 }
@@ -311,7 +329,7 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
  * Titles only. The conversations live behind the examples route so they are downloaded by someone
  * who opens one and by nobody else.
  */
-function Examples() {
+function Examples({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -323,6 +341,7 @@ function Examples() {
           <Link
             key={example.id}
             href={`/examples/${example.id}`}
+            onClick={onNavigate}
             className={cn(
               "flex h-[34px] items-center gap-1.5 truncate rounded-md px-2 text-sm transition-colors",
               pathname === `/examples/${example.id}`

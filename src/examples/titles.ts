@@ -15,7 +15,7 @@ export type ExampleSummary = {
 export const EXAMPLE_TITLES: readonly ExampleSummary[] = [
   { id: "swiss-city-poster", title: "Swiss-style city poster", hoursAgo: 2 },
   { id: "three-poster-campaign", title: "Three-poster campaign", hoursAgo: 6 },
-  { id: "poster-that-got-blocked", title: "Poster that got blocked", hoursAgo: 70 },
+  { id: "what-can-you-do", title: "What can you do?", hoursAgo: 30 },
 ];
 
 export const isExampleId = (id: string): boolean =>

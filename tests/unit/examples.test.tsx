@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ChatWithMessages } from "@/contracts";
 import { ExampleScreen } from "@/components/examples/ExampleScreen";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { exampleChat } from "@/examples/chats";
 import { EXAMPLE_TITLES } from "@/examples/titles";
+import { clerkMock } from "../clerk-mock";
+import { routerMock } from "../router-mock";
 import { renderWithProviders } from "../render";
 
 describe("the example fixtures", () => {
@@ -28,11 +31,19 @@ describe("the example fixtures", () => {
 
   it("reads as a conversation rather than a single exchange", () => {
     for (const { id } of EXAMPLE_TITLES) {
-      const messages = exampleChat(id)!.messages;
+      const users = exampleChat(id)!.messages.filter((m) => m.role === "user");
 
-      expect(messages.filter((m) => m.role === "user").length, id).toBeGreaterThanOrEqual(3);
-      expect(messages.some((m) => m.toolInvocations.length > 0), `${id} shows no work`).toBe(true);
+      expect(users.length, id).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  /** One is a plain conversation on purpose; the set as a whole still has to show the product working. */
+  it("shows generated work in more than one of them", () => {
+    const withTools = EXAMPLE_TITLES.filter(({ id }) =>
+      exampleChat(id)!.messages.some((m) => m.toolInvocations.length > 0),
+    );
+
+    expect(withTools.length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -58,5 +69,36 @@ describe("the sidebar", () => {
     for (const example of EXAMPLE_TITLES) {
       expect(within(section).getByText(example.title)).toBeInTheDocument();
     }
+  });
+});
+
+/**
+ * They were nested inside `RecentTasks`, which returns early when signed out — so the one visitor
+ * who has nothing else to look at was the one who could not see them.
+ */
+describe("signed out", () => {
+  it("still offers the examples", async () => {
+    clerkMock.isSignedIn = false;
+    renderWithProviders(<Sidebar />);
+
+    expect(await screen.findByText("Examples")).toBeInTheDocument();
+    for (const example of EXAMPLE_TITLES) {
+      expect(screen.getByText(example.title)).toBeInTheDocument();
+    }
+  });
+
+  /**
+   * `/chat/recent` redirects to `/sign-in` server-side, which replaces the whole shell — sidebar,
+   * examples and all — for someone who has not decided to sign in yet.
+   */
+  it("opens the sign-in modal from Tasks rather than routing away", async () => {
+    const user = userEvent.setup();
+    clerkMock.isSignedIn = false;
+    renderWithProviders(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "Tasks" }));
+
+    expect(clerkMock.openSignIn).toHaveBeenCalled();
+    expect(routerMock.push).not.toHaveBeenCalled();
   });
 });
