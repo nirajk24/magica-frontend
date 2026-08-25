@@ -1,13 +1,14 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { PanelLeft, Search, Settings, X } from "lucide-react";
+import { BookOpen, PanelLeft, Search, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { MagicaLogo } from "@/components/MagicaMark";
 import { NAV_ITEMS } from "@/components/shell/nav";
 import { RecentTaskRow } from "@/components/shell/RecentTaskRow";
+import { EXAMPLE_TITLES } from "@/examples/titles";
 import { SidebarFooter } from "@/components/shell/SidebarFooter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
@@ -295,6 +296,44 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
             />
           ))
         )}
+      </div>
+
+      <Examples />
+    </div>
+  );
+}
+
+/**
+ * The example conversations, kept in their own labelled section rather than mixed into Recent
+ * tasks. That separation is what stops a reader wondering whose chats these are — a heading of
+ * their own says it before the badge on the page does.
+ *
+ * Titles only. The conversations live behind the examples route so they are downloaded by someone
+ * who opens one and by nobody else.
+ */
+function Examples() {
+  const pathname = usePathname();
+
+  return (
+    <div className="mt-4 shrink-0">
+      <p className="px-3 pb-1 text-xs font-normal text-fg-muted">Examples</p>
+
+      <div className="px-2">
+        {EXAMPLE_TITLES.map((example) => (
+          <Link
+            key={example.id}
+            href={`/examples/${example.id}`}
+            className={cn(
+              "flex h-[34px] items-center gap-1.5 truncate rounded-md px-2 text-sm transition-colors",
+              pathname === `/examples/${example.id}`
+                ? "bg-surface-selected text-fg"
+                : "text-fg-muted hover:bg-surface-selected hover:text-fg",
+            )}
+          >
+            <BookOpen className="size-3 shrink-0 text-fg-subtle" aria-hidden />
+            <span className="truncate">{example.title}</span>
+          </Link>
+        ))}
       </div>
     </div>
   );
