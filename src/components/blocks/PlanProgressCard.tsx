@@ -67,7 +67,7 @@ function StepGlyph({ status }: { status: ActivePlan["steps"][number]["status"] }
         aria-label="Completed"
         className="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full bg-success text-bg"
       >
-        <Check className="size-3" aria-hidden />
+        <Check className="size-3 animate-in zoom-in-90 fade-in duration-200 ease-out" aria-hidden />
       </span>
     );
   }

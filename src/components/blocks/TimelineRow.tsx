@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, CircleCheck, CircleX, Clock, Loader2 } from "lucide-react";
+import { ChevronRight, CircleCheck, CircleX, Clock, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { ToolView } from "@/lib/timeline";
@@ -49,14 +49,16 @@ export function TimelineRow({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const expandable = children !== undefined;
-  const Chevron = open ? ChevronDown : ChevronRight;
+  // One icon rotated rather than two swapped: swapping components cannot transition, so the
+  // disclosure snapped between states while everything around it eased.
+  const chevronClass = cn("size-3.5 transition-transform duration-[120ms] ease-out", open && "rotate-90");
 
   const header = (
     <>
       <Icon className={cn("size-3.5 shrink-0 text-fg", iconClassName)} />
       <span className={cn("text-[13px] font-semibold text-fg", labelClassName)}>{label}</span>
       {expandable && chevron === "inline" && (
-        <Chevron className="size-3.5 text-fg-muted" aria-hidden />
+        <ChevronRight className={cn(chevronClass, "text-fg-muted")} aria-hidden />
       )}
       <StatusGlyph status={status} />
       {typeof durationMs === "number" && (
@@ -81,7 +83,7 @@ export function TimelineRow({
           {chevron === "end" && (
             <span className="ml-auto flex items-center gap-2">
               {right}
-              <Chevron className="size-3.5 text-fg-subtle" aria-hidden />
+              <ChevronRight className={cn(chevronClass, "text-fg-subtle")} aria-hidden />
             </span>
           )}
         </button>

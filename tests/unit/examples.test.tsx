@@ -111,12 +111,20 @@ describe("the examples section", () => {
 
     await user.click(await first.findByRole("button", { name: /Examples/ }));
 
-    expect(first.queryByText(EXAMPLE_TITLES[0]!.title)).not.toBeInTheDocument();
+    // The rows stay mounted so the height can animate, and `visibility: hidden` takes them out of
+    // the tab order. jsdom applies no stylesheet, so the state is asserted rather than the pixels.
+    expect(first.getByRole("button", { name: /Examples/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(useUI.getState().examplesOpen, "the store is what remembers it").toBe(false);
 
     first.unmount();
     const second = renderWithProviders(<Sidebar />);
 
-    expect(second.queryByText(EXAMPLE_TITLES[0]!.title)).not.toBeInTheDocument();
+    expect(second.getByRole("button", { name: /Examples/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 });

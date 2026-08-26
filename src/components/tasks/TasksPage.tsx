@@ -158,7 +158,7 @@ export function TasksPage() {
         ) : chats.length === 0 ? (
           <EmptyState searching={search.trim().length > 0} />
         ) : (
-          <ul>
+          <ul className="animate-in fade-in duration-200 ease-out">
             {chats.map((chat) => (
               <li key={chat.id}>
                 <TaskRow

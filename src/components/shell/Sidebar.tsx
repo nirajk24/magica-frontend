@@ -308,14 +308,16 @@ function RecentTasks({ onNavigate }: { onNavigate?: () => void }) {
         ) : chats.length === 0 ? (
           <EmptyList />
         ) : (
-          chats.map((chat) => (
-            <RecentTaskRow
-              key={chat.id}
-              chat={chat}
-              active={pathname === `/chat/${chat.id}`}
-              onNavigate={onNavigate}
-            />
-          ))
+          <div className="animate-in fade-in duration-200 ease-out">
+            {chats.map((chat) => (
+                <RecentTaskRow
+                key={chat.id}
+                chat={chat}
+                active={pathname === `/chat/${chat.id}`}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -355,8 +357,18 @@ function Examples({ onNavigate }: { onNavigate?: () => void }) {
         Examples
       </button>
 
-      {showing && (
-        <div className="px-2">
+      {/*
+        Height is animated through `grid-template-rows`, which needs no measured pixel value. The
+        rows stay mounted so the close animates too; `invisible` is what keeps a collapsed link out
+        of the tab order, since `visibility: hidden` removes focusability where `opacity` does not.
+      */}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-[320ms] ease-out",
+          showing ? "grid-rows-[1fr]" : "grid-rows-[0fr] invisible",
+        )}
+      >
+        <div className="overflow-hidden px-2">
           {EXAMPLE_TITLES.map((example) => (
             <Link
               key={example.id}
@@ -374,7 +386,7 @@ function Examples({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

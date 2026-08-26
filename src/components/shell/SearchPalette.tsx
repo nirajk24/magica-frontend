@@ -166,7 +166,7 @@ function PaletteBody({ onClose }: { onClose: () => void }) {
             {search.trim().length > 0 ? "No tasks match that search." : "No tasks yet"}
           </p>
         ) : (
-          <div id={RESULTS_ID} role="listbox" aria-label="Tasks">
+          <div id={RESULTS_ID} role="listbox" aria-label="Tasks" className="animate-in fade-in duration-200 ease-out">
             {chats.map((chat, position) => (
               <button
                 key={chat.id}
