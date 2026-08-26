@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "@/templates/gallery";
 import { cn } from "@/lib/cn";
+import { FadeImage } from "@/components/FadeImage";
 
 const ALL = "All";
 /** The reference serves 30 cards a tab and keeps the rest behind `See more ideas`. */
@@ -187,7 +188,7 @@ function TemplateCard({
             className="block h-full w-full object-cover"
           />
         ) : (
-          <img
+          <FadeImage
             src={template.poster}
             alt={template.title}
             onError={() => setFailed(true)}

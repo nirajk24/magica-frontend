@@ -8,6 +8,7 @@ import { inputImageUrls, orderedInputRows, outputUrls } from "@/components/block
 import { cn } from "@/lib/cn";
 import { formatCredits } from "@/lib/format";
 import type { ToolView } from "@/lib/timeline";
+import { FadeImage } from "@/components/FadeImage";
 
 /**
  * The full detail behind a tool card's `View more`.
@@ -121,7 +122,7 @@ function ImageSection({ label, urls }: { label: string; urls: readonly string[] 
       <p className="inline-block border-b border-border pb-1 text-fg">{label}:</p>
       <div className="mt-3 flex flex-wrap gap-3">
         {urls.map((url) => (
-          <img
+          <FadeImage
             key={url}
             src={url}
             alt={label}

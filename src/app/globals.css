@@ -178,13 +178,33 @@
   --tab-strip: #191919;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  [data-spinner] {
-    animation: none;
-  }
+/*
+ * Three durations, and nothing outside them. The failure mode for motion work is twenty separately
+ * tuned one-offs that never quite agree; a fixed set is what makes a dozen animations read as one
+ * system. Entrances decelerate and exits accelerate, which is most of what makes motion feel
+ * physical rather than mechanical.
+ */
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-exit: cubic-bezier(0.4, 0, 1, 1);
+}
 
-  .page-blur-overlay {
-    animation: none;
+/*
+ * Blanket, not per-component. This previously named `[data-spinner]` and `.page-blur-overlay`
+ * individually, which meant every animation added afterwards had to remember to opt in — and the
+ * one that forgets is invisible to everyone who does not need this setting.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

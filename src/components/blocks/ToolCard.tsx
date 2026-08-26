@@ -7,6 +7,7 @@ import { DetailRows, TimelineRow, type DetailRow } from "@/components/blocks/Tim
 import { iconColourFor, iconFor } from "@/components/blocks/icons";
 import { inputRows, outputUrls } from "@/components/blocks/tool-output";
 import { formatCredits } from "@/lib/format";
+import { FadeImage } from "@/components/FadeImage";
 
 export type ToolCardProps = { tool: ToolView };
 
@@ -66,7 +67,7 @@ export function OutputStrip({ urls, label }: { urls: readonly string[]; label: s
   return (
     <div className="flex flex-wrap gap-2">
       {urls.map((url) => (
-        <img
+        <FadeImage
           key={url}
           src={url}
           alt={`Output of ${label}`}

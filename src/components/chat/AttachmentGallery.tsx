@@ -3,6 +3,7 @@
 import type { AttachmentDTO } from "@/contracts";
 import { isAttachmentExpired } from "@/queries/use-attachments";
 import { useUI } from "@/stores/ui";
+import { FadeImage } from "@/components/FadeImage";
 
 /**
  * How wide a sent attachment renders. The reference draws an attachment and a generated asset at the
@@ -41,7 +42,7 @@ export function AttachmentGallery({ attachments }: { attachments: readonly Attac
             aria-label={`Preview ${attachment.name}`}
             onClick={() => setPreviewFile(attachment.id)}
           >
-            <img
+            <FadeImage
               src={attachment.url}
               alt={attachment.name}
               className="max-h-[320px] w-auto max-w-full rounded-card bg-surface"

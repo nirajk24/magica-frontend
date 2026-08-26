@@ -4,6 +4,7 @@ import { useMemo, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { stripSuppressedUrls } from "@/lib/prose";
+import { FadeImage } from "@/components/FadeImage";
 
 /**
  * Assistant prose is real markdown in the reference — bold lead-ins, ordered and unordered lists and
@@ -89,7 +90,7 @@ export function Markdown({
 
       img: ({ alt, src }) =>
         typeof src === "string" && !suppressUrls?.has(src) ? (
-          <img src={src} alt={alt ?? ""} className="my-4 max-w-full rounded-card" />
+          <FadeImage src={src} alt={alt ?? ""} className="my-4 max-w-full rounded-card" />
         ) : null,
     }),
     [suppressUrls],

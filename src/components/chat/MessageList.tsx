@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { ActiveRun, MessageDTO } from "@/contracts";
 import { LiveRun } from "@/components/chat/LiveRun";
 import { MessageRow } from "@/components/chat/MessageRow";
 import { PendingTurn } from "@/components/chat/PendingTurn";
 import { ScrollToBottom } from "@/components/chat/ScrollToBottom";
+import { cn } from "@/lib/cn";
 
 const COLUMN = "mx-auto w-full max-w-[880px] px-6";
 
@@ -50,6 +51,24 @@ export function MessageList({
   const virtuoso = useRef<VirtuosoHandle>(null);
   const [atBottom, setAtBottom] = useState(true);
 
+  /**
+   * Whether an arriving row should animate in.
+   *
+   * `itemContent` re-runs whenever a row scrolls back into view, so this cannot be derived from
+   * arrival without the class being pulled mid-animation. It is gated on first paint instead: a
+   * reload renders the whole transcript at rest, and anything mounting afterwards fades in.
+   *
+   * The trade-off is that scrolling a row out of view and back replays its entrance. That reads as
+   * a reveal rather than a glitch, and it is worth it to stop twenty messages cascading on load.
+   */
+  const [entrances, setEntrances] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setEntrances(true));
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className="relative h-full">
       <Virtuoso
@@ -62,7 +81,12 @@ export function MessageList({
         atBottomStateChange={setAtBottom}
         startReached={onStartReached}
         itemContent={(_index, item) => (
-          <div className={`${COLUMN} py-4`}>
+          <div
+            className={cn(
+              `${COLUMN} py-4`,
+              entrances && "animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out",
+            )}
+          >
             {item.kind === "message" ? (
               <MessageRow message={item.message} chatId={chatId} runActive={runActive} />
             ) : item.kind === "pending" ? (
