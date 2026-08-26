@@ -3,6 +3,7 @@
 import { BarChart3, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/cn";
 import { CREDIT_DIGITS, formatCredits } from "@/lib/format";
 import { useCredits } from "@/queries/use-credits";
 import { useUI } from "@/stores/ui";
@@ -26,7 +27,11 @@ export function CreditsPopover() {
         className="flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-sm font-semibold text-fg transition-colors hover:bg-surface"
       >
         <CreditsSpark className="size-4" />
-        {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
+        {data ? (
+          formatCredits(data.balance, CREDIT_DIGITS.balance)
+        ) : (
+          <BalanceSkeleton className="w-[52px]" />
+        )}
       </PopoverTrigger>
 
       <PopoverContent className="w-[310px] rounded-2xl p-2.5">
@@ -36,7 +41,11 @@ export function CreditsPopover() {
           <div className="mt-2 flex items-center justify-between">
             <span className="text-sm text-fg">Available Credits</span>
             <span className="text-sm text-fg-muted">
-              {data ? formatCredits(data.balance, CREDIT_DIGITS.balance) : "—"}
+              {data ? (
+                formatCredits(data.balance, CREDIT_DIGITS.balance)
+              ) : (
+                <BalanceSkeleton className="w-[84px]" />
+              )}
             </span>
           </div>
 
@@ -90,5 +99,21 @@ function CreditsSpark({ className }: { className?: string }) {
       <path d="M15 4.5 16.6 8.4 20.5 10 16.6 11.6 15 15.5 13.4 11.6 9.5 10 13.4 8.4 Z" />
       <path d="M4 15.5h4M6.5 19h4" />
     </svg>
+  );
+}
+
+/**
+ * Holds the balance's width while it loads.
+ *
+ * A dash is one character and the figure is six, so the pill was rendering narrow and then growing
+ * the moment the query landed — a layout shift on the one element that sits on screen through every
+ * page. Reserving the width means only the contents change.
+ */
+function BalanceSkeleton({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-block h-[1em] animate-pulse rounded bg-surface align-middle", className)}
+    />
   );
 }
