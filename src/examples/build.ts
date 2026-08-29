@@ -62,6 +62,7 @@ function invocation(id: string, index: number, generation: Generation): ToolInvo
     input: { prompt: generation.prompt, size: "1024x1536", quality: "High", n: 1 },
     output: { images: [ART[generation.image]] },
     errorMessage: null,
+    failureCode: null,
     creditUsed: micro(generation.credits),
     durationMs: generation.seconds * 1000,
   };

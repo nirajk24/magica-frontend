@@ -3,10 +3,8 @@
 Agent-chat frontend for the Magica clone. Next.js App Router + React, TanStack Query for server
 state, Zustand for browser state, Trigger.dev Realtime for live runs.
 
-**Design docs:** `LLD.md` (phased build plan, the rendering model in §3) and `UI-SPEC.md` (what every
-screen looks like, which capture proves it, and the numbered UI decisions). Read LLD §0 and §3 before
-adding anything, and UI-SPEC before touching a pixel — it holds the measured values, so guessing one
-that is already written down is the expensive mistake.
+**Design docs:** `LLD.md` — the structure, the rendering model in §5, realtime and recovery in §6,
+and the traps this stack sets in §9. Read it before adding anything substantial.
 
 ## Rules
 

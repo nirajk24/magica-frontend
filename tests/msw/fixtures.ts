@@ -161,6 +161,7 @@ export const toolInvocation: ToolInvocationDTO = {
   input: { prompt: "a mountain at sunrise" },
   output: { images: [IMAGE_URL] },
   errorMessage: null,
+  failureCode: null,
   creditUsed: "5880",
   durationMs: 8_412,
 };

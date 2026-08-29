@@ -14,7 +14,7 @@ documented at [magica-8fc30897.mintlify.site](https://magica-8fc30897.mintlify.s
 
 | | |
 |---|---|
-| **Design docs** | [`LLD.md`](./LLD.md) — state, the rendering model, realtime, traps · [`UI-SPEC.md`](./UI-SPEC.md) — every screen, measured values, numbered decisions · [`CONVENTIONS.md`](./CONVENTIONS.md) — day-to-day rules |
+| **Design docs** | [`LLD.md`](./LLD.md) — state, the rendering model, realtime, traps · [`CONVENTIONS.md`](./CONVENTIONS.md) — day-to-day rules |
 
 ---
 
@@ -44,7 +44,7 @@ agent worker. Without the worker, sends are accepted and no turn ever runs.
 ### Checks
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm test    # 389 tests across 34 files
+pnpm typecheck && pnpm lint && pnpm test    # 424 tests across 39 files
 pnpm build                                  # fails on drifted contracts before it builds
 pnpm sync-contracts                         # re-copy the backend's schemas
 
@@ -67,7 +67,6 @@ reload mid-conversation — so it is opt-in and spends real model credits.
 ```
 magica-frontend/
 ├── LLD.md                    state, the rendering model, realtime, the traps
-├── UI-SPEC.md                every screen with its measured values and numbered decisions
 ├── CONVENTIONS.md            layering, testing rules, comment style
 ├── scripts/sync-contracts.ts copies the backend's Zod schemas; --check fails the build on drift
 ├── src/
@@ -95,7 +94,7 @@ magica-frontend/
 ├── e2e/                      Playwright: an anonymous-surface project and an opt-in live-turn one
 ├── playwright.config.ts
 └── tests/
-    ├── unit/                 34 files, 389 tests
+    ├── unit/                 39 files, 424 tests
     └── msw/                  handlers and fixtures, typed as the contracts
 ```
 
